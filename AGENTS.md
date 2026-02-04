@@ -8,6 +8,7 @@ This is a **specification and planning repository** for Moon Admin WebApp—a se
 **Live Docs**: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable.
 
 ## Critical Constraints
+- **Test Driven Development:** All features and implementations must follow TDD—first write a failing test, then implement to pass. Aim for 90%+ test coverage and 100% test pass rate. Fix any failing test, even if unrelated to your implementation.
 - Never cache data—always fetch fresh from backend
 - Encrypt all sensitive localStorage data (AES-GCM 256-bit)
 - No modals for records—use inline edit mode ([SPEC.md](SPEC.md#record-view))
@@ -45,3 +46,5 @@ See [SPEC.md](SPEC.md#ui-layouts-and-components) for UI layouts and component sp
 - [.github/agents/PRD.agent.md](.github/agents/PRD.agent.md) — PRD generator
 - [.github/instructions/prd.instructions.md](.github/instructions/prd.instructions.md) — PRD template
 - [.github/prompts/Implment_PRD.prompt.md](.github/prompts/Implment_PRD.prompt.md) — Implementation workflow
+- [DaisyUI](.github/llms/daisyui-llms.txt) — DaisyUI llms.txt 
+- [Bun.js](.github/llms/bunjs-llms-full.txt) — Bunjs llms.txt

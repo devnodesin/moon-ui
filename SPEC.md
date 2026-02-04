@@ -1,4 +1,3 @@
-
 ## Role
 
 You are a senior full-stack engineer specializing in secure, mobile-first admin web applications.
@@ -13,6 +12,7 @@ Moon Admin WebApp is a fully standalone, schema-driven admin UI for managing any
 
 - The backend is powered by Moon server: [https://github.com/devnodesin/moon](https://github.com/devnodesin/moon)
 - For backend API documentation, always attempt to fetch from [https://moon.asensar.in/doc/md](https://moon.asensar.in/doc/md). If unavailable, refer to the local copy in `MOON_API.md`.
+- **UI Layouts and Components**: refer [SPEC_UI.md](./SPEC_UI.md) for UI design.
 
 ---
 
@@ -21,15 +21,15 @@ Moon Admin WebApp is a fully standalone, schema-driven admin UI for managing any
 #### Authentication Flow
 
 ```
-Login → Encrypt & Store Tokens → API Calls (with token) → 
+Login → Encrypt & Store Tokens → API Calls (with token) →
 Token Refresh → Logout → Clear Tokens
 ```
 
 #### Connection Switching Flow
 
 ```
-Select New Connection → Confirm Switch → Logout from Current → 
-Clear In-Memory Data → Decrypt New Credentials → Login to New Backend → 
+Select New Connection → Confirm Switch → Logout from Current →
+Clear In-Memory Data → Decrypt New Credentials → Login to New Backend →
 Fetch Fresh Data → Update UI
 ```
 
@@ -52,13 +52,20 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 11. Use Bun.js for project setup, dev server, and builds.
 12. Validate all user input and API responses.
 13. Explicitly require robust error handling for network/API failures in the UI. Show user notifications for errors, auto-dismiss them, and provide a separate Notification page to view all previous notifications with a 'clear all notifications' option. Specify if notifications should persist only in-session or across reloads (recommend in-session only for now).
-14. Storing sensitive data in in-memory (JS variables) is acceptable during the session, but never persist keys or sensitive data in plaintext.
-15. Document setup, configuration, and security model in the repo.
+14. All errors, API failures, and important events must be handled using the notification system. Show a smart loading/progress bar for best UX/UI during async operations. Any API failure must trigger a notification to the user.
+15. Support data import and export features using CSV and JSON formats.
+16. Follow session timeout and auto-logout rules as specified in `MOON_API.md`.
+17. Notifications are in-session only and stored completely locally (not persisted across reloads).
+18. No need for i18n or translation support; all UI and messages will be in English only.
+19. Storing sensitive data in in-memory (JS variables) is acceptable during the session, but never persist keys or sensitive data in plaintext.
+20. Document setup, configuration, and security model in the repo.
+21. **UI Layouts and Components**: refer [SPEC_UI.md](./SPEC_UI.md) for UI design.
 
 ## Constraints
 
 ### MUST
 
+- **Test Driven Development:** All features and implementations must follow TDD—first write a failing test, then implement to pass. Aim for 90%+ test coverage and 100% test pass rate. Fix any failing test, even if unrelated to your implementation.
 - Encrypt all sensitive data before localStorage (AES-GCM 256-bit, PBKDF2, unique IV).
 - Use React + DaisyUI (Tailwind) for all UI.
 - Use Bun.js for all scripts and builds.
@@ -111,150 +118,4 @@ Input: User switches from "Production" to "Staging" backend.
 Output: All in-memory data is cleared, tokens for new backend are decrypted, user is authenticated, fresh data is fetched from new backend, UI updates to reflect new connection.
 Explanation: No data is shared or cached between backends.
 
-## UI Layouts and Components
-
-### Login View
-
-```md
-┌─────────────────────────────┐
-│                             │
-│         [Logo/Title]        │
-│                             │
-│  ┌─────────────────────┐   │
-│  │ Saved Connections ▼ │   │ ← Dropdown to select saved connection
-│  └─────────────────────┘   │
-│         OR                  │
-│    ┌─────────────────┐     │
-│    │  Server URL     │     │
-│    └─────────────────┘     │
-│    ┌─────────────────┐     │
-│    │  Username       │     │
-│    └─────────────────┘     │
-│    ┌─────────────────┐     │
-│    │  Password       │     │
-│    └─────────────────┘     │
-│    [☑] Remember Connection │
-│                             │
-│      [Connect Button]       │
-│                             │
-│  [Manage Connections]       │ ← Link to connection manager
-│                             │
-└─────────────────────────────┘
-```
-
-### Admin View
-
-**Admin View (Desktop)**
-
-```md
-┌──────────────────────────────────────────────┐
-│ [☰] [● Server] Current Page         [Header] │ ← Header (fixed)
-├────────┬─────────────────────────────────────┤
-│ Side   │                                     │
-│ bar    │         Content Area                │
-│        │         (Dynamic)                   │
-│ (fix)  │                                     │
-│        │                                     │
-├────────┴─────────────────────────────────────┤
-│                 Footer                       │ ← Footer
-└──────────────────────────────────────────────┘
-```
-
-**Admin View (Mobile)**
-
-```md
-┌─────────────────────────────┐
-│ [☰] [● Server] Page [Header]│ ← Header (fixed)
-├─────────────────────────────┤
-│                             │
-│       Content Area          │
-│       (Full Width)          │
-│                             │
-├─────────────────────────────┤
-│          Footer             │
-└─────────────────────────────┘
-
-Sidebar (Overlay on toggle):
-┌──────────┐
-│ Sidebar  │
-│ Menu     │
-│ Items    │
-└──────────┘
-```
-
-**Content Area Behavior:**
-
-- The Content Area is changed dynamically based on context.
-- Default: `Table View`, On click of a row item in the table show `Record View`
-
-### Table View (Collections, Users, API Keys)
-
-```md
-┌─────────────────────────────────────────────┐
-│ [Search Box]              [+ Action Button] │ ← Toolbar
-├─────────────────────────────────────────────┤
-│ Column 1 │ Column 2 │ Column 3 │ Actions   │ ← Header (sortable, 5-6 colums)
-├──────────┼──────────┼──────────┼───────────┤
-│ Data 1   │ Data 2   │ Data 3   │ [⋮]       │ ← Rows
-│ Data 1   │ Data 2   │ Data 3   │ [⋮]       │
-│ Data 1   │ Data 2   │ Data 3   │ [⋮]       │
-├─────────────────────────────────────────────┤
-│ [← Prev]  Page 1 of 10  [Next →]           │ ← Pagination
-└─────────────────────────────────────────────┘
-```
-
-- Clicking a row in any data table opens a **Single Record View** using `Record View` component
-
-### Record View
-
-`Record View`: On click of a row item in the table, show a single record view with an edit button at the top. This view supports both viewing and editing record data in a single screen.
-
-- Clicking a row in any data table opens a **Single Record View**
-- The record opens in **View Mode by default**
-- In View Mode:
-  - Fields are read-only
-  - Fields look like plain text (not form inputs)
-- An **Edit** button is visible at the top
-- Clicking **Edit** switches the same screen to **Edit Mode**
-- In Edit Mode:
-  - Fields become inline-editable
-  - Editable fields use minimal UI (underline or subtle focus)
-- **Save** and **Cancel** actions are shown only in Edit Mode
-- No modals are used for viewing or editing records
-**UX Rule :** Same screen, same layout, two modes (`view` = read-only text
-`edit` = inline editable fields)
-
-**Record View - View Mode**
-
-```md
-┌──────────────────────────────────┐
-│ ← Back                [ Edit ]   |
-├──────────────────────────────────┤
-│                                  │
-│ Name        John Doe             │
-│ Email       john@example.com     │
-│ Role        Admin                │
-│ Status      Active               │
-│                                  │
-└──────────────────────────────────┘
-```
-
-**Record View - Edit Mode**
-
-```md
-┌──────────────────────────────────┐
-│ ← Back                [ Edit ]   |
-├──────────────────────────────────┤
-│                                  │
-│ Name        John Doe________     │
-│ Email       john@example.com__   │
-│ Role        Admin___________     │
-│ Status      Active_________      │
-│                                  │
-│ [ Cancel ]   [ Save ]            │
-└──────────────────────────────────┘
-```
-
-- Only [ Save ] will save the record
-- Cancel will not save the data
-- Edit button disabled
+-
