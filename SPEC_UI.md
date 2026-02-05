@@ -1,5 +1,7 @@
 # UI Layouts and Components
 
+> **Note:** This file `SPEC_UI.md` documents only UI/UX related features.
+
 ---
 
 ## UI/UX Requirements
