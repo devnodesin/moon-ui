@@ -1,5 +1,16 @@
 # UI Layouts and Components
 
+---
+
+## UI/UX Requirements
+
+- **Accessibility:** All UI components and layouts must meet WCAG 2.1 AA accessibility standards.
+- **No Modals for Records:** Viewing and editing records must always be inline—never use modals.
+- **No Data Caching:** All data views must always fetch fresh data from the backend (no client-side caching).
+- **Error Handling:** All API/network errors and important events must trigger a user notification.
+- **Session Timeout:** On session expiration or token refresh failure, show a notification and redirect user to login.
+
+
 ## Login View
 
 ```md
@@ -93,6 +104,8 @@ Sidebar (Overlay on toggle):
 
 - Clicking a row in any data table opens a **Single Record View** using `Record View` component
 
+- Table views must provide buttons for importing (CSV/JSON) and exporting data (CSV/JSON).
+
 ## Record View
 
 `Record View`: On click of a row item in the table, show a single record view with an edit button at the top. This view supports both viewing and editing record data in a single screen.
@@ -146,3 +159,55 @@ Sidebar (Overlay on toggle):
 - Only [ Save ] will save the record
 - Cancel will not save the data
 - Edit button disabled
+
+## Smart Loading/Progress Bar UX
+
+During any async operation (such as data fetch, save, or authentication), display a visible progress indicator at the top of the screen (e.g., a thin animated bar or subtle loader). The progress bar should:
+
+- Appear immediately when an async action starts and remain visible until completion.
+- Use smooth, non-blocking animation to indicate ongoing activity.
+- Avoid blocking user interaction unless absolutely necessary.
+- Optionally show incremental progress if possible, or use an indeterminate animation if progress is unknown.
+- Be styled to match the app’s theme and remain unobtrusive, but clearly visible.
+- Disappear instantly when the operation completes or fails.
+
+This ensures users always know when the app is working and prevents confusion during network delays or long-running actions.
+
+## Notifications UX
+
+- Show user notifications for errors, warnings, and important events as non-blocking banners or toasts at the top or bottom of the screen.
+- Notifications should:
+  - Appear immediately when triggered (e.g., on error, success, or important info).
+  - Be styled to indicate type (error = red, warning = yellow, info/success = green/blue).
+  - Auto-dismiss after a short duration (e.g., 4–6 seconds), but allow manual dismissal (close button).
+  - Never block user interaction with the main UI.
+- All notifications from the current session are stored in memory (in-session only, do not persist across reloads for now).
+- Provide a dedicated **Notification Page** accessible from the main menu:
+  - Lists all notifications from the current session.
+  - Each notification shows its type, message, and timestamp.
+  - Include a **Clear All Notifications** button to remove all notifications from the list.
+
+- All errors, API failures, and important events must be handled using the notification system. Any API failure must trigger a notification to the user.
+
+**Notification Banner Example:**
+
+```md
+┌─────────────────────────────────────────────┐
+│  ⚠️  Error: Failed to save changes. [✕]     │ ← Error notification (red, auto-dismiss)
+└─────────────────────────────────────────────┘
+```
+
+**Notification Page Example:**
+
+```md
+┌─────────────────────────────────────────────┐
+│ Notifications                [Clear All]    │
+├─────────────────────────────────────────────┤
+│ [!] Error: Failed to save changes.   12:01  │
+│ [i] Info: Profile updated.           11:59  │
+│ [✓] Success: Record created.         11:58  │
+│                                         ▼  │
+└─────────────────────────────────────────────┘
+```
+
+- Notifications are only visible for the current session and are cleared on reload or logout.
