@@ -1,7 +1,7 @@
 # Moon – Instructions and API Documentation for AI Coding Agents
 
 > **Quick Start:**
-> 1. [View HTML docs](http://localhost:6006/doc/) or [Markdown docs](http://localhost:6006/doc/md)
+> 1. [View HTML docs](http://localhost:6006/doc/) or [Markdown docs](http://localhost:6006/doc/llms-full.txt)
 > 2. [Authenticate](#authentication) (see below)
 > 3. [Try a sample request](#collection-management)
 > 4. [See JSON Appendix](#json-appendix) for machine-readable spec
@@ -77,7 +77,7 @@ Moon is intentionally minimal. It does **not** support:
 - **Encryption at Rest:** No built-in data encryption at rest.
 - **Admin UI:** API-only; no built-in web UI or dashboard.
 - **HTTP Methods:** Only supports `GET`, `POST`, and `OPTIONS` (no `PUT`, `PATCH`, or `DELETE`).
-- **Public endpoints:** `/health`, `/doc`, `/doc/md`.
+- **Public endpoints:** `/health`, `/doc`, `/doc/llms-full.txt`.
 
 **Design Constraints**
 
@@ -142,9 +142,9 @@ View HTML documentation in your browser: [http://localhost:6006/doc/](http://loc
 
 Get Markdown documentation (for humans and AI coding agents) via curl:
 ```bash
-curl "http://localhost:6006/doc/md"
+curl "http://localhost:6006/doc/llms-full.txt"
 ```
-Or view in browser: [http://localhost:6006/doc/md](http://localhost:6006/doc/md)
+Or view in browser: [http://localhost:6006/doc/llms-full.txt](http://localhost:6006/doc/llms-full.txt)
 
 Refresh documentation cache:
 ```bash
@@ -180,7 +180,6 @@ curl -s "http://localhost:6006/collections:list" \
   -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
-
 **API Key Authentication:** Include your API key in the `X-API-Key` header (e.g., `X-API-Key`):
 
 ```
@@ -188,6 +187,8 @@ X-API-Key: <your-api-key>
 ```
 
 
+
+---
 
 ## Response Format
 
@@ -752,7 +753,6 @@ Response format:
 
 The schema endpoint requires authentication and returns `404` if the collection does not exist.
 
-
 **Create a New Record**
 
 ```bash
@@ -904,7 +904,6 @@ Server-side aggregation endpoints for analytics. Replace `{collection}` with you
 | `/{collection}:min` | GET | Minimum value (requires `?field=...`) |
 | `/{collection}:max` | GET | Maximum value (requires `?field=...`) |
 
-
 **Count Records:** `:count`
 
 ```bash
@@ -962,7 +961,6 @@ X-RateLimit-Remaining: 95
 X-RateLimit-Reset: 1706875200
 ```
 
-
 **Rate Limit Exceeded Response (429):**
 
 When you exceed the rate limit (100/min/user for JWT, 1000/min/key for API Key), you'll receive:
@@ -1003,10 +1001,6 @@ Moon supports Cross-Origin Resource Sharing (CORS) for browser-based clients.
 
 ---
 
-**[Moon](https://github.com/devnodesin/moon)** made by [Devnodes.in](https://devnodes.in)
-
----
-
 ## JSON Appendix
 
 This machine-readable appendix enables automated client generation and reduces ambiguity for AI coding agents.
@@ -1018,23 +1012,24 @@ This machine-readable appendix enables automated client generation and reduces a
   "document_version": "1.5.1",
   "base_url": "http://localhost:6006",
   "url_prefix": null,
-
   "authentication": {
-    "modes": ["jwt", "api_key"],
+    "modes": [
+      "jwt",
+      "api_key"
+    ],
     "headers": {
-      "jwt": "Authorization: Bearer <token>",
-      "api_key": "X-API-Key: <key>"
+      "api_key": "X-API-Key: key",
+      "jwt": "Authorization: Bearer token"
     },
     "rate_limits": {
-      "jwt": "100 requests per minute per user",
-      "api_key": "1000 requests per minute per key"
+      "api_key": "1000 requests per minute per key",
+      "jwt": "100 requests per minute per user"
     },
     "rules": {
-      "jwt_for": "user-facing apps with session management",
-      "api_key_for": "server-to-server or backend services"
+      "api_key_for": "server-to-server or backend services",
+      "jwt_for": "user-facing apps with session management"
     }
   },
-
   "collections": {
     "terminology": {
       "collection": "table/database collection",
@@ -1047,14 +1042,13 @@ This machine-readable appendix enables automated client generation and reduces a
       "pattern": "^[a-z][a-z0-9_]*$"
     },
     "constraints": {
-      "joins_supported": false,
+      "background_jobs": false,
       "foreign_keys": false,
+      "joins_supported": false,
       "transactions": false,
-      "triggers": false,
-      "background_jobs": false
+      "triggers": false
     }
   },
-
   "data_types": [
     {
       "name": "string",
@@ -1072,7 +1066,7 @@ This machine-readable appendix enables automated client generation and reduces a
       "name": "boolean",
       "description": "true/false values",
       "sql_mapping": "BOOLEAN",
-      "example": true,
+      "example": true
     },
     {
       "name": "datetime",
@@ -1084,288 +1078,373 @@ This machine-readable appendix enables automated client generation and reduces a
       "name": "json",
       "description": "Arbitrary JSON object or array",
       "sql_mapping": "JSON",
-      "example": {"key": "value"}
+      "example": {
+        "key": "value"
+      }
     },
     {
       "name": "decimal",
       "description": "Decimal values with precision",
       "sql_mapping": "DECIMAL",
-      "format": "string",
       "example": "199.99",
+      "format": "string",
       "note": "API input/output uses strings, default 2 decimal places"
     }
   ],
-
+  "registered_collections": [
+    {
+      "name": "products",
+      "fields": [
+        {
+          "name": "description",
+          "type": "string",
+          "nullable": true
+        },
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "price",
+          "type": "integer",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "ulid",
+          "type": "string",
+          "nullable": false
+        }
+      ]
+    }
+  ],
   "endpoints": {
-    "health": {
-      "path": "/health",
-      "method": "GET",
-      "auth_required": false,
-      "description": "Health check endpoint"
-    },
-    "authentication": {
-      "login": {
-        "path": "/auth:login",
-        "method": "POST",
-        "auth_required": false,
-        "description": "Authenticate user, receive JWT tokens"
-      },
-      "logout": {
-        "path": "/auth:logout",
-        "method": "POST",
+    "aggregation": {
+      "avg": {
         "auth_required": true,
-        "description": "Invalidate current session's refresh token"
-      },
-      "refresh": {
-        "path": "/auth:refresh",
-        "method": "POST",
-        "auth_required": false,
-        "description": "Exchange refresh token for new access token"
-      },
-      "me": {
-        "path": "/auth:me",
-        "methods": ["GET", "POST"],
-        "auth_required": true,
-        "description": "Get or update current user profile"
-      }
-    },
-    "user_management": {
-      "list": {
-        "path": "/users:list",
+        "description": "Average numeric field",
         "method": "GET",
-        "auth_required": true,
-        "role_required": "admin"
+        "params": [
+          "field"
+        ],
+        "path": "/{collection}:avg"
       },
-      "get": {
-        "path": "/users:get",
+      "count": {
+        "auth_required": true,
+        "description": "Count records",
         "method": "GET",
-        "auth_required": true,
-        "role_required": "admin",
-        "params": ["id"]
+        "path": "/{collection}:count"
       },
-      "create": {
-        "path": "/users:create",
-        "method": "POST",
+      "max": {
         "auth_required": true,
-        "role_required": "admin"
+        "description": "Maximum value",
+        "method": "GET",
+        "params": [
+          "field"
+        ],
+        "path": "/{collection}:max"
       },
-      "update": {
-        "path": "/users:update",
-        "method": "POST",
+      "min": {
         "auth_required": true,
-        "role_required": "admin",
-        "params": ["id"],
-        "actions": ["reset_password", "revoke_sessions"]
+        "description": "Minimum value",
+        "method": "GET",
+        "params": [
+          "field"
+        ],
+        "path": "/{collection}:min"
       },
-      "destroy": {
-        "path": "/users:destroy",
-        "method": "POST",
+      "sum": {
         "auth_required": true,
-        "role_required": "admin",
-        "params": ["id"]
+        "description": "Sum numeric field",
+        "method": "GET",
+        "params": [
+          "field"
+        ],
+        "path": "/{collection}:sum"
       }
     },
     "apikey_management": {
-      "list": {
-        "path": "/apikeys:list",
-        "method": "GET",
+      "create": {
         "auth_required": true,
+        "method": "POST",
+        "path": "/apikeys:create",
+        "role_required": "admin"
+      },
+      "destroy": {
+        "auth_required": true,
+        "method": "POST",
+        "params": [
+          "id"
+        ],
+        "path": "/apikeys:destroy",
         "role_required": "admin"
       },
       "get": {
-        "path": "/apikeys:get",
+        "auth_required": true,
         "method": "GET",
-        "auth_required": true,
-        "role_required": "admin",
-        "params": ["id"]
+        "params": [
+          "id"
+        ],
+        "path": "/apikeys:get",
+        "role_required": "admin"
       },
-      "create": {
-        "path": "/apikeys:create",
-        "method": "POST",
+      "list": {
         "auth_required": true,
+        "method": "GET",
+        "path": "/apikeys:list",
         "role_required": "admin"
       },
       "update": {
+        "actions": [
+          "rotate"
+        ],
+        "auth_required": true,
+        "method": "POST",
+        "params": [
+          "id"
+        ],
         "path": "/apikeys:update",
+        "role_required": "admin"
+      }
+    },
+    "authentication": {
+      "login": {
+        "auth_required": false,
+        "description": "Authenticate user, receive JWT tokens",
         "method": "POST",
-        "auth_required": true,
-        "role_required": "admin",
-        "params": ["id"],
-        "actions": ["rotate"]
+        "path": "/auth:login"
       },
-      "destroy": {
-        "path": "/apikeys:destroy",
-        "method": "POST",
+      "logout": {
         "auth_required": true,
-        "role_required": "admin",
-        "params": ["id"]
+        "description": "Invalidate current session's refresh token",
+        "method": "POST",
+        "path": "/auth:logout"
+      },
+      "me": {
+        "auth_required": true,
+        "description": "Get or update current user profile",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "path": "/auth:me"
+      },
+      "refresh": {
+        "auth_required": false,
+        "description": "Exchange refresh token for new access token",
+        "method": "POST",
+        "path": "/auth:refresh"
       }
     },
     "collection_management": {
-      "list": {
-        "path": "/collections:list",
-        "method": "GET",
+      "create": {
         "auth_required": true,
+        "method": "POST",
+        "path": "/collections:create",
+        "role_required": "admin"
+      },
+      "destroy": {
+        "auth_required": true,
+        "method": "POST",
+        "path": "/collections:destroy",
         "role_required": "admin"
       },
       "get": {
-        "path": "/collections:get",
+        "auth_required": true,
         "method": "GET",
-        "auth_required": true,
-        "role_required": "admin",
-        "params": ["name"]
+        "params": [
+          "name"
+        ],
+        "path": "/collections:get",
+        "role_required": "admin"
       },
-      "create": {
-        "path": "/collections:create",
-        "method": "POST",
+      "list": {
         "auth_required": true,
+        "method": "GET",
+        "path": "/collections:list",
         "role_required": "admin"
       },
       "update": {
+        "auth_required": true,
+        "method": "POST",
+        "operations": [
+          "add_columns",
+          "rename_columns",
+          "modify_columns",
+          "remove_columns"
+        ],
         "path": "/collections:update",
-        "method": "POST",
-        "auth_required": true,
-        "role_required": "admin",
-        "operations": ["add_columns", "rename_columns", "modify_columns", "remove_columns"]
-      },
-      "destroy": {
-        "path": "/collections:destroy",
-        "method": "POST",
-        "auth_required": true,
         "role_required": "admin"
       }
     },
     "data_access": {
-      "list": {
-        "path": "/{collection}:list",
-        "method": "GET",
-        "auth_required": true,
-        "description": "List records in collection"
-      },
-      "get": {
-        "path": "/{collection}:get",
-        "method": "GET",
-        "auth_required": true,
-        "params": ["id"],
-        "description": "Get single record by ID"
-      },
       "create": {
-        "path": "/{collection}:create",
-        "method": "POST",
         "auth_required": true,
-        "description": "Create new record"
-      },
-      "update": {
-        "path": "/{collection}:update",
+        "description": "Create new record",
         "method": "POST",
-        "auth_required": true,
-        "description": "Update existing record"
+        "path": "/{collection}:create"
       },
       "destroy": {
-        "path": "/{collection}:destroy",
+        "auth_required": true,
+        "description": "Delete record",
         "method": "POST",
-        "auth_required": true,
-        "description": "Delete record"
-      }
-    },
-    "aggregation": {
-      "count": {
-        "path": "/{collection}:count",
-        "method": "GET",
-        "auth_required": true,
-        "description": "Count records"
+        "path": "/{collection}:destroy"
       },
-      "sum": {
-        "path": "/{collection}:sum",
-        "method": "GET",
+      "get": {
         "auth_required": true,
-        "params": ["field"],
-        "description": "Sum numeric field"
+        "description": "Get single record by ID",
+        "method": "GET",
+        "params": [
+          "id"
+        ],
+        "path": "/{collection}:get"
       },
-      "avg": {
-        "path": "/{collection}:avg",
-        "method": "GET",
+      "list": {
         "auth_required": true,
-        "params": ["field"],
-        "description": "Average numeric field"
+        "description": "List records in collection",
+        "method": "GET",
+        "path": "/{collection}:list"
       },
-      "min": {
-        "path": "/{collection}:min",
-        "method": "GET",
+      "update": {
         "auth_required": true,
-        "params": ["field"],
-        "description": "Minimum value"
-      },
-      "max": {
-        "path": "/{collection}:max",
-        "method": "GET",
-        "auth_required": true,
-        "params": ["field"],
-        "description": "Maximum value"
+        "description": "Update existing record",
+        "method": "POST",
+        "path": "/{collection}:update"
       }
     },
     "documentation": {
       "html": {
-        "path": "/doc/",
-        "method": "GET",
         "auth_required": false,
-        "description": "HTML documentation"
+        "description": "HTML documentation",
+        "method": "GET",
+        "path": "/doc/"
       },
       "markdown": {
-        "path": "/doc/md",
-        "method": "GET",
         "auth_required": false,
-        "description": "Markdown documentation"
+        "description": "Markdown documentation",
+        "method": "GET",
+        "path": "/doc/md"
       },
       "refresh": {
-        "path": "/doc:refresh",
-        "method": "POST",
         "auth_required": true,
-        "role_required": "admin",
-        "description": "Refresh documentation cache"
+        "description": "Refresh documentation cache",
+        "method": "POST",
+        "path": "/doc:refresh",
+        "role_required": "admin"
+      }
+    },
+    "health": {
+      "auth_required": false,
+      "description": "Health check endpoint",
+      "method": "GET",
+      "path": "/health"
+    },
+    "user_management": {
+      "create": {
+        "auth_required": true,
+        "method": "POST",
+        "path": "/users:create",
+        "role_required": "admin"
+      },
+      "destroy": {
+        "auth_required": true,
+        "method": "POST",
+        "params": [
+          "id"
+        ],
+        "path": "/users:destroy",
+        "role_required": "admin"
+      },
+      "get": {
+        "auth_required": true,
+        "method": "GET",
+        "params": [
+          "id"
+        ],
+        "path": "/users:get",
+        "role_required": "admin"
+      },
+      "list": {
+        "auth_required": true,
+        "method": "GET",
+        "path": "/users:list",
+        "role_required": "admin"
+      },
+      "update": {
+        "actions": [
+          "reset_password",
+          "revoke_sessions"
+        ],
+        "auth_required": true,
+        "method": "POST",
+        "params": [
+          "id"
+        ],
+        "path": "/users:update",
+        "role_required": "admin"
       }
     }
   },
-
   "query": {
-    "operators": ["eq", "ne", "gt", "lt", "gte", "lte", "like", "in"],
+    "field_selection": {
+      "description": "Return only specified fields (id always included)",
+      "example": "?fields=name,price",
+      "param": "fields"
+    },
+    "operators": [
+      "eq",
+      "ne",
+      "gt",
+      "lt",
+      "gte",
+      "lte",
+      "like",
+      "in"
+    ],
+    "pagination": {
+      "cursor_param": "after",
+      "example": "?limit=10\u0026after=01ARZ3NDEKTSV4RRFFQ69G5FBX",
+      "limit_param": "limit"
+    },
+    "search": {
+      "description": "Searches across all text/string columns",
+      "example": "?q=wireless",
+      "full_text_param": "q"
+    },
+    "sorting": {
+      "ascending": "field",
+      "descending": "-field",
+      "example": "?sort=-price,name",
+      "syntax": "?sort={field1,-field2}"
+    },
     "syntax": {
-      "filter": "?column[operator]=value",
       "examples": [
         "?price[gte]=100",
         "?category[eq]=electronics",
         "?name[like]=%mouse%"
-      ]
-    },
-    "sorting": {
-      "syntax": "?sort={field1,-field2}",
-      "ascending": "field",
-      "descending": "-field",
-      "example": "?sort=-price,name"
-    },
-    "pagination": {
-      "cursor_param": "after",
-      "limit_param": "limit",
-      "example": "?limit=10&after=01ARZ3NDEKTSV4RRFFQ69G5FBX"
-    },
-    "search": {
-      "full_text_param": "q",
-      "description": "Searches across all text/string columns",
-      "example": "?q=wireless"
-    },
-    "field_selection": {
-      "param": "fields",
-      "description": "Return only specified fields (id always included)",
-      "example": "?fields=name,price"
+      ],
+      "filter": "?column[operator]=value"
     }
   },
-
   "aggregation": {
-    "supported": ["count", "sum", "avg", "min", "max"],
-    "numeric_types": ["integer", "decimal"],
-    "note": "Aggregation functions work on integer and decimal field types only"
+    "note": "Aggregation functions work on integer and decimal field types only",
+    "numeric_types": [
+      "integer",
+      "decimal"
+    ],
+    "supported": [
+      "count",
+      "sum",
+      "avg",
+      "min",
+      "max"
+    ]
   },
-
   "http_status_codes": {
     "200": "OK - Successful GET request",
     "201": "Created - Successful POST request creating resource",
@@ -1377,7 +1456,6 @@ This machine-readable appendix enables automated client generation and reduces a
     "429": "Too Many Requests - Rate limit exceeded",
     "500": "Internal Server Error - Server error"
   },
-
   "rate_limiting": {
     "headers": {
       "limit": "X-RateLimit-Limit",
@@ -1385,30 +1463,37 @@ This machine-readable appendix enables automated client generation and reduces a
       "reset": "X-RateLimit-Reset"
     }
   },
-
   "cors": {
-    "allowed_methods": ["GET", "POST", "OPTIONS"],
-    "allowed_headers": ["Authorization", "Content-Type", "X-API-Key"],
-    "configurable": true,
+    "allowed_headers": [
+      "Authorization",
+      "Content-Type",
+      "X-API-Key"
+    ],
+    "allowed_methods": [
+      "GET",
+      "POST",
+      "OPTIONS"
+    ],
     "config_file": "samples/moon.conf",
-    "config_key": "cors.allowed_origins"
+    "config_key": "cors.allowed_origins",
+    "configurable": true
   },
-
   "guarantees": {
-    "transactions": false,
-    "joins": false,
+    "background_jobs": false,
     "foreign_keys": false,
-    "triggers": false,
-    "background_jobs": false
+    "joins": false,
+    "transactions": false,
+    "triggers": false
   },
-
   "aip_standards": {
     "custom_actions": "AIP-136",
+    "description": "APIs use colon separator between resource and action for predictable interface",
     "pattern": "resource:action",
-    "separator": ":",
-    "description": "APIs use colon separator between resource and action for predictable interface"
+    "separator": ":"
   }
 }
 ```
 
+---
+**[Moon](https://github.com/devnodesin/moon)** made by [Devnodes.in](https://devnodes.in)
 ---
