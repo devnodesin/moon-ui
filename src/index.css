@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+
+@plugin "daisyui" {
+  themes:
+    autumn --default,
+    abyss --prefersdark;
+  logs: false;
+}
