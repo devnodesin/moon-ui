@@ -10,15 +10,6 @@
 - Testing server: `https://moon.asensar.in/`
 - Credentials: (username: `admin`, password: `moonadmin12#`)
 
-## Quick Start
-
-- Project setup (Bun.js):
-
-```bash
-bun create vite moon-ui --template react-ts
-bun add -D daisyui@latest
-```
-
 ## Objective
 
 Design and implement a secure, mobile-first admin webapp that enables seamless management of collections, users, API keys, and connections across multiple Moon backends, with no data caching.
@@ -76,8 +67,6 @@ Fetch Fresh Data → Update UI
 
 - **Test Driven Development:** All features and implementations must follow TDD—first write a failing test, then implement to pass. Aim for 90%+ test coverage and 100% test pass rate. Fix any failing test, even if unrelated to your implementation.
 - Use React + DaisyUI (Tailwind) for all UI.
-- Use Bun.js for all scripts and builds.
-	- Strict enforcement: All development, scripts, package management, and CI/build tasks MUST use Bun.js exclusively. The use of Node.js, `npm`, `npx`, `yarn`, or other Node-based package managers or runtimes is prohibited for this project and by AI agents working on it.
 - Always fetch fresh data from backend (no caching).
 - Support multiple backend connections, each isolated.
 - Validate all user input and API responses.

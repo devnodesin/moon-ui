@@ -1,56 +1,48 @@
 ## Overview
 
-- **What is this and why**: This task involves initializing the Moon Admin WebApp project repository with the required technology stack and configuration. It establishes the foundation for all subsequent development.
-- **Overview**: We will set up a React + TypeScript application using Vite and Bun.js. We will configure Tailwind CSS and DaisyUI for styling, establish the project directory structure, and set up linting, formatting, and testing tools to ensure code quality and `SPEC.md` compliance.
-- **Overview**: The result will be a runnable "Hello World" application with the correct build system, test runner, and style framework in place, ready for feature development.
+- **What is this and why**: Initialize the Moon Admin WebApp project with the required technology stack and development tooling. This foundation ensures all subsequent features are built upon a stable, strictly typed, and testable environment.
+- **Context**: The project is a fresh React SPA using TypeScript. `SPEC.md` mandates specific tools (Vite, Tailwind, DaisyUI, Vitest) and strict code quality standards (TDD, linting).
+- **Goal**: Establish the repository structure, install dependencies, configure build tools/linters, and prove the setup works with a basic "Hello World" and passing tests.
 
 ## Requirements
 
-- **What must it do?**
-  - Initialize a new Vite project using the `react-ts` template.
-  - Use `bun` as the package manager and runtime.
-  - Install and configure Tailwind CSS and DaisyUI.
-  - Configure `autumn` (light) and `abyss` (dark) themes in DaisyUI.
-  - Set up a strict TypeScript configuration (`tsconfig.json`).
-  - Configure ESLint and Prettier for code consistency.
-  - Set up a test runner (Bun test or Vitest) with a sample test to verify the setup.
-  - Create the initial directory structure (e.g., `src/components`, `src/pages`, `src/lib`, `src/hooks`, `src/types`).
-  - Ensure the app runs locally on `localhost`.
+- **Tech Stack Setup**:
+  - Initialize a new Vite project with React and TypeScript (`swc` variant preferred for performance).
+  - Install and configure Tailwind CSS.
+  - Install and configure DaisyUI plugin.
+  - Configure DaisyUI themes: `autumn` (light) and `abyss` (dark) as per `SPEC.md`.
+  - Ensure `package.json` scripts are set up for `dev`, `build`, `preview`, `test`, `lint`.
 
-- **Requirements**
-  - **Stack**: React, TypeScript, Vite, Bun.js.
-  - **Styling**: Tailwind CSS, DaisyUI.
-  - **Testing**: Bun Test (preferred) or Vitest. 90%+ coverage goal infrastructure.
-  - **Linting**: ESLint, Prettier.
-  - **Strict Mode**: TypeScript strict mode must be enabled.
-  - **Path Aliases**: Configure `@/` to point to `src/`.
+- **Testing Infrastructure**:
+  - Install Vitest and React Testing Library.
+  - Configure `jsdom` environment for tests.
+  - Create a sample test to verify the test runner works.
+
+- **Code Quality**:
+  - Configure ESLint with strict TypeScript rules.
+  - Configure Prettier for consistent formatting.
+  - Ensure no "any" types are allowed (Strict Mode).
+
+- **Constraint Compliance**:
+  - Must use `HashRouter` (install `react-router-dom`).
+  - Mobile-first responsive meta tags must be present.
 
 ## Acceptance
 
-- **How do we know it’s done?**
-  - Repository contains a valid `package.json` with `bun` lockfile.
-  - `bun run dev` starts the server without errors.
-  - `bun run build` produces a production build in `dist/`.
-  - `bun test` runs and passes the sample test.
-  - Tailwind and DaisyUI are working: A sample component using DaisyUI classes renders correctly with the `autumn` theme by default.
-  - Directory structure matches the standard React layout.
-  - Linting commands (`bun run lint`) pass without errors.
+- **Verification Steps**:
+  1. Run `npm install` and `npm run dev` -> App should load without errors on `localhost`.
+  2. Run `npm run test` -> Sample tests should pass with green output.
+  3. Run `npm run build` -> Should generate a `dist/` folder with optimized assets.
+  4. Inspect the browser:
+     - Verify Tailwind utility classes work (e.g., change background).
+     - Verify DaisyUI components render (e.g., a button).
+     - Toggle themes (manually in code or devtools HTML tag) to verify `autumn` and `abyss` exist.
+  
+- **Automated Tests**:
+  - `App.test.tsx` renders the App component and asserts "Hello Moon" (or similar) is visible.
+  - Unit test confirms standard library imports work.
 
-- **Acceptance Checklist**
-  - [ ] Project initialized with `bun create vite moon-ui --template react-ts` (or equivalent).
-  - [ ] Tailwind CSS and DaisyUI installed and configured in `tailwind.config.js`.
-  - [ ] Themes `autumn` and `abyss` added to DaisyUI config.
-  - [ ] TypeScript configured with `strict: true`.
-  - [ ] ESLint and Prettier configured and scriptable via `package.json`.
-  - [ ] Test runner configured; `bun test` passes a trivial test.
-  - [ ] Project structure created (`src/` with subfolders).
-  - [ ] README updated with start commands.
-
-- **Verification**
-  - Run `bun install && bun run dev` and open the browser.
-  - Run `bun test`.
-  - Check `tailwind.config.js` for theme configuration.
-
-- [ ] Ensure all documentation (`SPEC.md`, `README.md`) are updated and remain consistent with the implemented code changes.
-- [ ] Run all tests and ensure 100% pass rate.
-- [ ] If any test failure is unrelated to your feature, investigate and fix it before marking the task as complete.
+- **Checklist**:
+  - [ ] Ensure all documentation (`SPEC.md`, `README.md`) are updated and remain consistent with the implemented code changes.
+  - [ ] Run all tests and ensure 100% pass rate.
+  - [ ] If any test failure is unrelated to your feature, investigate and fix it before marking the task as complete.

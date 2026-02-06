@@ -6,7 +6,7 @@ You are a senior full-stack engineer specializing in secure, mobile-first admin 
 
 ## Context
 
-Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-driven admin UI that runs entirely in the browser and is intended to be deployed as an SPA. No backend server is included in this project. The app should be able to connect to external Moon API-compliant backends when configured, but operate as a self-contained frontend by default. It must support multiple backend connections, use localStorage as a temporary data store, and guarantee real-time, uncached data. The stack is React + DaisyUI (Tailwind) + Bun.js. This is a specification and planning repository for Moon Admin WebApp. No code exists yet.
+Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-driven admin UI that runs entirely in the browser and is intended to be deployed as an SPA. No backend server is included in this project. The app should be able to connect to external Moon API-compliant backends when configured, but operate as a self-contained frontend by default. It must support multiple backend connections, use localStorage as a temporary data store, and guarantee real-time, uncached data. The stack is React + DaisyUI (Tailwind). This is a specification and planning repository for Moon Admin WebApp. No code exists yet.
 
 ## Mandatory Rules
 
@@ -20,14 +20,12 @@ Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-dri
 - Invest in simplicity up front; process cannot fix complex designs.
 - Design for human limits: keep components small and independent.
 - Use only the Recat standard library unless a third-party dependency is absolutely essential.
-- Tech Stack: React (TypeScript strict) · DaisyUI (Tailwind) · Bun.js
- - Tooling enforcement: All agents and contributors MUST use Bun.js exclusively for package management, scripts, and builds. The use of Node.js, `npm`, `npx`, `yarn`, or any Node-based runtime or package manager is forbidden when developing, testing, or building this project. If you encounter any toolchain that relies on npm/Node.js, flag it and convert to Bun.js equivalents.
+- Tech Stack: React (TypeScript strict) · DaisyUI (Tailwind)
 - Framework Docs:
   - `SPEC.md` - Moon UI design specification (UI, flows, security, constraints)
   - `llms/moon-llms-full.txt` - Backend API reference and JSON appendix
   - `llms/daisyui-llms.txt` - DaisyUI
-  - `llms/bunjs-llms-full.txt` - Bun.js
-- Live Docs: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable.
+  - Live Docs: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable. For testing and verification, use the Playwright MCP server for automated end-to-end (E2E) testing; integrate Playwright tests into CI workflows and document any Playwright tooling that requires Node.js, proposing platform-compatible alternatives or wrappers when needed.
 
 ## SPEC.md Compliance
 
@@ -43,7 +41,7 @@ Strictly follow all guidelines and structures in `SPEC.md` for every task.
 - **Test-Driven Development (TDD) is required:**
   - Start each feature, bugfix, or refactor by writing a failing test.
   - Place unit and integration tests next to implementation files as `*.test.ts` or `*.test.tsx`.
-  - Prefer the project's test runner (e.g., `bun test` or Vitest) and aim for high coverage (target 90%+).
+  - Prefer the project's test runner (e.g., Vitest) and aim for high coverage (target 90%+).
   - Installation and usage docs belong in ; keep `README.md` concise and high-level.
 
 ## Workflow & Verification
