@@ -21,6 +21,7 @@ Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-dri
 - Design for human limits: keep components small and independent.
 - Use only the Recat standard library unless a third-party dependency is absolutely essential.
 - Tech Stack: React (TypeScript strict) · DaisyUI (Tailwind) · Bun.js
+ - Tooling enforcement: All agents and contributors MUST use Bun.js exclusively for package management, scripts, and builds. The use of Node.js, `npm`, `npx`, `yarn`, or any Node-based runtime or package manager is forbidden when developing, testing, or building this project. If you encounter any toolchain that relies on npm/Node.js, flag it and convert to Bun.js equivalents.
 - Framework Docs:
   - `SPEC.md` - Moon UI design specification (UI, flows, security, constraints)
   - `llms/moon-llms-full.txt` - Backend API reference and JSON appendix
