@@ -62,6 +62,8 @@
   - [ ] LocalStorage usage is strictly opted-in.
   - [ ] 100% Test pass rate for auth logic.
 
+## Documentation Checklist
+
 - [ ] Ensure all documentation (`SPEC.md`, `README.md`) are updated and remain consistent with the implemented code changes.
 - [ ] Run all tests and ensure 100% pass rate.
 - [ ] If any test failure is unrelated to your feature, investigate and fix it before marking the task as complete.
