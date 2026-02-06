@@ -10,29 +10,30 @@ Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-dri
 
 ## Objective
 
-All implementation must follow SPEC.md and backend API docs in MOON_API.md.
+All implementation must follow `SPEC.md`
 
 ## Instructions
 
 - Tech Stack: React (TypeScript strict) · DaisyUI (Tailwind) · Bun.js
 - Framework Docs:
-  - DaisyUI (.github/llms/daisyui-llms.txt)
-  - Bun.js (.github/llms/bunjs-llms-full.txt)
+  - `SPEC.md` - Moon UI desing specification spec (UI, flows, security, constraints)
+  - `llms/moon-llms-full.txt` - Backend API reference and JSON appendix
+  - `llms/daisyui-llms.txt` - DaisyUI
+  - `llms/bunjs-llms-full.txt` - Bun.js
 - Live Docs: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable.
 
 ### Essential Patterns
 
 - Moon API: Collection = Table, Field = Column, Record = Row
 - API pattern: resource:action (e.g., /collections:list, /products:create)
-- Authentication: JWT (15-min expiration, refresh-see MOON_API.md#authentication)
+- Authentication: JWT (15-min expiration, refresh—see llms/moon-llms-full.txt#authentication)
 - UI: Login -> Admin (header/sidebar/content) -> Table View -> Record View (view/edit)
 
 ### Key Files
 
-- `SPEC.md` - Product spec (UI, flows, security, constraints)
-- `MOON_API.md` - Backend API reference and JSON appendix
-- `.github/llms/daisyui-llms.txt` - DaisyUI llms.txt
-- `.github/llms/bunjs-llms-full.txt` - Bunjs llms.txt
+
+
+
 
 ## Constraints
 
@@ -47,7 +48,7 @@ All implementation must follow SPEC.md and backend API docs in MOON_API.md.
 
 - Never cache data-always fetch fresh from backend
 - No modals for records-use inline edit mode (`SPEC.md#record-view`)
-- Never modify MOON_API.md.
+- Never modify llms/moon-llms-full.txt.
 - Do not create documentation, summaries, or high-level writeups unless explicitly requested.
 
 ## Output Format

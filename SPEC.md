@@ -1,7 +1,7 @@
 
 ## Documentation (MUST REFER)
 - **UI Layouts and Components**: refer [SPEC_UI.md](./SPEC_UI.md) for UI design.
-- For external Moon backends, see https://moon.asensar.in/doc/md or the local `MOON_API.md`.
+- For external Moon backends, see https://moon.asensar.in/doc/md or the local `llms/moon-llms-full.txt`.
 - Moon github repo: https://github.com/devnodesin/moon
 
 ## BACKEND (MOON SERVER)
@@ -43,7 +43,7 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 ### Backend Integration
 
 - The UI is responsible for connecting to external Moon API‑compliant backends via standard HTTP requests (use `fetch` or an HTTP client like Axios). 
-- All `curl` examples in `MOON_API.md` are reference snippets for humans and agents only — the application must perform equivalent REST calls from the browser, not by invoking `curl`.
+- All `curl` examples in `llms/moon-llms-full.txt` are reference snippets for humans and agents only — the application must perform equivalent REST calls from the browser, not by invoking `curl`.
 - Implement a reusable HTTP client layer that handles authentication (access + refresh tokens), automatic token refresh, retries/backoff, error normalization, and consistent notification on failures.
 - For local development and testing, the app may target a Moon test server, but all interactions must remain standard browser HTTP calls (CORS-aware).
 
@@ -62,7 +62,7 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 10. Explicitly require robust error handling for network/API failures in the UI. Show user notifications for errors, auto-dismiss them, and provide a separate Notification page to view all previous notifications with a 'clear all notifications' option. Specify if notifications should persist only in-session or across reloads (recommend in-session only for now).
 11. All errors, API failures, and important events must be handled using the notification system. Show a smart loading/progress bar for best UX/UI during async operations. Any API failure must trigger a notification to the user.
 12. Support data import and export features using CSV and JSON formats.
-13. Follow session timeout and auto-logout rules as specified in `MOON_API.md`. Implement these flows in the UI using the app's HTTP client (token validation, refresh, and forced logout); do not rely on command-line `curl` usage — `MOON_API.md`'s examples are references for the REST contract.
+13. Follow session timeout and auto-logout rules as specified in `llms/moon-llms-full.txt`. Implement these flows in the UI using the app's HTTP client (token validation, refresh, and forced logout); do not rely on command-line `curl` usage — `llms/moon-llms-full.txt`'s examples are references for the REST contract.
 14. Notifications are in-session only and stored completely locally (not persisted across reloads).
 15. No need for i18n or translation support; all UI and messages will be in English only.
 16. Storing sensitive data in in-memory (JS variables) is acceptable during the session.
