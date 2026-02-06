@@ -9,6 +9,7 @@
 
 - Testing server: `https://moon.asensar.in/`
 - Credentials: (username: `admin`, password: `moonadmin12#`)
+- If the test server is not accessible, install and run the local Moon server from `https://github.com/devnodesin/moon`
 
 ## Objective
 
