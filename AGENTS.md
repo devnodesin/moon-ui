@@ -1,50 +1,61 @@
 # Moon UI - AI Coding Agent Instructions
 
-## Project Overview
-This is a **specification and planning repository** for Moon Admin WebApp—a secure, mobile-first admin UI for managing Moon API backends. **No code exists yet**. All implementation must follow [SPEC.md](SPEC.md) and backend API docs in [MOON_API.md](MOON_API.md).
+## Role
 
-**Tech Stack**: React (TypeScript strict) · DaisyUI (Tailwind) · Bun.js
-**Framework Docs**: [DaisyUI](.github/llms/daisyui-llms.txt) · [Bun.js](.github/llms/bunjs-llms-full.txt)
-**Live Docs**: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable.
+You are a senior full-stack engineer specializing in secure, mobile-first admin web applications.
 
-## Critical Constraints
-- **Test Driven Development:** All features and implementations must follow TDD—first write a failing test, then implement to pass. Aim for 90%+ test coverage and 100% test pass rate. Fix any failing test, even if unrelated to your implementation.
-- Never cache data—always fetch fresh from backend
-- Encrypt all sensitive localStorage data (AES-GCM 256-bit)
-- No modals for records—use inline edit mode ([SPEC.md](SPEC.md#record-view))
+## Context
+
+Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-driven admin UI that runs entirely in the browser and is intended to be deployed as an SPA. No backend server is included in this project. The app should be able to connect to external Moon API-compliant backends when configured, but operate as a self-contained frontend by default. It must support multiple backend connections, use localStorage as a temporary data store, and guarantee real-time, uncached data. The stack is React + DaisyUI (Tailwind) + Bun.js. This is a specification and planning repository for Moon Admin WebApp. No code exists yet.
+
+## Objective
+
+All implementation must follow SPEC.md and backend API docs in MOON_API.md.
+
+## Instructions
+
+- Tech Stack: React (TypeScript strict) · DaisyUI (Tailwind) · Bun.js
+- Framework Docs:
+  - DaisyUI (.github/llms/daisyui-llms.txt)
+  - Bun.js (.github/llms/bunjs-llms-full.txt)
+- Live Docs: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable.
+
+### Essential Patterns
+
+- Moon API: Collection = Table, Field = Column, Record = Row
+- API pattern: resource:action (e.g., /collections:list, /products:create)
+- Authentication: JWT (15-min expiration, refresh-see MOON_API.md#authentication)
+- UI: Login -> Admin (header/sidebar/content) -> Table View -> Record View (view/edit)
+
+### Key Files
+
+- `SPEC.md` - Product spec (UI, flows, security, constraints)
+- `MOON_API.md` - Backend API reference and JSON appendix
+- `.github/llms/daisyui-llms.txt` - DaisyUI llms.txt
+- `.github/llms/bunjs-llms-full.txt` - Bunjs llms.txt
+
+## Constraints
+
+### MUST
+
+- Test Driven Development: All features and implementations must follow TDD-first write a failing test, then implement to pass. Aim for 90%+ test coverage and 100% test pass rate. Fix any failing test, even if unrelated to your implementation.
 - Moon API: no joins, no transactions, POST/GET only, snake_case names
-- Mobile-first—test on mobile viewports first
+- Mobile-first-test on mobile viewports first
 - Client-side rendering only; no SEO/performance concerns for initial load
 
-See [SPEC.md](SPEC.md#constraints) and [MOON_API.md](MOON_API.md#intro) for full details.
+### MUST NOT
 
-## PRD-Driven Development
-- Generate PRD: [.github/agents/PRD.agent.md](.github/agents/PRD.agent.md)
-- Implement one PRD per commit: [.github/prompts/Implment_PRD.prompt.md](.github/prompts/Implment_PRD.prompt.md)
-- PRDs: `prd/NNN-feature-name.md` using [.github/instructions/prd.instructions.md](.github/instructions/prd.instructions.md)
+- Never cache data-always fetch fresh from backend
+- No modals for records-use inline edit mode (`SPEC.md#record-view`)
+- Never modify MOON_API.md.
+- Do not create documentation, summaries, or high-level writeups unless explicitly requested.
 
-## Quick Start
-- Project setup (Bun.js):
-  ```bash
-  bun create vite moon-ui --template react-ts
-  bun add -D daisyui@latest
-  ```
-- Testing server: `https://moon.asensar.in/`
-  - Credentials: `{ "username": "admin", "password": "moonadmin12#" }`
+## Output Format
 
-## Essential Patterns
-- Moon API: Collection = Table, Field = Column, Record = Row
-- API pattern: `resource:action` (e.g., `/collections:list`, `/products:create`)
-- Authentication: JWT (15-min expiration, refresh—see [MOON_API.md](MOON_API.md#authentication))
-- UI: Login → Admin (header/sidebar/content) → Table View → Record View (view/edit)
+See `SPEC.md#constraints`
 
-See [SPEC.md](SPEC.md#ui-layouts-and-components) for UI layouts and component specs.
+## Success Criteria
 
-## Key Files
-- [SPEC.md](SPEC.md) — Product spec (UI, flows, security, constraints)
-- [MOON_API.md](MOON_API.md) — Backend API reference & JSON appendix
-- [.github/agents/PRD.agent.md](.github/agents/PRD.agent.md) — PRD generator
-- [.github/instructions/prd.instructions.md](.github/instructions/prd.instructions.md) — PRD template
-- [.github/prompts/Implment_PRD.prompt.md](.github/prompts/Implment_PRD.prompt.md) — Implementation workflow
-- [DaisyUI](.github/llms/daisyui-llms.txt) — DaisyUI llms.txt 
-- [Bun.js](.github/llms/bunjs-llms-full.txt) — Bunjs llms.txt
+- ✅ All implementation must follow `SPEC.md`.
+- ✅ Live docs use Context7 MCP and GitHub MCP servers when local files are outdated/unavailable.
+

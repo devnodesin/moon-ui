@@ -6,7 +6,7 @@
 
 ## UI/UX Requirements
 
-- **Accessibility:** All UI components and layouts must meet WCAG 2.1 AA accessibility standards.
+- **Accessibility:** Not required (private/internal app).
 - **No Modals for Records:** Viewing and editing records must always be inline—never use modals.
 - **No Data Caching:** All data views must always fetch fresh data from the backend (no client-side caching).
 - **Error Handling:** All API/network errors and important events must trigger a user notification.
