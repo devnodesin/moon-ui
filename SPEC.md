@@ -40,7 +40,7 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 ## Instructions
 
 1. TypeScript is required (strict mode and type-checking enforced).
-2. Use DaisyUI default themes unless customization is explicitly needed.
+2. Use DaisyUI themes: `autumn` for light mode, `abyss` for dark mode.
 3. Support only the latest major browsers; no need to support legacy browsers like IE.
 4. Extract backend connection, authentication, and schema-driven UI requirements from the context.
 5. Generate a React-based admin app using DaisyUI for all UI components and Tailwind for layout.
