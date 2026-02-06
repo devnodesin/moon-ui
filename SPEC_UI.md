@@ -42,6 +42,10 @@
 └──────────────────────────────┘
 ```
 
+- Input: User enters server URL, username, password, checks "Remember Connection", clicks Connect.
+- Output: Credentials are validated, JWT tokens are received, all sensitive data is stored in localStorage, user is logged in and redirected to Admin view.
+- Explanation: Connection is isolated.
+
 ## Admin View
 
 **Admin View (Desktop)**
