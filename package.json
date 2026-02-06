@@ -5,17 +5,17 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "format": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
-    "format:fix": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "typecheck": "tsc --noEmit"
+    "dev": "bun --bun vite",
+    "build": "bun run typecheck && bun --bun vite build",
+    "preview": "bun --bun vite preview",
+    "test": "bunx vitest run",
+    "test:watch": "bunx vitest",
+    "test:coverage": "bunx vitest run --coverage",
+    "lint": "bunx eslint src --ext .ts,.tsx",
+    "lint:fix": "bunx eslint src --ext .ts,.tsx --fix",
+    "format": "bunx prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+    "format:fix": "bunx prettier --write \"src/**/*.{ts,tsx,css,json}\"",
+    "typecheck": "bunx tsc --noEmit"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

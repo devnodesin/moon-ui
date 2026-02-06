@@ -4,7 +4,7 @@ A secure, mobile-first admin webapp for managing collections, users, API keys, a
 
 ## Technology Stack
 
-- **Runtime**: Bun.js (or Node.js with npm)
+- **Runtime**: Bun.js (primary)
 - **Framework**: React 18+ with TypeScript (strict mode)
 - **Build Tool**: Vite
 - **UI Framework**: DaisyUI 5.x + Tailwind CSS 4.x
@@ -25,7 +25,7 @@ A secure, mobile-first admin webapp for managing collections, users, API keys, a
 
 ## Prerequisites
 
-- Node.js 18+ or Bun.js 1.0+
+- Bun.js 1.0+ (primary runtime)
 - Modern browser (Chrome, Firefox, Safari, or Edge latest)
 
 ## Quick Start
@@ -33,60 +33,60 @@ A secure, mobile-first admin webapp for managing collections, users, API keys, a
 ### Installation
 
 ```bash
-# Using npm
+# Install dependencies with npm (Bun registry has connectivity issues)
 npm install
 
-# Or using Bun
-bun install
+# Or if you prefer, you can use Bun when it's stable
+# bun install
 ```
 
 ### Development
 
 ```bash
-# Start development server (http://localhost:3000)
-npm run dev
+# Start development server with Bun (http://localhost:3000)
+bun run dev
 ```
 
 ### Building
 
 ```bash
-# Type check and build for production
-npm run build
+# Type check and build for production with Bun
+bun run build
 
 # Preview production build
-npm run preview
+bun run preview
 ```
 
 ### Testing
 
 ```bash
-# Run all tests
-npm run test
+# Run all tests with Bun
+bun run test
 
 # Run tests in watch mode (TDD)
-npm run test:watch
+bun run test:watch
 
 # Generate coverage report
-npm run test:coverage
+bun run test:coverage
 ```
 
 ### Code Quality
 
 ```bash
 # Type checking
-npm run typecheck
+bun run typecheck
 
 # Lint code
-npm run lint
+bun run lint
 
 # Fix linting issues
-npm run lint:fix
+bun run lint:fix
 
 # Check code formatting
-npm run format
+bun run format
 
 # Fix formatting issues
-npm run format:fix
+bun run format:fix
 ```
 
 ## Project Structure
