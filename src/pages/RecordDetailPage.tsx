@@ -58,8 +58,10 @@ export function RecordDetailPage() {
         const empty: Record<string, unknown> = {};
         schema.forEach((col) => {
           const t = col.type.toLowerCase();
+          const isNumeric = ['int', 'float', 'number', 'double', 'decimal']
+            .some((n) => t.includes(n));
           if (t.includes('bool')) empty[col.name] = false;
-          else if (t.includes('int') || t.includes('float') || t.includes('number') || t.includes('double') || t.includes('decimal')) empty[col.name] = null;
+          else if (isNumeric) empty[col.name] = null;
           else empty[col.name] = '';
         });
         setRecord(empty);
