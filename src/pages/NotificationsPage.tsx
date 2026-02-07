@@ -31,7 +31,13 @@ function getTypeIcon(type: NotificationType): string {
   }
 }
 
-function NotificationItem({ notification }: { notification: Notification }) {
+function NotificationItem({ 
+  notification,
+  onClear,
+}: { 
+  notification: Notification;
+  onClear: (id: string) => void;
+}) {
   const date = new Date(notification.timestamp);
   const formattedDate = date.toLocaleString();
 
@@ -52,19 +58,31 @@ function NotificationItem({ notification }: { notification: Notification }) {
           </div>
         </div>
       </div>
+      <button
+        className="btn btn-sm btn-ghost btn-circle"
+        onClick={() => onClear(notification.id)}
+        aria-label="Clear notification"
+        data-testid={`clear-notification-${notification.id}`}
+      >
+        ✕
+      </button>
     </div>
   );
 }
 
 export function NotificationsPage() {
-  const { notifications, clearAll } = useNotifications();
+  const { notifications, clearNotification, clearAll } = useNotifications();
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Notifications</h1>
         {notifications.length > 0 && (
-          <button className="btn btn-outline btn-error" onClick={clearAll}>
+          <button 
+            className="btn btn-outline btn-error" 
+            onClick={clearAll}
+            data-testid="clear-all-notifications"
+          >
             Clear All
           </button>
         )}
@@ -90,7 +108,11 @@ export function NotificationsPage() {
       ) : (
         <div role="list">
           {notifications.map((notification) => (
-            <NotificationItem key={notification.id} notification={notification} />
+            <NotificationItem 
+              key={notification.id} 
+              notification={notification}
+              onClear={clearNotification}
+            />
           ))}
         </div>
       )}

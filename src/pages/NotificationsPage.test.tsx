@@ -112,4 +112,63 @@ describe('NotificationsPage', () => {
     const successIcon = screen.getByLabelText('success notification');
     expect(successIcon).toBeInTheDocument();
   });
+
+  it('should show individual clear button on each notification', () => {
+    render(
+      <NotificationProvider>
+        <TestWrapper />
+      </NotificationProvider>
+    );
+
+    act(() => {
+      screen.getByText('Add Success').click();
+    });
+
+    // Find the clear button by aria-label
+    const clearButton = screen.getByLabelText('Clear notification');
+    expect(clearButton).toBeInTheDocument();
+  });
+
+  it('should clear only the specific notification when individual clear is clicked', () => {
+    render(
+      <NotificationProvider>
+        <TestWrapper />
+      </NotificationProvider>
+    );
+
+    act(() => {
+      screen.getByText('Add Success').click();
+      screen.getByText('Add Error').click();
+    });
+
+    expect(screen.getByText('Test success')).toBeInTheDocument();
+    expect(screen.getByText('Test error')).toBeInTheDocument();
+
+    // Get all clear buttons and click the first one (which is the most recent notification - error)
+    const clearButtons = screen.getAllByLabelText('Clear notification');
+    act(() => {
+      clearButtons[0].click();
+    });
+
+    // Most recent notification (error) should be removed
+    expect(screen.queryByText('Test error')).not.toBeInTheDocument();
+    // First notification (success) should still be there
+    expect(screen.getByText('Test success')).toBeInTheDocument();
+  });
+
+  it('should provide visual feedback when clearing notifications', () => {
+    render(
+      <NotificationProvider>
+        <TestWrapper />
+      </NotificationProvider>
+    );
+
+    act(() => {
+      screen.getByText('Add Success').click();
+    });
+
+    // Check that the clear button has proper styling
+    const clearButton = screen.getByLabelText('Clear notification');
+    expect(clearButton).toHaveClass('btn', 'btn-sm', 'btn-ghost', 'btn-circle');
+  });
 });
