@@ -1,4 +1,5 @@
 import { ThemeToggle } from './ThemeToggle';
+import { ConnectionSwitcher } from './ConnectionSwitcher';
 
 export function Navbar() {
   return (
@@ -28,7 +29,8 @@ export function Navbar() {
           🌙 Moon Admin
         </a>
       </div>
-      <div className="flex-none">
+      <div className="flex-none gap-2">
+        <ConnectionSwitcher />
         <ThemeToggle />
       </div>
     </div>

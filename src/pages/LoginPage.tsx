@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import * as connectionManager from '../services/connectionManager';
+import type { ConnectionProfile } from '../types/connection';
 
 interface FormErrors {
   serverUrl?: string;
@@ -45,14 +47,32 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [apiError, setApiError] = useState('');
+  const [savedConnections, setSavedConnections] = useState<ConnectionProfile[]>([]);
 
   const nextPath = searchParams.get('next') || '/admin';
+
+  useEffect(() => {
+    setSavedConnections(connectionManager.getConnections());
+    const baseUrlParam = searchParams.get('baseUrl');
+    if (baseUrlParam) {
+      setServerUrl(baseUrlParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isAuthenticated) {
       navigate(decodeURIComponent(nextPath), { replace: true });
     }
   }, [isAuthenticated, navigate, nextPath]);
+
+  const handleSavedSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    if (!id) return;
+    const profile = savedConnections.find((c) => c.id === id);
+    if (profile) {
+      setServerUrl(profile.baseUrl);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +84,18 @@ export function LoginPage() {
 
     setLoading(true);
     try {
-      await login(username.trim(), password, serverUrl.trim(), remember);
+      const trimmedUrl = serverUrl.trim();
+      await login(username.trim(), password, trimmedUrl, remember);
+
+      if (remember) {
+        const connId = new URL(trimmedUrl).host;
+        connectionManager.saveConnection({
+          id: connId,
+          label: connId,
+          baseUrl: trimmedUrl,
+          lastActive: Date.now(),
+        });
+      }
     } catch (err: unknown) {
       const message =
         (err as { message?: string })?.message || 'Connection failed. Please check your credentials and server URL.';
@@ -82,10 +113,25 @@ export function LoginPage() {
             🌙 Moon Admin
           </h2>
 
-          {/* Saved Connections placeholder */}
+          {/* Saved Connections */}
           <div className="form-control mb-2">
-            <select className="select select-bordered w-full" disabled>
-              <option>Saved Connections</option>
+            <select
+              className="select select-bordered w-full"
+              onChange={handleSavedSelect}
+              defaultValue=""
+              disabled={loading || savedConnections.length === 0}
+              aria-label="Saved Connections"
+            >
+              <option value="" disabled>
+                {savedConnections.length === 0
+                  ? 'No Saved Connections'
+                  : 'Saved Connections'}
+              </option>
+              {savedConnections.map((conn) => (
+                <option key={conn.id} value={conn.id}>
+                  {conn.label} — {conn.baseUrl}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -187,11 +233,11 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* Manage Connections placeholder */}
+          {/* Manage Connections link */}
           <div className="text-center mt-3">
-            <button className="btn btn-link btn-sm" disabled>
+            <a className="btn btn-link btn-sm" href="/#/admin/connections">
               Manage Connections
-            </button>
+            </a>
           </div>
         </div>
       </div>

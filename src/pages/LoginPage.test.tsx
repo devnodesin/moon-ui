@@ -51,10 +51,10 @@ describe('LoginPage', () => {
 
   it('should show saved connections dropdown placeholder', () => {
     renderLogin();
-    expect(screen.getByText('Saved Connections')).toBeInTheDocument();
+    expect(screen.getByLabelText('Saved Connections')).toBeInTheDocument();
   });
 
-  it('should show manage connections placeholder', () => {
+  it('should show manage connections link', () => {
     renderLogin();
     expect(screen.getByText('Manage Connections')).toBeInTheDocument();
   });
