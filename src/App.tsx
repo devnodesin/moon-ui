@@ -12,6 +12,9 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
+import { CollectionListPage } from './pages/CollectionListPage';
+import { CollectionRecordsPage } from './pages/CollectionRecordsPage';
+import { RecordDetailPage } from './pages/RecordDetailPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
@@ -55,6 +58,36 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <ConnectionsPage />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/collections"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <CollectionListPage />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/collections/:collectionName"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <CollectionRecordsPage />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/collections/:collectionName/:id"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <RecordDetailPage />
                       </Layout>
                     </ProtectedRoute>
                   }
