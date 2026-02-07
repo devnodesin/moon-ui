@@ -7,6 +7,7 @@ export function Sidebar() {
     { path: '/admin/users', label: 'Users', icon: '👥' },
     { path: '/admin/keys', label: 'API Keys', icon: '🔑' },
     { path: '/admin/notifications', label: 'Notifications', icon: '🔔' },
+    { path: '/admin/connections', label: 'Connections', icon: '🔌' },
   ];
 
   return (
