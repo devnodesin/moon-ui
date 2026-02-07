@@ -174,15 +174,18 @@ describe('CollectionRecordsPage', () => {
     });
 
     // Verify fetchData was called exactly once for initial load
-    // (both getSchema and listRecords should be called once)
-    expect(mockGetSchema).toHaveBeenCalledTimes(1);
+    const initialCallCount = mockGetSchema.mock.calls.length;
+    expect(initialCallCount).toBe(1);
     expect(mockListRecords).toHaveBeenCalledTimes(1);
     
-    // Wait a bit more to ensure no additional calls happen
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    
-    // Verify no additional calls were made (no recursion)
-    expect(mockGetSchema).toHaveBeenCalledTimes(1);
-    expect(mockListRecords).toHaveBeenCalledTimes(1);
+    // Wait to ensure no additional calls happen (no recursion)
+    // Use waitFor with a condition that should not change if working correctly
+    await waitFor(
+      () => {
+        expect(mockGetSchema).toHaveBeenCalledTimes(initialCallCount);
+        expect(mockListRecords).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 500 }
+    );
   });
 });

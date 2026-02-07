@@ -144,7 +144,8 @@ describe('NotificationsPage', () => {
     expect(screen.getByText('Test success')).toBeInTheDocument();
     expect(screen.getByText('Test error')).toBeInTheDocument();
 
-    // Get all clear buttons and click the first one (which is the most recent notification - error)
+    // Notifications are displayed in LIFO order (newest first)
+    // So clearButtons[0] is the error notification (added second)
     const clearButtons = screen.getAllByLabelText('Clear notification');
     act(() => {
       clearButtons[0].click();
@@ -152,7 +153,7 @@ describe('NotificationsPage', () => {
 
     // Most recent notification (error) should be removed
     expect(screen.queryByText('Test error')).not.toBeInTheDocument();
-    // First notification (success) should still be there
+    // Older notification (success) should still be there
     expect(screen.getByText('Test success')).toBeInTheDocument();
   });
 
