@@ -94,7 +94,7 @@ describe('HttpClient', () => {
       .onGet('https://api.example.com/protected')
       .replyOnce(401)
       // Refresh token endpoint
-      .onPost('https://api.example.com/auth/refresh')
+      .onPost('https://api.example.com/auth:refresh')
       .replyOnce(200, {
         accessToken: 'new-access-token',
         refreshToken: 'new-refresh-token',
@@ -126,7 +126,7 @@ describe('HttpClient', () => {
     mock
       .onGet('https://api.example.com/protected')
       .replyOnce(401)
-      .onPost('https://api.example.com/auth/refresh')
+      .onPost('https://api.example.com/auth:refresh')
       .replyOnce(401);
 
     try {

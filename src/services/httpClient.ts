@@ -86,8 +86,8 @@ export class HttpClient {
     }
 
     const response = await axios.post(
-      `${this.client.defaults.baseURL}/auth/refresh`,
-      { refreshToken }
+      `${this.client.defaults.baseURL}/auth:refresh`,
+      { refresh_token: refreshToken }
     );
 
     const { accessToken, refreshToken: newRefreshToken, expiresIn } = response.data;
