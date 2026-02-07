@@ -104,6 +104,19 @@ E2E tests cover:
 
 ## Troubleshooting
 
+**Tests fail with "Cannot connect to server. This might be a CORS issue"**:
+- The Moon API server must be configured to allow CORS requests from `http://localhost:5173`
+- Server needs these CORS headers:
+  ```
+  Access-Control-Allow-Origin: http://localhost:5173
+  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, Authorization
+  Access-Control-Allow-Credentials: true
+  ```
+- For development/testing, you can use: `Access-Control-Allow-Origin: *`
+- This is a server-side configuration, not an application issue
+- The app correctly detects and displays CORS errors
+
 **Tests fail with "Timeout"**: 
 - Ensure dev server is running (`npm run dev`)
 - Check network connectivity to test server
