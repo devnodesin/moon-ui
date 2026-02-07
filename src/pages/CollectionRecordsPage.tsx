@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DataTable } from '../components/DataTable';
 import type { Column, Pagination } from '../components/DataTable';
@@ -23,7 +23,9 @@ export function CollectionRecordsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [cursors, setCursors] = useState<string[]>([]);
+  
+  // Use ref to avoid including cursors in fetchData dependencies
+  const cursorsRef = useRef<string[]>([]);
 
   const baseUrl = currentConnection?.baseUrl ?? '';
   const token = currentConnection?.accessToken ?? '';
@@ -39,14 +41,14 @@ export function CollectionRecordsPage() {
         collectionService.listRecords(baseUrl, token, collection, {
           q: search || undefined,
           limit: PAGE_SIZE,
-          after: page > 1 ? cursors[page - 2] : undefined,
+          after: page > 1 ? cursorsRef.current[page - 2] : undefined,
         }),
       ]);
       setSchema(schemaResult);
       setRecords(recordsResult.data ?? []);
       setHasMore(recordsResult.has_more ?? false);
-      if (recordsResult.next_cursor && page > cursors.length) {
-        setCursors((prev) => [...prev, recordsResult.next_cursor!]);
+      if (recordsResult.next_cursor && page > cursorsRef.current.length) {
+        cursorsRef.current = [...cursorsRef.current, recordsResult.next_cursor];
       }
     } catch {
       notify.error('Failed to load records');
@@ -54,7 +56,7 @@ export function CollectionRecordsPage() {
       setLoading(false);
       stopLoading();
     }
-  }, [baseUrl, token, collection, search, page, cursors, startLoading, stopLoading, notify]);
+  }, [baseUrl, token, collection, search, page, startLoading, stopLoading, notify]);
 
   useEffect(() => {
     fetchData();
@@ -63,7 +65,7 @@ export function CollectionRecordsPage() {
   const handleSearch = useCallback((q: string) => {
     setSearch(q);
     setPage(1);
-    setCursors([]);
+    cursorsRef.current = [];
   }, []);
 
   const handlePageChange = useCallback((p: number) => {

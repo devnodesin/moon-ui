@@ -32,8 +32,13 @@ vi.mock('../hooks/useNotify', () => ({
   useNotify: () => mockNotify,
 }));
 
+const mockLoadingContext = { 
+  isLoading: false, 
+  startLoading: vi.fn(), 
+  stopLoading: vi.fn() 
+};
 vi.mock('../contexts/LoadingContext', () => ({
-  useLoading: () => ({ isLoading: false, startLoading: vi.fn(), stopLoading: vi.fn() }),
+  useLoading: () => mockLoadingContext,
 }));
 
 const mockGetSchema = vi.fn();
@@ -149,5 +154,35 @@ describe('CollectionRecordsPage', () => {
   it('should show back link to collections', async () => {
     renderPage();
     expect(screen.getByText('← Collections')).toBeInTheDocument();
+  });
+
+  it('should not cause recursive renders when loading data', async () => {
+    mockListRecords.mockResolvedValue({
+      data: [
+        { id: '1', title: 'Post 1' },
+        { id: '2', title: 'Post 2' },
+      ],
+      has_more: true,
+      next_cursor: 'cursor-1',
+    });
+
+    renderPage();
+
+    // Wait for initial render to complete
+    await waitFor(() => {
+      expect(screen.getByText('Post 1')).toBeInTheDocument();
+    });
+
+    // Verify fetchData was called exactly once for initial load
+    // (both getSchema and listRecords should be called once)
+    expect(mockGetSchema).toHaveBeenCalledTimes(1);
+    expect(mockListRecords).toHaveBeenCalledTimes(1);
+    
+    // Wait a bit more to ensure no additional calls happen
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    
+    // Verify no additional calls were made (no recursion)
+    expect(mockGetSchema).toHaveBeenCalledTimes(1);
+    expect(mockListRecords).toHaveBeenCalledTimes(1);
   });
 });
