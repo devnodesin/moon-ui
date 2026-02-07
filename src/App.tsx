@@ -15,6 +15,9 @@ import { ConnectionsPage } from './pages/ConnectionsPage';
 import { CollectionListPage } from './pages/CollectionListPage';
 import { CollectionRecordsPage } from './pages/CollectionRecordsPage';
 import { RecordDetailPage } from './pages/RecordDetailPage';
+import { UsersPage } from './pages/UsersPage';
+import { UserDetailPage } from './pages/UserDetailPage';
+import { ApiKeysPage } from './pages/ApiKeysPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
@@ -88,6 +91,36 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <RecordDetailPage />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/users"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <UsersPage />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/users/:id"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <UserDetailPage />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/keys"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <ApiKeysPage />
                       </Layout>
                     </ProtectedRoute>
                   }
