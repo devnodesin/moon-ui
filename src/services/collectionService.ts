@@ -97,7 +97,7 @@ export async function listRecords(
   const query = new URLSearchParams();
   if (params) {
     for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined && value !== '') {
+      if (value !== undefined && value !== null) {
         query.set(key, String(value));
       }
     }

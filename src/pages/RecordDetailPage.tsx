@@ -56,7 +56,12 @@ export function RecordDetailPage() {
       if (isNew) {
         // Build empty record from schema
         const empty: Record<string, unknown> = {};
-        schema.forEach((col) => { empty[col.name] = ''; });
+        schema.forEach((col) => {
+          const t = col.type.toLowerCase();
+          if (t.includes('bool')) empty[col.name] = false;
+          else if (t.includes('int') || t.includes('float') || t.includes('number') || t.includes('double') || t.includes('decimal')) empty[col.name] = null;
+          else empty[col.name] = '';
+        });
         setRecord(empty);
       } else {
         const data = await collectionService.getRecord(baseUrl, token, collection, id!);

@@ -142,13 +142,32 @@ export function CollectionRecordsPage() {
             importedRecords = [importedRecords];
           }
         } else {
-          // CSV parsing
+          // CSV parsing with quoted field support
           const lines = text.trim().split('\n');
-          const headers = lines[0].split(',').map((h) => h.trim());
-          importedRecords = lines.slice(1).map((line) => {
-            const values = line.split(',');
+          const parseCsvLine = (line: string): string[] => {
+            const fields: string[] = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+              const ch = line[i];
+              if (inQuotes) {
+                if (ch === '"' && line[i + 1] === '"') { current += '"'; i++; }
+                else if (ch === '"') { inQuotes = false; }
+                else { current += ch; }
+              } else {
+                if (ch === '"') { inQuotes = true; }
+                else if (ch === ',') { fields.push(current.trim()); current = ''; }
+                else { current += ch; }
+              }
+            }
+            fields.push(current.trim());
+            return fields;
+          };
+          const headers = parseCsvLine(lines[0]);
+          importedRecords = lines.slice(1).filter((l) => l.trim()).map((line) => {
+            const values = parseCsvLine(line);
             const record: Record<string, unknown> = {};
-            headers.forEach((h, i) => { record[h] = values[i]?.trim() ?? ''; });
+            headers.forEach((h, i) => { record[h] = values[i] ?? ''; });
             return record;
           });
         }
