@@ -3,6 +3,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './hooks/useAuth';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ConnectionProvider } from './contexts/ConnectionContext';
+import { LoadingProvider } from './contexts/LoadingContext';
+import { GlobalProgress } from './components/GlobalProgress';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { ToastContainer } from './components/ToastContainer';
@@ -15,11 +17,13 @@ import { NotFoundPage } from './pages/NotFoundPage';
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <ConnectionProvider>
-          <NotificationProvider>
-            <HashRouter>
-              <ToastContainer />
+      <LoadingProvider>
+        <AuthProvider>
+          <ConnectionProvider>
+            <NotificationProvider>
+              <HashRouter>
+                <GlobalProgress />
+                <ToastContainer />
               <Routes>
                 {/* Public route */}
                 <Route path="/" element={<LoginPage />} />
@@ -59,10 +63,11 @@ function App() {
                 {/* 404 Not Found */}
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
-            </HashRouter>
-          </NotificationProvider>
-        </ConnectionProvider>
-      </AuthProvider>
+              </HashRouter>
+            </NotificationProvider>
+          </ConnectionProvider>
+        </AuthProvider>
+      </LoadingProvider>
     </ThemeProvider>
   );
 }
