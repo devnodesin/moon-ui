@@ -26,4 +26,32 @@ describe('Sidebar', () => {
     
     expect(screen.getByRole('link', { name: /notifications/i })).toBeInTheDocument();
   });
+
+  it('should render connections link', () => {
+    render(
+      <HashRouter>
+        <Sidebar />
+      </HashRouter>
+    );
+    
+    expect(screen.getByRole('link', { name: /connections/i })).toBeInTheDocument();
+  });
+
+  it('should have correct navigation paths', () => {
+    render(
+      <HashRouter>
+        <Sidebar />
+      </HashRouter>
+    );
+    
+    const usersLink = screen.getByRole('link', { name: /users/i });
+    const apiKeysLink = screen.getByRole('link', { name: /api keys/i });
+    const notificationsLink = screen.getByRole('link', { name: /notifications/i });
+    const connectionsLink = screen.getByRole('link', { name: /connections/i });
+    
+    expect(usersLink).toHaveAttribute('href', '#/admin/users');
+    expect(apiKeysLink).toHaveAttribute('href', '#/admin/keys');
+    expect(notificationsLink).toHaveAttribute('href', '#/admin/notifications');
+    expect(connectionsLink).toHaveAttribute('href', '#/admin/connections');
+  });
 });
