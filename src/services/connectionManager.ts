@@ -7,6 +7,7 @@ function loadProfiles(): ConnectionProfile[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
+    // Corrupted data in localStorage; return empty to allow fresh start
     return [];
   }
 }

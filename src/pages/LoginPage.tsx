@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import * as connectionManager from '../services/connectionManager';
 import type { ConnectionProfile } from '../types/connection';
@@ -235,9 +235,9 @@ export function LoginPage() {
 
           {/* Manage Connections link */}
           <div className="text-center mt-3">
-            <a className="btn btn-link btn-sm" href="/#/admin/connections">
+            <Link className="btn btn-link btn-sm" to="/admin/connections">
               Manage Connections
-            </a>
+            </Link>
           </div>
         </div>
       </div>
