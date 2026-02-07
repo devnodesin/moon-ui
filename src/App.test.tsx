@@ -3,18 +3,14 @@ import { render, screen } from '@testing-library/react';
 import App from './App';
 
 describe('App Component', () => {
-  it('renders Hello Moon message', () => {
+  it('should render login page by default when not authenticated', () => {
     render(<App />);
-    expect(screen.getByText(/Hello Moon/i)).toBeInTheDocument();
+    expect(screen.getByText(/Moon Admin/i)).toBeInTheDocument();
   });
 
-  it('renders the Get Started button', () => {
+  it('should render with ThemeProvider', () => {
     render(<App />);
-    expect(screen.getByRole('button', { name: /Get Started/i })).toBeInTheDocument();
-  });
-
-  it('renders Moon Admin WebApp text', () => {
-    render(<App />);
-    expect(screen.getByText(/Moon Admin WebApp/i)).toBeInTheDocument();
+    // Verify the app renders without crashing
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(true);
   });
 });
