@@ -80,7 +80,17 @@ test.describe('Navigation', () => {
     
     if (await apiKeysLink.count() > 0) {
       await apiKeysLink.click();
-      await expect(page).toHaveURL(/\/#\/admin\/api-keys/);
+      await expect(page).toHaveURL(/\/#\/admin\/keys/);
+    }
+  });
+
+  test('should navigate to notifications page', async ({ page }) => {
+    // Look for notifications link
+    const notificationsLink = page.getByRole('link', { name: /notifications/i }).first();
+    
+    if (await notificationsLink.count() > 0) {
+      await notificationsLink.click();
+      await expect(page).toHaveURL(/\/#\/admin\/notifications/);
     }
   });
 
