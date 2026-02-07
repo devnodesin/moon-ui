@@ -19,7 +19,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ) => {
     const tokens = await authService.login(baseUrl, username, password);
 
-    const expiresAt = Date.now() + tokens.expires_in * 1000;
+    // Parse expires_at or calculate expiry
+    const expiresAt = tokens.expires_at 
+      ? new Date(tokens.expires_at).getTime()
+      : Date.now() + 3600 * 1000; // Default 1 hour
+    
     const connectionId = new URL(baseUrl).host;
 
     const storage = remember
@@ -28,10 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storage.setTokens(tokens.access_token, tokens.refresh_token, expiresAt);
 
     let fetchedUser: User;
-    try {
-      fetchedUser = await authService.getCurrentUser(baseUrl, tokens.access_token);
-    } catch {
-      fetchedUser = { username };
+    // Use user from token response if available
+    if (tokens.user) {
+      fetchedUser = tokens.user;
+    } else {
+      try {
+        fetchedUser = await authService.getCurrentUser(baseUrl, tokens.access_token);
+      } catch {
+        fetchedUser = { username };
+      }
     }
 
     const session: ConnectionSession = {

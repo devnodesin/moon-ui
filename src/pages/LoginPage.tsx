@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 import * as connectionManager from '../services/connectionManager';
 import type { ConnectionProfile } from '../types/connection';
@@ -97,8 +98,23 @@ export function LoginPage() {
         });
       }
     } catch (err: unknown) {
-      const message =
-        (err as { message?: string })?.message || 'Connection failed. Please check your credentials and server URL.';
+      console.error('Login error:', err);
+      let message = 'Connection failed. Please check your credentials and server URL.';
+      
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          // Server responded with error
+          message = err.response.data?.message || err.response.data?.error || message;
+        } else if (err.request) {
+          // Request made but no response (CORS or network error)
+          message = 'Cannot connect to server. This might be a CORS issue. Please check that the server allows requests from this origin.';
+        } else {
+          message = err.message || message;
+        }
+      } else {
+        message = (err as { message?: string })?.message || message;
+      }
+      
       setApiError(message);
     } finally {
       setLoading(false);

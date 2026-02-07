@@ -120,7 +120,7 @@ describe('HttpClient', () => {
     const client = new HttpClient({
       baseUrl: 'https://api.example.com',
       tokenStorage,
-      onSessionExpired,
+      onSessionExpired: onSessionExpired as () => void,
     });
 
     mock

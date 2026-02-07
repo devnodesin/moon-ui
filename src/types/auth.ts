@@ -1,7 +1,9 @@
 export interface User {
+  id?: string;
   username: string;
   email?: string;
   role?: string;
+  can_write?: boolean;
 }
 
 export interface ConnectionSession {
@@ -16,7 +18,9 @@ export interface ConnectionSession {
 export interface AuthTokenResponse {
   access_token: string;
   refresh_token: string;
-  expires_in: number;
+  expires_at: string;
+  token_type: string;
+  user?: User;
 }
 
 export interface AuthContextValue {
