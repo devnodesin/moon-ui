@@ -54,9 +54,10 @@ export function RecordDetailPage() {
       setFields(fieldDefs);
 
       if (isNew) {
-        // Build empty record from schema
+        // Build empty record from schema (exclude 'id' - it's auto-generated)
         const empty: Record<string, unknown> = {};
         schema.forEach((col) => {
+          if (col.name === 'id') return; // Skip id field for new records
           const t = col.type.toLowerCase();
           const isNumeric = ['int', 'float', 'number', 'double', 'decimal']
             .some((n) => t.includes(n));

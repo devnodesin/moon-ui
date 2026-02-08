@@ -128,6 +128,23 @@ describe('collectionService', () => {
       const result = await collectionService.createRecord(BASE_URL, TOKEN, 'posts', { title: 'New Post' });
       expect(result).toEqual({ id: '2', title: 'New Post' });
     });
+
+    it('should filter out id field when creating record', async () => {
+      mock.onPost(`${BASE_URL}/posts:create`).reply((config) => {
+        const body = JSON.parse(config.data);
+        // Ensure 'id' is NOT sent in the request
+        expect(body.data).toEqual({ title: 'New Post', content: 'Hello' });
+        expect(body.data.id).toBeUndefined();
+        return [201, { id: '2', title: 'New Post', content: 'Hello' }];
+      });
+
+      const result = await collectionService.createRecord(BASE_URL, TOKEN, 'posts', { 
+        id: '', 
+        title: 'New Post',
+        content: 'Hello'
+      });
+      expect(result).toEqual({ id: '2', title: 'New Post', content: 'Hello' });
+    });
   });
 
   describe('updateRecord', () => {

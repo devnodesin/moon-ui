@@ -145,4 +145,39 @@ describe('RecordView', () => {
 
     expect(screen.getByTestId('value-name')).toHaveTextContent('—');
   });
+
+  it('should update displayed values when data prop changes', () => {
+    const testFields: FieldDefinition[] = [
+      { key: 'id', label: 'ID', type: 'text' },
+      { key: 'name', label: 'Name', type: 'text' },
+      { key: 'brand', label: 'Brand', type: 'text' },
+    ];
+    
+    // Initial render with empty data
+    const { rerender } = render(
+      <RecordView 
+        data={{ id: '', name: '', brand: '' }} 
+        fields={testFields} 
+      />
+    );
+    
+    // Values should show as empty strings
+    expect(screen.getByTestId('value-id')).toHaveTextContent('');
+    expect(screen.getByTestId('value-name')).toHaveTextContent('');
+    expect(screen.getByTestId('value-brand')).toHaveTextContent('');
+    
+    // Simulate async data load (like fetching from API)
+    const newData = {
+      id: '01KGYMMW8ZFKRDH5ZVHQJ30RR8',
+      name: 'Chain Link Fence',
+      brand: 'Bestfence',
+    };
+    
+    rerender(<RecordView data={newData} fields={testFields} />);
+    
+    // Values should now display the fetched data
+    expect(screen.getByTestId('value-id')).toHaveTextContent('01KGYMMW8ZFKRDH5ZVHQJ30RR8');
+    expect(screen.getByTestId('value-name')).toHaveTextContent('Chain Link Fence');
+    expect(screen.getByTestId('value-brand')).toHaveTextContent('Bestfence');
+  });
 });

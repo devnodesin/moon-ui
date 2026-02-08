@@ -9,6 +9,7 @@ import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
 import * as collectionService from '../services/collectionService';
 import type { CollectionInfo, CollectionColumn } from '../services/collectionService';
+import { validateName } from '../utils/validation';
 
 interface CollectionRow {
   name: string;
@@ -140,8 +141,11 @@ export function CollectionListPage() {
 
   const handleCreate = async () => {
     const trimmed = newName.trim();
-    if (!trimmed) {
-      notify.error('Collection name is required');
+    
+    // Validate collection name
+    const collectionError = validateName(trimmed, 'collection');
+    if (collectionError) {
+      notify.error(collectionError);
       return;
     }
     
@@ -150,6 +154,15 @@ export function CollectionListPage() {
     if (validFields.length === 0) {
       notify.error('At least one field is required');
       return;
+    }
+    
+    // Validate each field name
+    for (const field of validFields) {
+      const fieldError = validateName(field.name.trim(), 'field');
+      if (fieldError) {
+        notify.error(fieldError);
+        return;
+      }
     }
     
     // Check for duplicate field names
@@ -253,23 +266,31 @@ export function CollectionListPage() {
             <input
               type="text"
               className="input input-bordered input-sm"
-              placeholder="Enter collection name"
+              placeholder="e.g., my_collection, users, product_items"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               data-testid="create-name-input"
             />
+            <label className="label">
+              <span className="label-text-alt text-base-content/60">
+                Must be lowercase snake_case (letters, numbers, underscores)
+              </span>
+            </label>
           </div>
 
           <div className="form-control mb-3">
             <label className="label">
               <span className="label-text font-semibold">Fields</span>
+              <span className="label-text-alt text-base-content/60">
+                Field names must be lowercase snake_case
+              </span>
             </label>
             {newFields.map((field, index) => (
               <div key={index} className="flex gap-2 mb-2 items-center" data-testid={`field-row-${index}`}>
                 <input
                   type="text"
                   className="input input-bordered input-sm flex-1"
-                  placeholder="Field name"
+                  placeholder="e.g., user_id, created_at"
                   value={field.name}
                   onChange={(e) => updateField(index, { name: e.target.value })}
                   data-testid={`field-name-${index}`}

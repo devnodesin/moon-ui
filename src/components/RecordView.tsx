@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export interface FieldDefinition {
   key: string;
@@ -26,6 +26,11 @@ export function RecordView<T extends Record<string, unknown>>({
   const [mode, setMode] = useState<'view' | 'edit'>(initialMode);
   const [draft, setDraft] = useState<T>(data);
   const [saving, setSaving] = useState(false);
+
+  // Sync draft when data prop changes (e.g., after async fetch)
+  useEffect(() => {
+    setDraft(data);
+  }, [data]);
 
   const handleEdit = useCallback(() => {
     setDraft(data);
