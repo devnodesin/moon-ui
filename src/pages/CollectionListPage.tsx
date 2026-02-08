@@ -13,6 +13,7 @@ import type { CollectionInfo, CollectionColumn } from '../services/collectionSer
 interface CollectionRow {
   name: string;
   columnCount: number;
+  recordCount: number | null;
 }
 
 interface FieldDraft {
@@ -47,12 +48,48 @@ export function CollectionListPage() {
     startLoading();
     try {
       const list: CollectionInfo[] = await collectionService.listCollections(baseUrl, token);
-      setCollections(
-        list.map((c) => ({
-          name: c.name,
-          columnCount: c.columns?.length ?? 0,
-        })),
+      
+      // Fetch schema and record count for each collection
+      const enrichedCollections = await Promise.all(
+        list.map(async (c) => {
+          try {
+            // Fetch schema to get field count
+            const schema = await collectionService.getSchema(baseUrl, token, c.name);
+            
+            // Fetch first record to check if collection has data
+            // Note: API doesn't provide total count, so we show:
+            // - 0 if empty
+            // - 1 if exactly one record
+            // - -1 (displayed as "1+") if has_more is true
+            const recordsResult = await collectionService.listRecords(baseUrl, token, c.name, { limit: 1 });
+            
+            const hasData = recordsResult.data && recordsResult.data.length > 0;
+            let recordCount: number;
+            if (!hasData) {
+              recordCount = 0;
+            } else if (recordsResult.has_more) {
+              recordCount = -1; // Will be displayed as "1+"
+            } else {
+              recordCount = 1; // Exactly one record
+            }
+            
+            return {
+              name: c.name,
+              columnCount: schema.length,
+              recordCount,
+            };
+          } catch {
+            // If fetching metadata fails, return basic info
+            return {
+              name: c.name,
+              columnCount: 0,
+              recordCount: null,
+            };
+          }
+        }),
       );
+      
+      setCollections(enrichedCollections);
     } catch {
       notify.error('Failed to load collections');
     } finally {
@@ -160,6 +197,18 @@ export function CollectionListPage() {
   const columns: Column<CollectionRow>[] = [
     { key: 'name', label: 'Name', sortable: true },
     { key: 'columnCount', label: 'Fields', sortable: true },
+    { 
+      key: 'recordCount' as keyof CollectionRow, 
+      label: 'Records', 
+      sortable: true,
+      render: (value, row) => {
+        if (value === null) return '—';
+        // Check if we need to show "1+" for collections with more records
+        const data = collections.find(c => c.name === row.name);
+        if (data && data.recordCount === -1) return '1+';
+        return String(value);
+      }
+    },
     {
       key: 'name' as keyof CollectionRow,
       label: 'Actions',

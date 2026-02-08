@@ -13,6 +13,7 @@ export interface RecordViewProps<T extends Record<string, unknown>> {
   fields: FieldDefinition[];
   onSave?: (data: T) => Promise<void>;
   onBack?: () => void;
+  initialMode?: 'view' | 'edit';
 }
 
 export function RecordView<T extends Record<string, unknown>>({
@@ -20,8 +21,9 @@ export function RecordView<T extends Record<string, unknown>>({
   fields,
   onSave,
   onBack,
+  initialMode = 'view',
 }: RecordViewProps<T>) {
-  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  const [mode, setMode] = useState<'view' | 'edit'>(initialMode);
   const [draft, setDraft] = useState<T>(data);
   const [saving, setSaving] = useState(false);
 
