@@ -23,8 +23,8 @@ Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-dri
 - Tech Stack: React (TypeScript strict) · DaisyUI (Tailwind)
 - Framework Docs:
   - `SPEC.md` - Moon UI design specification (UI, flows, security, constraints)
-  - `llms/moon-llms-full.txt` - Backend API reference and JSON appendix
-  - `llms/daisyui-llms.txt` - DaisyUI
+  - `https://moon.asensar.in/doc/llms-full.txt` - Backend API reference and JSON appendix
+  - `https://daisyui.com/llms.txt` - DaisyUI
   - Live Docs: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable. For testing and verification, use the Playwright MCP server for automated end-to-end (E2E) testing; integrate Playwright tests into CI workflows and document any Playwright tooling that requires Node.js, proposing platform-compatible alternatives or wrappers when needed.
 
 ## SPEC.md Compliance
