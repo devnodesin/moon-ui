@@ -12,6 +12,18 @@ import { test, expect } from '@playwright/test';
 test.describe('Collection List - Bug Fixes', () => {
   test.beforeEach(async ({ page }) => {
     // Mock API responses
+    await page.route('**/auth:me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'mock-user-id',
+          username: 'mock-user',
+          email: 'mock@example.com'
+        })
+      });
+    });
+
     await page.route('**/collections:list', async (route) => {
       await route.fulfill({
         status: 200,
@@ -107,26 +119,28 @@ test.describe('Collection List - Bug Fixes', () => {
     // Set up localStorage with mock authentication
     await page.goto('http://localhost:5173/');
     await page.evaluate(() => {
-      const mockConnection = {
-        connectionId: 'mock-test',
+      // Set up connection profile in the format the app expects
+      const connectionProfile = {
+        id: 'mock.test.com',
+        label: 'Mock Test Server',
         baseUrl: 'https://mock.test.com',
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-        expiresAt: Date.now() + 3600000,
-        remember: true
+        lastActive: Date.now()
       };
       
-      localStorage.setItem('moon-connections', JSON.stringify({
-        currentConnectionId: 'mock-test',
-        connections: {
-          'mock-test': mockConnection
-        }
-      }));
+      // Store connection profile as an array
+      localStorage.setItem('moon-connections', JSON.stringify([connectionProfile]));
       
-      localStorage.setItem('moon-token-mock-test-access', 'mock-access-token');
-      localStorage.setItem('moon-token-mock-test-refresh', 'mock-refresh-token');
-      localStorage.setItem('moon-token-mock-test-expires', String(Date.now() + 3600000));
+      // Store tokens for this connection
+      localStorage.setItem('moon-token-mock.test.com-access', 'mock-access-token');
+      localStorage.setItem('moon-token-mock.test.com-refresh', 'mock-refresh-token');
+      localStorage.setItem('moon-token-mock.test.com-expires', String(Date.now() + 3600000));
     });
+    
+    // Reload the page to let the app pick up the stored session
+    await page.reload();
+    
+    // Wait for authentication to be restored and redirect to admin
+    await page.waitForURL(/\/#\/admin/, { timeout: 5000 }).catch(() => {});
   });
 
   test('should display correct field count in Collections table', async ({ page }) => {

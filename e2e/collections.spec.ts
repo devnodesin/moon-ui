@@ -32,14 +32,25 @@ test.describe('Collections Management', () => {
     await page.goto('/#/admin/collections');
     await page.waitForLoadState('networkidle');
     
-    // Look for first collection link or button
-    const firstCollection = page.locator('a, button').filter({ hasText: /collection/i }).first();
+    // Wait for data to load
+    await page.waitForTimeout(2000);
     
-    if (await firstCollection.count() > 0) {
-      await firstCollection.click();
+    // Look for first table row (skip header row)
+    const firstRow = page.locator('tbody tr').first();
+    const rowCount = await firstRow.count();
+    
+    // Only proceed if there are collections
+    if (rowCount > 0) {
+      await firstRow.click();
+      
+      // Wait for navigation
+      await page.waitForTimeout(500);
       
       // Should navigate to collection records page
-      await expect(page).toHaveURL(/\/#\/admin\/collections\//);
+      await expect(page).toHaveURL(/\/#\/admin\/collections\/.+/);
+    } else {
+      // Skip test if no collections exist
+      console.log('No collections found, skipping test');
     }
   });
 
