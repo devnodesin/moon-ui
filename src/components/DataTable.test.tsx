@@ -171,4 +171,47 @@ describe('DataTable', () => {
 
     expect(screen.getByText('ALICE')).toBeInTheDocument();
   });
+
+  it('should render Action column when onDelete is provided', () => {
+    const onDelete = vi.fn();
+    render(<DataTable columns={columns} data={data} onDelete={onDelete} />);
+
+    expect(screen.getByText('Action')).toBeInTheDocument();
+  });
+
+  it('should render delete buttons for each row when onDelete is provided', () => {
+    const onDelete = vi.fn();
+    render(<DataTable columns={columns} data={data} onDelete={onDelete} />);
+
+    const deleteButtons = screen.getAllByTestId(/delete-btn-/);
+    expect(deleteButtons).toHaveLength(3);
+  });
+
+  it('should call onDelete when delete button is clicked', () => {
+    const onDelete = vi.fn();
+    render(<DataTable columns={columns} data={data} onDelete={onDelete} />);
+
+    const deleteButton = screen.getByTestId('delete-btn-0');
+    fireEvent.click(deleteButton);
+
+    expect(onDelete).toHaveBeenCalledWith(data[0]);
+  });
+
+  it('should not call onRowClick when delete button is clicked', () => {
+    const onDelete = vi.fn();
+    const onRowClick = vi.fn();
+    render(<DataTable columns={columns} data={data} onDelete={onDelete} onRowClick={onRowClick} />);
+
+    const deleteButton = screen.getByTestId('delete-btn-0');
+    fireEvent.click(deleteButton);
+
+    expect(onDelete).toHaveBeenCalledWith(data[0]);
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it('should not render Action column when onDelete is not provided', () => {
+    render(<DataTable columns={columns} data={data} />);
+
+    expect(screen.queryByText('Action')).not.toBeInTheDocument();
+  });
 });

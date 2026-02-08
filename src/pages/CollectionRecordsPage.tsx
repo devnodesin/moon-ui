@@ -189,6 +189,26 @@ export function CollectionRecordsPage() {
     e.target.value = '';
   };
 
+  const handleDelete = useCallback(async (row: Record<string, unknown>) => {
+    const id = String(row.id ?? '');
+    if (!id) {
+      notify.error('Record ID not found');
+      return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this record?')) {
+      return;
+    }
+
+    try {
+      await collectionService.deleteRecord(baseUrl, token, collection, id);
+      notify.success('Record deleted successfully');
+      fetchData();
+    } catch {
+      notify.error('Failed to delete record');
+    }
+  }, [baseUrl, token, collection, notify, fetchData]);
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
@@ -209,6 +229,7 @@ export function CollectionRecordsPage() {
           const id = String(row.id ?? '');
           if (id) navigate(`/admin/collections/${encodeURIComponent(collection)}/${encodeURIComponent(id)}`);
         }}
+        onDelete={handleDelete}
         actions={
           <>
             <button

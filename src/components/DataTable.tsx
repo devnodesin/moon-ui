@@ -23,6 +23,7 @@ export interface DataTableProps<T> {
   onPageChange?: (page: number) => void;
   actions?: React.ReactNode;
   isLoading?: boolean;
+  onDelete?: (row: T) => void;
 }
 
 export function DataTable<T>({
@@ -34,6 +35,7 @@ export function DataTable<T>({
   onPageChange,
   actions,
   isLoading,
+  onDelete,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -102,18 +104,19 @@ export function DataTable<T>({
                   </span>
                 </th>
               ))}
+              {onDelete && <th>Action</th>}
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={columns.length} className="text-center py-8">
+                <td colSpan={columns.length + (onDelete ? 1 : 0)} className="text-center py-8">
                   <span className="loading loading-spinner loading-md" />
                 </td>
               </tr>
             ) : sortedData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="text-center py-8 text-base-content/60">
+                <td colSpan={columns.length + (onDelete ? 1 : 0)} className="text-center py-8 text-base-content/60">
                   No data available
                 </td>
               </tr>
@@ -132,6 +135,20 @@ export function DataTable<T>({
                         : String(row[col.key] ?? '')}
                     </td>
                   ))}
+                  {onDelete && (
+                    <td>
+                      <button
+                        className="btn btn-sm btn-error"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(row);
+                        }}
+                        data-testid={`delete-btn-${idx}`}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
