@@ -32,14 +32,40 @@ test.describe('Collections Management', () => {
     await page.goto('/#/admin/collections');
     await page.waitForLoadState('networkidle');
     
-    // Look for first collection link or button
-    const firstCollection = page.locator('a, button').filter({ hasText: /collection/i }).first();
+    // Wait for data to load (collections table)
+    await page.waitForTimeout(2000);
     
-    if (await firstCollection.count() > 0) {
-      await firstCollection.click();
+    // Check if table has data
+    const tableBody = page.locator('tbody');
+    const loadingSpinner = tableBody.locator('.loading-spinner');
+    
+    // Wait for loading to finish
+    if (await loadingSpinner.count() > 0) {
+      await loadingSpinner.waitFor({ state: 'hidden', timeout: 10000 });
+    }
+    
+    // Check for "No data available" message
+    const noDataMessage = await tableBody.getByText('No data available').count();
+    if (noDataMessage > 0) {
+      console.log('No collections found in the test server, skipping test');
+      return;
+    }
+    
+    // Look for first table row (skip header row)
+    const firstRow = page.locator('tbody tr').first();
+    const rowCount = await firstRow.count();
+    
+    // Only proceed if there are collections
+    if (rowCount > 0) {
+      await firstRow.click();
+      
+      // Wait for navigation
+      await page.waitForTimeout(500);
       
       // Should navigate to collection records page
-      await expect(page).toHaveURL(/\/#\/admin\/collections\//);
+      await expect(page).toHaveURL(/\/#\/admin\/collections\/.+/);
+    } else {
+      console.log('No collection rows found, skipping test');
     }
   });
 

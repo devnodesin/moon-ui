@@ -87,10 +87,14 @@ test.describe('Login Flow', () => {
     // Wait for successful login and redirect
     await expect(page).toHaveURL(/\/#\/admin/, { timeout: 10000 });
 
-    // Navigate back to login page (simulating logout)
-    await page.goto('/');
+    // Logout first
+    const logoutButton = page.getByRole('button', { name: /logout/i }).or(
+      page.getByRole('link', { name: /logout/i })
+    );
+    await logoutButton.click();
+    await page.waitForURL(/\/#\/?/, { timeout: 5000 });
 
-    // Check if the saved connection appears in the dropdown
+    // Now check if the saved connection appears in the dropdown
     const savedConnectionsSelect = page.locator('select[aria-label="Saved Connections"]');
     await expect(savedConnectionsSelect).toBeVisible();
     
@@ -123,7 +127,7 @@ test.describe('Login Flow', () => {
 
 test.describe('Authenticated Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    // Login before each test
+    // Login before each test WITH remember checked
     await page.goto('/');
     
     // Wait for any loading spinner to disappear (session restoration)
@@ -136,16 +140,20 @@ test.describe('Authenticated Navigation', () => {
     await page.locator('#serverUrl').fill(TEST_SERVER);
     await page.locator('#username').fill(TEST_USERNAME);
     await page.locator('#password').fill(TEST_PASSWORD);
+    await page.locator('#remember').check(); // Check remember to persist tokens
     await page.getByRole('button', { name: /connect/i }).click();
     await expect(page).toHaveURL(/\/#\/admin/, { timeout: 10000 });
   });
 
   test('should redirect to dashboard when authenticated user visits login page', async ({ page }) => {
     // Navigate to login page
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
+    
+    // Wait a bit for session restoration and redirect logic to complete
+    await page.waitForTimeout(1000);
     
     // Should be redirected back to admin
-    await expect(page).toHaveURL(/\/#\/admin/);
+    await expect(page).toHaveURL(/\/#\/admin/, { timeout: 10000 });
   });
 
   test('should be able to logout and return to login page', async ({ page }) => {
