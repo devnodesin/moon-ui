@@ -89,9 +89,8 @@ export async function getSchema(
   accessToken: string,
   collection: string,
 ): Promise<CollectionColumn[]> {
-  const url = buildCollectionEndpoint(baseUrl, collection, 'schema');
   const response = await axios.get<SchemaApiResponse | CollectionColumn[]>(
-    url,
+    buildCollectionEndpoint(baseUrl, collection, 'schema'),
     authHeaders(accessToken),
   );
   // Normalize API response to handle both old and new formats

@@ -41,6 +41,7 @@ export function normalizeCollectionListResponse(
     return (collections as string[]).map((name) => ({ name }));
   }
 
+  // Empty array is valid - return as-is
   return [];
 }
 
