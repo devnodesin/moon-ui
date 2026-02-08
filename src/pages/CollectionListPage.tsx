@@ -6,11 +6,17 @@ import { useAuth } from '../hooks/useAuth';
 import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
 import * as collectionService from '../services/collectionService';
-import type { CollectionInfo } from '../services/collectionService';
+import type { CollectionInfo, CollectionColumn } from '../services/collectionService';
 
 interface CollectionRow {
   name: string;
   columnCount: number;
+}
+
+interface FieldDraft {
+  name: string;
+  type: string;
+  nullable: boolean;
 }
 
 export function CollectionListPage() {
@@ -22,6 +28,7 @@ export function CollectionListPage() {
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newFields, setNewFields] = useState<FieldDraft[]>([{ name: '', type: 'string', nullable: false }]);
 
   const baseUrl = currentConnection?.baseUrl ?? '';
   const token = currentConnection?.accessToken ?? '';
@@ -63,11 +70,37 @@ export function CollectionListPage() {
 
   const handleCreate = async () => {
     const trimmed = newName.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      notify.error('Collection name is required');
+      return;
+    }
+    
+    // Validate fields
+    const validFields = newFields.filter(f => f.name.trim() !== '');
+    if (validFields.length === 0) {
+      notify.error('At least one field is required');
+      return;
+    }
+    
+    // Check for duplicate field names
+    const fieldNames = validFields.map(f => f.name.trim());
+    const uniqueNames = new Set(fieldNames);
+    if (fieldNames.length !== uniqueNames.size) {
+      notify.error('Field names must be unique');
+      return;
+    }
+    
+    const columns: CollectionColumn[] = validFields.map(f => ({
+      name: f.name.trim(),
+      type: f.type,
+      nullable: f.nullable,
+    }));
+    
     try {
-      await collectionService.createCollection(baseUrl, token, { name: trimmed, columns: [] });
+      await collectionService.createCollection(baseUrl, token, { name: trimmed, columns });
       notify.success(`Collection "${trimmed}" created`);
       setNewName('');
+      setNewFields([{ name: '', type: 'string', nullable: false }]);
       setShowCreate(false);
       fetchCollections();
     } catch {
@@ -75,12 +108,29 @@ export function CollectionListPage() {
     }
   };
 
+  const addField = () => {
+    setNewFields([...newFields, { name: '', type: 'string', nullable: false }]);
+  };
+
+  const removeField = (index: number) => {
+    if (newFields.length > 1) {
+      setNewFields(newFields.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateField = (index: number, updates: Partial<FieldDraft>) => {
+    const updated = [...newFields];
+    updated[index] = { ...updated[index], ...updates };
+    setNewFields(updated);
+  };
+
   const columns: Column<CollectionRow>[] = [
     { key: 'name', label: 'Name', sortable: true },
     { key: 'columnCount', label: 'Fields', sortable: true },
     {
-      key: 'name',
+      key: 'name' as keyof CollectionRow,
       label: 'Actions',
+      sortable: false,
       render: (_value, row) => (
         <button
           className="btn btn-xs btn-error btn-outline"
@@ -101,21 +151,92 @@ export function CollectionListPage() {
       <h1 className="text-2xl font-bold mb-4">Collections</h1>
 
       {showCreate && (
-        <div className="flex gap-2 mb-4" data-testid="create-form">
-          <input
-            type="text"
-            className="input input-bordered input-sm"
-            placeholder="Collection name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            data-testid="create-name-input"
-          />
-          <button className="btn btn-sm btn-primary" onClick={handleCreate} data-testid="create-submit">
-            Create
-          </button>
-          <button className="btn btn-sm btn-ghost" onClick={() => setShowCreate(false)}>
-            Cancel
-          </button>
+        <div className="card bg-base-200 mb-4 p-4" data-testid="create-form">
+          <div className="form-control mb-3">
+            <label className="label">
+              <span className="label-text font-semibold">Collection Name</span>
+            </label>
+            <input
+              type="text"
+              className="input input-bordered input-sm"
+              placeholder="Enter collection name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              data-testid="create-name-input"
+            />
+          </div>
+
+          <div className="form-control mb-3">
+            <label className="label">
+              <span className="label-text font-semibold">Fields</span>
+            </label>
+            {newFields.map((field, index) => (
+              <div key={index} className="flex gap-2 mb-2 items-center" data-testid={`field-row-${index}`}>
+                <input
+                  type="text"
+                  className="input input-bordered input-sm flex-1"
+                  placeholder="Field name"
+                  value={field.name}
+                  onChange={(e) => updateField(index, { name: e.target.value })}
+                  data-testid={`field-name-${index}`}
+                />
+                <select
+                  className="select select-bordered select-sm w-32"
+                  value={field.type}
+                  onChange={(e) => updateField(index, { type: e.target.value })}
+                  data-testid={`field-type-${index}`}
+                >
+                  <option value="string">String</option>
+                  <option value="integer">Integer</option>
+                  <option value="boolean">Boolean</option>
+                  <option value="datetime">DateTime</option>
+                  <option value="decimal">Decimal</option>
+                  <option value="json">JSON</option>
+                </select>
+                <label className="label cursor-pointer gap-2">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={field.nullable}
+                    onChange={(e) => updateField(index, { nullable: e.target.checked })}
+                    data-testid={`field-nullable-${index}`}
+                  />
+                  <span className="label-text text-sm">Nullable</span>
+                </label>
+                {newFields.length > 1 && (
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-error btn-outline"
+                    onClick={() => removeField(index)}
+                    data-testid={`remove-field-${index}`}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn btn-xs btn-ghost mt-1"
+              onClick={addField}
+              data-testid="add-field-btn"
+            >
+              + Add Field
+            </button>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <button className="btn btn-sm btn-ghost" onClick={() => {
+              setShowCreate(false);
+              setNewName('');
+              setNewFields([{ name: '', type: 'string', nullable: false }]);
+            }}>
+              Cancel
+            </button>
+            <button className="btn btn-sm btn-primary" onClick={handleCreate} data-testid="create-submit">
+              Create Collection
+            </button>
+          </div>
         </div>
       )}
 

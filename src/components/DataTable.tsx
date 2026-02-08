@@ -86,9 +86,9 @@ export function DataTable<T>({
         <table className="table table-zebra w-full" data-testid="datatable-table">
           <thead>
             <tr>
-              {columns.map((col) => (
+              {columns.map((col, idx) => (
                 <th
-                  key={String(col.key)}
+                  key={`${String(col.key)}-${idx}`}
                   className={col.sortable ? 'cursor-pointer select-none' : ''}
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}
                 >
@@ -125,8 +125,8 @@ export function DataTable<T>({
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   data-testid={`datatable-row-${idx}`}
                 >
-                  {columns.map((col) => (
-                    <td key={String(col.key)}>
+                  {columns.map((col, colIdx) => (
+                    <td key={`${String(col.key)}-${colIdx}`}>
                       {col.render
                         ? col.render(row[col.key], row)
                         : String(row[col.key] ?? '')}
