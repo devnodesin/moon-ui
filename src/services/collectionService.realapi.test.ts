@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { normalizeSchemaResponse } from './apiAdapter';
 
 describe('Collections API Bug Fix - Real API Response Structure', () => {
   it('should handle real API response where collections is a string array', () => {
@@ -42,5 +43,20 @@ describe('Collections API Bug Fix - Real API Response Structure', () => {
     };
     
     expect(mockRealApiResponse.collection).toEqual(expected);
+  });
+
+  it('should normalize wrapped schema response from real API', () => {
+    // This is what the real Moon API returns for /{collection}:schema
+    const mockRealApiResponse = {
+      collection: 'products',
+      fields: [
+        { name: 'id', type: 'string', nullable: false },
+        { name: 'name', type: 'string', nullable: false }
+      ]
+    };
+    
+    // Our adapter should extract the fields array
+    const result = normalizeSchemaResponse(mockRealApiResponse);
+    expect(result).toEqual(mockRealApiResponse.fields);
   });
 });

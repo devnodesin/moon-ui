@@ -74,12 +74,16 @@ describe('collectionService', () => {
   });
 
   describe('getSchema', () => {
-    it('should GET /{collection}:schema', async () => {
-      const cols = [{ name: 'id', type: 'string' }, { name: 'title', type: 'string' }];
-      mock.onGet(`${BASE_URL}/posts:schema`).reply(200, cols);
+    it('should GET /{collection}:schema and handle wrapped response', async () => {
+      const fields = [{ name: 'id', type: 'string' }, { name: 'title', type: 'string' }];
+      mock.onGet(`${BASE_URL}/posts:schema`).reply(200, { collection: 'posts', fields });
 
       const result = await collectionService.getSchema(BASE_URL, TOKEN, 'posts');
-      expect(result).toEqual(cols);
+      expect(result).toEqual(fields);
+    });
+
+    it('should throw error if collection name is empty', async () => {
+      await expect(collectionService.getSchema(BASE_URL, TOKEN, '')).rejects.toThrow();
     });
   });
 

@@ -106,11 +106,14 @@ describe('Collections Page - Bug Fix Verification', () => {
       count: 1
     });
 
-    // Mock getSchema endpoint with REAL API structure (unwrapped)
-    mock.onGet(`${BASE_URL}/products:schema`).reply(200, [
-      { name: 'id', type: 'string' },
-      { name: 'name', type: 'string' }
-    ]);
+    // Mock getSchema endpoint with REAL API structure (wrapped with collection and fields)
+    mock.onGet(`${BASE_URL}/products:schema`).reply(200, {
+      collection: 'products',
+      fields: [
+        { name: 'id', type: 'string' },
+        { name: 'name', type: 'string' }
+      ]
+    });
 
     render(
       <MemoryRouter>

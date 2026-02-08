@@ -22,6 +22,29 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 - Implement a reusable HTTP client layer that handles authentication (access + refresh tokens), automatic token refresh, retries/backoff, error normalization, and consistent notification on failures.
 - For local development and testing, the app may target a Moon test server, but all interactions must remain standard browser HTTP calls (CORS-aware).
 
+### API Adapter Layer
+
+The app includes an API adapter (`src/services/apiAdapter.ts`) that normalizes Moon API responses and ensures stable behavior:
+
+**Moon API v1.99+ Response Formats:**
+
+| Endpoint | Response Format | Adapter Function |
+|----------|----------------|------------------|
+| `/collections:list` | `{collections: ["name1", "name2"], count: number}` | `normalizeCollectionListResponse()` |
+| `/{collection}:schema` | `{collection: "name", fields: [{name, type, nullable}]}` | `normalizeSchemaResponse()` |
+
+**Adapter Features:**
+- Normalizes Moon API responses to match app's internal data model
+- Runtime validation with console warnings for debugging
+- Defensive checks to prevent calling endpoints with undefined/empty collection identifiers
+- Validates API response structure and provides helpful error messages
+
+**Implementation Notes:**
+- Collections list endpoint returns simple string array, adapter converts to `{name}` objects
+- Schema endpoint wraps response in `{collection, fields}` object, adapter extracts fields array
+- All service functions in `src/services/collectionService.ts` use the adapter
+- **No backward compatibility**: App only supports Moon API v1.99+
+
 ## Application Flows
 
 **Authentication Flow**

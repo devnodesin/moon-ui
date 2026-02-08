@@ -1,4 +1,11 @@
 import axios from 'axios';
+import {
+  normalizeCollectionListResponse,
+  normalizeSchemaResponse,
+  buildCollectionEndpoint,
+  type CollectionListApiResponse,
+  type SchemaApiResponse,
+} from './apiAdapter';
 
 export interface CollectionColumn {
   name: string;
@@ -33,12 +40,12 @@ export async function listCollections(
   baseUrl: string,
   accessToken: string,
 ): Promise<CollectionInfo[]> {
-  const response = await axios.get<{ collections: string[]; count?: number }>(
+  const response = await axios.get<CollectionListApiResponse>(
     `${baseUrl}/collections:list`,
     authHeaders(accessToken),
   );
-  // API returns array of collection names, convert to CollectionInfo objects
-  return response.data.collections.map((name) => ({ name }));
+  // Normalize API response to handle both old and new formats
+  return normalizeCollectionListResponse(response.data);
 }
 
 export async function getCollection(
@@ -82,11 +89,12 @@ export async function getSchema(
   accessToken: string,
   collection: string,
 ): Promise<CollectionColumn[]> {
-  const response = await axios.get<CollectionColumn[]>(
-    `${baseUrl}/${encodeURIComponent(collection)}:schema`,
+  const response = await axios.get<SchemaApiResponse>(
+    buildCollectionEndpoint(baseUrl, collection, 'schema'),
     authHeaders(accessToken),
   );
-  return response.data;
+  // Normalize API response (Moon API v1.99+ format)
+  return normalizeSchemaResponse(response.data);
 }
 
 export interface SchemaUpdatePayload {
