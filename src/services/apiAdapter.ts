@@ -82,6 +82,22 @@ export function buildCollectionEndpoint(
 }
 
 /**
+ * Normalizes the /{collection}:get response to extract record data.
+ * The API returns records wrapped in a {data: {...}} object.
+ */
+export function normalizeRecordGetResponse(
+  response: { data?: Record<string, unknown> } | Record<string, unknown>,
+): Record<string, unknown> {
+  // Check if response has a 'data' wrapper
+  if (response && typeof response === 'object' && 'data' in response && response.data) {
+    return response.data as Record<string, unknown>;
+  }
+  
+  // If no 'data' wrapper, return the response as-is (backward compatibility)
+  return response as Record<string, unknown>;
+}
+
+/**
  * Runtime validation: warn if a collection object is missing expected fields
  */
 export function validateCollectionObject(

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   normalizeCollectionListResponse,
   normalizeSchemaResponse,
+  normalizeRecordGetResponse,
   buildCollectionEndpoint,
   validateCollectionObject,
 } from './apiAdapter';
@@ -128,6 +129,52 @@ describe('apiAdapter', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         '[API Adapter] Invalid schema response format: missing or invalid "fields" property',
       );
+    });
+  });
+
+  describe('normalizeRecordGetResponse', () => {
+    it('should extract record from wrapped {data: {...}} response', () => {
+      const response = {
+        data: {
+          id: '123',
+          name: 'Test Product',
+          price: 99.99,
+        },
+      };
+
+      const result = normalizeRecordGetResponse(response);
+
+      expect(result).toEqual({
+        id: '123',
+        name: 'Test Product',
+        price: 99.99,
+      });
+    });
+
+    it('should return record directly if not wrapped (backward compatibility)', () => {
+      const response = {
+        id: '123',
+        name: 'Test Product',
+        price: 99.99,
+      };
+
+      const result = normalizeRecordGetResponse(response);
+
+      expect(result).toEqual({
+        id: '123',
+        name: 'Test Product',
+        price: 99.99,
+      });
+    });
+
+    it('should handle empty data object', () => {
+      const response = {
+        data: {},
+      };
+
+      const result = normalizeRecordGetResponse(response);
+
+      expect(result).toEqual({});
     });
   });
 

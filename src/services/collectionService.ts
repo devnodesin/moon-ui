@@ -2,6 +2,7 @@ import axios from 'axios';
 import {
   normalizeCollectionListResponse,
   normalizeSchemaResponse,
+  normalizeRecordGetResponse,
   buildCollectionEndpoint,
   type CollectionListApiResponse,
   type SchemaApiResponse,
@@ -143,11 +144,12 @@ export async function getRecord(
   collection: string,
   id: string,
 ): Promise<Record<string, unknown>> {
-  const response = await axios.get<Record<string, unknown>>(
+  const response = await axios.get<{ data?: Record<string, unknown> } | Record<string, unknown>>(
     `${baseUrl}/${encodeURIComponent(collection)}:get?id=${encodeURIComponent(id)}`,
     authHeaders(accessToken),
   );
-  return response.data;
+  // Normalize response to extract data from wrapper if present
+  return normalizeRecordGetResponse(response.data);
 }
 
 export async function createRecord(
