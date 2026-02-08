@@ -66,26 +66,38 @@ export function SchemaEditorModal({
     const updated = [...fields];
     const currentField = updated[index];
     
-    // Determine action
+    // Apply updates first
+    const updatedField = { ...currentField, ...updates };
+    
+    // Determine action based on changes
     if (mode === 'edit') {
-      if (currentField._action === 'keep') {
-        // Check what changed
-        const initialField = initialFields.find(f => f.name === currentField.name);
+      if (currentField._action === 'keep' || currentField._action === 'modify' || currentField._action === 'rename') {
+        // Check what changed compared to initial state
+        const initialField = initialFields.find(f => f.name === (currentField._oldName || currentField.name));
         if (initialField) {
-          if (updates.name && updates.name !== initialField.name) {
-            currentField._action = 'rename';
-            currentField._oldName = initialField.name;
-          } else if (
-            (updates.type && updates.type !== initialField.type) ||
-            (updates.nullable !== undefined && updates.nullable !== initialField.nullable)
-          ) {
-            currentField._action = 'modify';
+          const nameChanged = updatedField.name !== initialField.name;
+          const typeChanged = updatedField.type !== initialField.type;
+          const nullableChanged = updatedField.nullable !== initialField.nullable;
+          
+          if (nameChanged) {
+            // Name changed - this is a rename
+            updatedField._action = 'rename';
+            updatedField._oldName = initialField.name;
+          } else if (typeChanged || nullableChanged) {
+            // Type or nullable changed - this is a modify
+            updatedField._action = 'modify';
+            // Clear old name if we're no longer renaming
+            delete updatedField._oldName;
+          } else {
+            // No changes - back to keep
+            updatedField._action = 'keep';
+            delete updatedField._oldName;
           }
         }
       }
     }
     
-    updated[index] = { ...currentField, ...updates };
+    updated[index] = updatedField;
     setFields(updated);
   };
 
