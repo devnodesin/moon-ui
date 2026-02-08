@@ -7,6 +7,9 @@ import * as connectionManager from '../services/connectionManager';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// Default token expiry: 1 hour in milliseconds
+const DEFAULT_TOKEN_EXPIRY_MS = 3600 * 1000;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -24,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Parse expires_at or calculate expiry
     const expiresAt = tokens.expires_at 
       ? new Date(tokens.expires_at).getTime()
-      : Date.now() + 3600 * 1000; // Default 1 hour
+      : Date.now() + DEFAULT_TOKEN_EXPIRY_MS;
     
     const connectionId = new URL(baseUrl).host;
 
@@ -119,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const tokens = await authService.refresh(mostRecent.baseUrl, refreshToken);
             const newExpiresAt = tokens.expires_at
               ? new Date(tokens.expires_at).getTime()
-              : Date.now() + 3600 * 1000;
+              : Date.now() + DEFAULT_TOKEN_EXPIRY_MS;
             storage.setTokens(tokens.access_token, tokens.refresh_token, newExpiresAt);
             
             fetchedUser = tokens.user || await authService.getCurrentUser(mostRecent.baseUrl, tokens.access_token);
