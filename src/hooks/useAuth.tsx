@@ -83,9 +83,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         // Find the most recently active connection
-        const mostRecent = connections.reduce((prev, current) =>
-          current.lastActive > prev.lastActive ? current : prev
-        );
+        const mostRecent = connections.length === 1 
+          ? connections[0]
+          : connections.reduce((prev, current) =>
+              current.lastActive > prev.lastActive ? current : prev
+            );
 
         const connectionId = mostRecent.id;
         const storage = new LocalStorageTokenStorage(connectionId);
@@ -167,8 +169,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Don't render children until initialization is complete
+  // Show a minimal loading state during initialization
   if (!isInitialized) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="loading loading-spinner loading-lg" />
+      </div>
+    );
   }
 
   return (
