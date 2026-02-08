@@ -33,11 +33,11 @@ export async function listCollections(
   baseUrl: string,
   accessToken: string,
 ): Promise<CollectionInfo[]> {
-  const response = await axios.get<CollectionInfo[]>(
+  const response = await axios.get<{ collections: CollectionInfo[]; count?: number }>(
     `${baseUrl}/collections:list`,
     authHeaders(accessToken),
   );
-  return response.data;
+  return response.data.collections;
 }
 
 export async function getCollection(

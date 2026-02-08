@@ -30,11 +30,11 @@ export async function listUsers(
   baseUrl: string,
   accessToken: string,
 ): Promise<UserRecord[]> {
-  const response = await axios.get<UserRecord[]>(
+  const response = await axios.get<{ users: UserRecord[]; next_cursor?: string | null; limit?: number }>(
     `${baseUrl}/users:list`,
     authHeaders(accessToken),
   );
-  return response.data;
+  return response.data.users;
 }
 
 export async function getUser(

@@ -22,7 +22,7 @@ describe('collectionService', () => {
       const data = [{ name: 'posts', columns: [{ name: 'title', type: 'string' }] }];
       mock.onGet(`${BASE_URL}/collections:list`).reply((config) => {
         expect(config.headers?.Authorization).toBe(`Bearer ${TOKEN}`);
-        return [200, data];
+        return [200, { collections: data, count: data.length }];
       });
 
       const result = await collectionService.listCollections(BASE_URL, TOKEN);
