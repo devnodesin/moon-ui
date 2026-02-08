@@ -19,7 +19,7 @@ describe('apiKeyService', () => {
       const keys = [{ id: '1', name: 'key1', description: 'desc', role: 'admin', can_write: true }];
       mock.onGet('https://api.example.com/apikeys:list').reply((config) => {
         expect(config.headers?.Authorization).toBe('Bearer tok');
-        return [200, keys];
+        return [200, { apikeys: keys, next_cursor: null, limit: 15 }];
       });
 
       const result = await apiKeyService.listApiKeys('https://api.example.com', 'tok');

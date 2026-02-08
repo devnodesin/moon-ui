@@ -34,11 +34,11 @@ export async function listApiKeys(
   baseUrl: string,
   accessToken: string,
 ): Promise<ApiKeyRecord[]> {
-  const response = await axios.get<ApiKeyRecord[]>(
+  const response = await axios.get<{ apikeys: ApiKeyRecord[]; next_cursor?: string | null; limit?: number }>(
     `${baseUrl}/apikeys:list`,
     authHeaders(accessToken),
   );
-  return response.data;
+  return response.data.apikeys;
 }
 
 export async function getApiKey(

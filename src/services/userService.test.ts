@@ -19,7 +19,7 @@ describe('userService', () => {
       const users = [{ id: '1', username: 'admin', email: 'admin@test.com', role: 'admin' }];
       mock.onGet('https://api.example.com/users:list').reply((config) => {
         expect(config.headers?.Authorization).toBe('Bearer tok');
-        return [200, users];
+        return [200, { users, next_cursor: null, limit: 15 }];
       });
 
       const result = await userService.listUsers('https://api.example.com', 'tok');
