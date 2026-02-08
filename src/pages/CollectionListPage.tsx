@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../components/DataTable';
 import type { Column } from '../components/DataTable';
+import { SchemaEditorModal } from '../components/SchemaEditorModal';
+import type { SchemaChanges } from '../components/SchemaEditorModal';
 import { useAuth } from '../hooks/useAuth';
 import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
@@ -19,6 +21,11 @@ interface FieldDraft {
   nullable: boolean;
 }
 
+interface EditingSchema {
+  collectionName: string;
+  fields: CollectionColumn[];
+}
+
 export function CollectionListPage() {
   const { currentConnection } = useAuth();
   const navigate = useNavigate();
@@ -29,6 +36,7 @@ export function CollectionListPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newFields, setNewFields] = useState<FieldDraft[]>([{ name: '', type: 'string', nullable: false }]);
+  const [editingSchema, setEditingSchema] = useState<EditingSchema | null>(null);
 
   const baseUrl = currentConnection?.baseUrl ?? '';
   const token = currentConnection?.accessToken ?? '';
@@ -65,6 +73,31 @@ export function CollectionListPage() {
       fetchCollections();
     } catch {
       notify.error(`Failed to delete "${name}"`);
+    }
+  };
+
+  const handleEditSchema = async (name: string) => {
+    try {
+      startLoading();
+      const schema = await collectionService.getSchema(baseUrl, token, name);
+      setEditingSchema({ collectionName: name, fields: schema });
+    } catch {
+      notify.error(`Failed to load schema for "${name}"`);
+    } finally {
+      stopLoading();
+    }
+  };
+
+  const handleSaveSchema = async (changes: SchemaChanges) => {
+    if (!editingSchema) return;
+    try {
+      await collectionService.updateSchema(baseUrl, token, { name: editingSchema.collectionName, ...changes });
+      notify.success(`Schema updated for "${editingSchema.collectionName}"`);
+      setEditingSchema(null);
+      fetchCollections();
+    } catch {
+      notify.error(`Failed to update schema for "${editingSchema.collectionName}"`);
+      throw new Error('Failed to update schema');
     }
   };
 
@@ -132,16 +165,28 @@ export function CollectionListPage() {
       label: 'Actions',
       sortable: false,
       render: (_value, row) => (
-        <button
-          className="btn btn-xs btn-error btn-outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete(row.name);
-          }}
-          data-testid={`delete-${row.name}`}
-        >
-          Delete
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="btn btn-xs btn-info btn-outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditSchema(row.name);
+            }}
+            data-testid={`edit-schema-${row.name}`}
+          >
+            Edit Schema
+          </button>
+          <button
+            className="btn btn-xs btn-error btn-outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(row.name);
+            }}
+            data-testid={`delete-${row.name}`}
+          >
+            Delete
+          </button>
+        </div>
       ),
     },
   ];
@@ -255,6 +300,17 @@ export function CollectionListPage() {
           </button>
         }
       />
+
+      {editingSchema && (
+        <SchemaEditorModal
+          isOpen={true}
+          collectionName={editingSchema.collectionName}
+          initialFields={editingSchema.fields}
+          onClose={() => setEditingSchema(null)}
+          onSave={handleSaveSchema}
+          mode="edit"
+        />
+      )}
     </div>
   );
 }

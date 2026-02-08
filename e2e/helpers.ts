@@ -14,6 +14,14 @@ export async function login(
   password: string = TEST_PASSWORD
 ): Promise<void> {
   await page.goto('/');
+  
+  // Wait for any loading spinner to disappear (session restoration)
+  await page.waitForLoadState('networkidle');
+  const loadingSpinner = page.locator('.loading-spinner');
+  if (await loadingSpinner.isVisible().catch(() => false)) {
+    await loadingSpinner.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+  }
+  
   await page.locator('#serverUrl').fill(serverUrl);
   await page.locator('#username').fill(username);
   await page.locator('#password').fill(password);
@@ -31,7 +39,8 @@ export async function logout(page: Page): Promise<void> {
   
   if (await logoutButton.count() > 0) {
     await logoutButton.click();
-    await page.waitForURL(/\/#\/?$/);
+    // Accept URL with or without query parameters
+    await page.waitForURL(/\/#\/?\??.*$/, { timeout: 5000 });
   }
 }
 
