@@ -127,7 +127,7 @@ test.describe('Login Flow', () => {
 
 test.describe('Authenticated Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    // Login before each test
+    // Login before each test WITH remember checked
     await page.goto('/');
     
     // Wait for any loading spinner to disappear (session restoration)
@@ -140,6 +140,7 @@ test.describe('Authenticated Navigation', () => {
     await page.locator('#serverUrl').fill(TEST_SERVER);
     await page.locator('#username').fill(TEST_USERNAME);
     await page.locator('#password').fill(TEST_PASSWORD);
+    await page.locator('#remember').check(); // Check remember to persist tokens
     await page.getByRole('button', { name: /connect/i }).click();
     await expect(page).toHaveURL(/\/#\/admin/, { timeout: 10000 });
   });

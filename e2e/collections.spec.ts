@@ -32,8 +32,24 @@ test.describe('Collections Management', () => {
     await page.goto('/#/admin/collections');
     await page.waitForLoadState('networkidle');
     
-    // Wait for data to load
+    // Wait for data to load (collections table)
     await page.waitForTimeout(2000);
+    
+    // Check if table has data
+    const tableBody = page.locator('tbody');
+    const loadingSpinner = tableBody.locator('.loading-spinner');
+    
+    // Wait for loading to finish
+    if (await loadingSpinner.count() > 0) {
+      await loadingSpinner.waitFor({ state: 'hidden', timeout: 10000 });
+    }
+    
+    // Check for "No data available" message
+    const noDataMessage = await tableBody.getByText('No data available').count();
+    if (noDataMessage > 0) {
+      console.log('No collections found in the test server, skipping test');
+      return;
+    }
     
     // Look for first table row (skip header row)
     const firstRow = page.locator('tbody tr').first();
@@ -49,8 +65,7 @@ test.describe('Collections Management', () => {
       // Should navigate to collection records page
       await expect(page).toHaveURL(/\/#\/admin\/collections\/.+/);
     } else {
-      // Skip test if no collections exist
-      console.log('No collections found, skipping test');
+      console.log('No collection rows found, skipping test');
     }
   });
 
