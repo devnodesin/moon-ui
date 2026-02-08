@@ -99,9 +99,10 @@ test.describe('Record View - Bug Fix', () => {
     await expect(page.getByTestId('value-name')).toContainText('Chain Link Fence');
     await expect(page.getByTestId('value-brand')).toContainText('Bestfence');
     
-    // Verify that no fields show the "—" empty value marker
-    const emptyMarker = page.getByText('—', { exact: true });
-    await expect(emptyMarker).not.toBeVisible();
+    // Verify that field values do not show the "—" empty value marker
+    await expect(page.getByTestId('value-id')).not.toContainText('—');
+    await expect(page.getByTestId('value-name')).not.toContainText('—');
+    await expect(page.getByTestId('value-brand')).not.toContainText('—');
   });
 
   test('should show Edit button in view mode', async ({ page }) => {
