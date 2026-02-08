@@ -37,6 +37,9 @@ export async function refreshToken(
   return response.data;
 }
 
+// Alias for convenience
+export const refresh = refreshToken;
+
 export async function logout(
   baseUrl: string,
   accessToken: string,
