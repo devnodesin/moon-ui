@@ -113,13 +113,20 @@ describe('CollectionListPage', () => {
     renderPage();
     await userEvent.click(screen.getByTestId('create-collection-btn'));
     await userEvent.type(screen.getByTestId('create-name-input'), 'newcol');
+    
+    // Fill in the first field (required)
+    await userEvent.type(screen.getByTestId('field-name-0'), 'id');
+    
     await userEvent.click(screen.getByTestId('create-submit'));
 
     await waitFor(() => {
       expect(mockCreateCollection).toHaveBeenCalledWith(
         'https://api.example.com',
         'test-token',
-        { name: 'newcol', columns: [] },
+        { 
+          name: 'newcol', 
+          columns: [{ name: 'id', type: 'string', nullable: false }] 
+        },
       );
       expect(mockNotify.success).toHaveBeenCalledWith('Collection "newcol" created');
     });

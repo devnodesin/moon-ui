@@ -88,6 +88,26 @@ export async function getSchema(
   return response.data;
 }
 
+export interface SchemaUpdatePayload {
+  name: string;
+  add_columns?: CollectionColumn[];
+  rename_columns?: { old_name: string; new_name: string }[];
+  modify_columns?: CollectionColumn[];
+  remove_columns?: string[];
+}
+
+export async function updateSchema(
+  baseUrl: string,
+  accessToken: string,
+  payload: SchemaUpdatePayload,
+): Promise<void> {
+  await axios.post(
+    `${baseUrl}/collections:update`,
+    payload,
+    authHeaders(accessToken),
+  );
+}
+
 export async function listRecords(
   baseUrl: string,
   accessToken: string,

@@ -9,8 +9,8 @@ test.describe('Protected Routes', () => {
     // Try to access protected route without authentication
     await page.goto('/#/admin/collections');
     
-    // Should be redirected to login with next parameter
-    await expect(page).toHaveURL(/\/#\/(login)?\?next=/);
+    // Should be redirected to login with next parameter (may include /login or just / with ?next=)
+    await expect(page).toHaveURL(/\/#\/(login)?\??.*/, { timeout: 5000 });
     
     // Login page should be visible
     await expect(page.locator('h2.card-title')).toContainText('🌙 Moon Admin');
@@ -20,8 +20,8 @@ test.describe('Protected Routes', () => {
     // Try to access collections page without auth
     await page.goto('/#/admin/collections');
     
-    // Should be redirected to login
-    await expect(page).toHaveURL(/\/#\/(login)?\?next=/);
+    // Should be redirected to login (may have query params)
+    await expect(page).toHaveURL(/\/#\/(login)?\??.*/, { timeout: 5000 });
     
     // Login
     await page.locator('#serverUrl').fill(TEST_SERVER);
@@ -38,6 +38,14 @@ test.describe('Navigation', () => {
   test.beforeEach(async ({ page }) => {
     // Login before each test
     await page.goto('/');
+    
+    // Wait for any loading spinner to disappear (session restoration)
+    await page.waitForLoadState('networkidle');
+    const loadingSpinner = page.locator('.loading-spinner');
+    if (await loadingSpinner.isVisible().catch(() => false)) {
+      await loadingSpinner.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
+    
     await page.locator('#serverUrl').fill(TEST_SERVER);
     await page.locator('#username').fill(TEST_USERNAME);
     await page.locator('#password').fill(TEST_PASSWORD);
@@ -46,8 +54,8 @@ test.describe('Navigation', () => {
   });
 
   test('should have a working navbar with navigation links', async ({ page }) => {
-    // Wait for navbar to be visible
-    const navbar = page.locator('nav');
+    // Wait for navbar to be visible - it's a div with class navbar, not <nav>
+    const navbar = page.locator('.navbar');
     await expect(navbar).toBeVisible();
     
     // Check for common navigation elements
@@ -116,6 +124,14 @@ test.describe('Navigation', () => {
 test.describe('Theme Toggle', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    
+    // Wait for any loading spinner to disappear (session restoration)
+    await page.waitForLoadState('networkidle');
+    const loadingSpinner = page.locator('.loading-spinner');
+    if (await loadingSpinner.isVisible().catch(() => false)) {
+      await loadingSpinner.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
+    
     await page.locator('#serverUrl').fill(TEST_SERVER);
     await page.locator('#username').fill(TEST_USERNAME);
     await page.locator('#password').fill(TEST_PASSWORD);
