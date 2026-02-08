@@ -56,18 +56,27 @@ export function CollectionListPage() {
             // Fetch schema to get field count
             const schema = await collectionService.getSchema(baseUrl, token, c.name);
             
-            // Fetch records with limit=0 to get total count (if API supports it)
-            // Otherwise fetch with limit=1 and check for total in response
+            // Fetch first record to check if collection has data
+            // Note: API doesn't provide total count, so we show:
+            // - 0 if empty
+            // - 1 if exactly one record
+            // - -1 (displayed as "1+") if has_more is true
             const recordsResult = await collectionService.listRecords(baseUrl, token, c.name, { limit: 1 });
             
-            // Try to determine record count from response
-            // Some APIs return total, count, or we can estimate from has_more
-            const recordCount = recordsResult.data?.length ?? 0;
+            const hasData = recordsResult.data && recordsResult.data.length > 0;
+            let recordCount: number;
+            if (!hasData) {
+              recordCount = 0;
+            } else if (recordsResult.has_more) {
+              recordCount = -1; // Will be displayed as "1+"
+            } else {
+              recordCount = 1; // Exactly one record
+            }
             
             return {
               name: c.name,
               columnCount: schema.length,
-              recordCount: recordCount > 0 || recordsResult.has_more ? recordCount : 0,
+              recordCount,
             };
           } catch {
             // If fetching metadata fails, return basic info
@@ -192,7 +201,13 @@ export function CollectionListPage() {
       key: 'recordCount' as keyof CollectionRow, 
       label: 'Records', 
       sortable: true,
-      render: (value) => value === null ? '—' : String(value)
+      render: (value, row) => {
+        if (value === null) return '—';
+        // Check if we need to show "1+" for collections with more records
+        const data = collections.find(c => c.name === row.name);
+        if (data && data.recordCount === -1) return '1+';
+        return String(value);
+      }
     },
     {
       key: 'name' as keyof CollectionRow,

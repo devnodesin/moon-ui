@@ -86,7 +86,7 @@ describe('Collections Page - Fields and Records Count', () => {
     });
   });
 
-  it('should display Records column with count', async () => {
+  it('should display Records column with count or "1+" for multiple records', async () => {
     // Mock collections list
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
       collections: ['products'],
@@ -102,10 +102,10 @@ describe('Collections Page - Fields and Records Count', () => {
       ]
     });
 
-    // Mock records list endpoint - return 1 record
+    // Mock records list endpoint - return 1 record with has_more=true
     mock.onGet(new RegExp(`${BASE_URL}/products:list`)).reply(200, {
       data: [{ id: '1', name: 'Product 1' }],
-      has_more: false
+      has_more: true // Indicates more records exist
     });
 
     render(
@@ -122,11 +122,9 @@ describe('Collections Page - Fields and Records Count', () => {
     // Verify Records column header exists
     expect(screen.getByText('Records')).toBeInTheDocument();
 
-    // Verify record count is displayed
+    // Verify record count is displayed as "1+" when has_more is true
     await waitFor(() => {
-      // Should show at least 1 record
-      const recordCells = screen.getAllByText('1');
-      expect(recordCells.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('1+')).toBeInTheDocument();
     });
   });
 
