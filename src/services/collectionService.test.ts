@@ -18,7 +18,7 @@ describe('collectionService', () => {
   });
 
   describe('listCollections', () => {
-    it('should GET /collections:list with auth header and convert string array to objects', async () => {
+    it('should GET /collections:list with auth header and convert string array to objects (NEW API)', async () => {
       const collectionNames = ['posts', 'users'];
       mock.onGet(`${BASE_URL}/collections:list`).reply((config) => {
         expect(config.headers?.Authorization).toBe(`Bearer ${TOKEN}`);
@@ -30,6 +30,17 @@ describe('collectionService', () => {
         { name: 'posts' },
         { name: 'users' },
       ]);
+    });
+
+    it('should handle object array response (OLD API)', async () => {
+      const collections = [
+        { name: 'posts', columns: [{ name: 'id', type: 'string' }] },
+        { name: 'users', columns: [] },
+      ];
+      mock.onGet(`${BASE_URL}/collections:list`).reply(200, { collections, count: 2 });
+
+      const result = await collectionService.listCollections(BASE_URL, TOKEN);
+      expect(result).toEqual(collections);
     });
 
     it('should throw on error', async () => {
@@ -74,12 +85,24 @@ describe('collectionService', () => {
   });
 
   describe('getSchema', () => {
-    it('should GET /{collection}:schema', async () => {
+    it('should GET /{collection}:schema and handle unwrapped array (OLD API)', async () => {
       const cols = [{ name: 'id', type: 'string' }, { name: 'title', type: 'string' }];
       mock.onGet(`${BASE_URL}/posts:schema`).reply(200, cols);
 
       const result = await collectionService.getSchema(BASE_URL, TOKEN, 'posts');
       expect(result).toEqual(cols);
+    });
+
+    it('should GET /{collection}:schema and handle wrapped response (NEW API)', async () => {
+      const fields = [{ name: 'id', type: 'string' }, { name: 'title', type: 'string' }];
+      mock.onGet(`${BASE_URL}/posts:schema`).reply(200, { collection: 'posts', fields });
+
+      const result = await collectionService.getSchema(BASE_URL, TOKEN, 'posts');
+      expect(result).toEqual(fields);
+    });
+
+    it('should throw error if collection name is empty', async () => {
+      await expect(collectionService.getSchema(BASE_URL, TOKEN, '')).rejects.toThrow();
     });
   });
 
