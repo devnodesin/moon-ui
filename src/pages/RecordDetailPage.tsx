@@ -134,6 +134,7 @@ export function RecordDetailPage() {
         fields={fields}
         onSave={handleSave}
         onBack={handleBack}
+        initialMode={isNew ? 'edit' : 'view'}
       />
     </div>
   );

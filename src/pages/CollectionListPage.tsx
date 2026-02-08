@@ -13,6 +13,7 @@ import type { CollectionInfo, CollectionColumn } from '../services/collectionSer
 interface CollectionRow {
   name: string;
   columnCount: number;
+  recordCount: number | null;
 }
 
 interface FieldDraft {
@@ -47,12 +48,39 @@ export function CollectionListPage() {
     startLoading();
     try {
       const list: CollectionInfo[] = await collectionService.listCollections(baseUrl, token);
-      setCollections(
-        list.map((c) => ({
-          name: c.name,
-          columnCount: c.columns?.length ?? 0,
-        })),
+      
+      // Fetch schema and record count for each collection
+      const enrichedCollections = await Promise.all(
+        list.map(async (c) => {
+          try {
+            // Fetch schema to get field count
+            const schema = await collectionService.getSchema(baseUrl, token, c.name);
+            
+            // Fetch records with limit=0 to get total count (if API supports it)
+            // Otherwise fetch with limit=1 and check for total in response
+            const recordsResult = await collectionService.listRecords(baseUrl, token, c.name, { limit: 1 });
+            
+            // Try to determine record count from response
+            // Some APIs return total, count, or we can estimate from has_more
+            const recordCount = recordsResult.data?.length ?? 0;
+            
+            return {
+              name: c.name,
+              columnCount: schema.length,
+              recordCount: recordCount > 0 || recordsResult.has_more ? recordCount : 0,
+            };
+          } catch {
+            // If fetching metadata fails, return basic info
+            return {
+              name: c.name,
+              columnCount: 0,
+              recordCount: null,
+            };
+          }
+        }),
       );
+      
+      setCollections(enrichedCollections);
     } catch {
       notify.error('Failed to load collections');
     } finally {
@@ -160,6 +188,12 @@ export function CollectionListPage() {
   const columns: Column<CollectionRow>[] = [
     { key: 'name', label: 'Name', sortable: true },
     { key: 'columnCount', label: 'Fields', sortable: true },
+    { 
+      key: 'recordCount' as keyof CollectionRow, 
+      label: 'Records', 
+      sortable: true,
+      render: (value) => value === null ? '—' : String(value)
+    },
     {
       key: 'name' as keyof CollectionRow,
       label: 'Actions',
