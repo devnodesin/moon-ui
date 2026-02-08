@@ -18,15 +18,18 @@ describe('collectionService', () => {
   });
 
   describe('listCollections', () => {
-    it('should GET /collections:list with auth header', async () => {
-      const data = [{ name: 'posts', columns: [{ name: 'title', type: 'string' }] }];
+    it('should GET /collections:list with auth header and convert string array to objects', async () => {
+      const collectionNames = ['posts', 'users'];
       mock.onGet(`${BASE_URL}/collections:list`).reply((config) => {
         expect(config.headers?.Authorization).toBe(`Bearer ${TOKEN}`);
-        return [200, { collections: data, count: data.length }];
+        return [200, { collections: collectionNames, count: collectionNames.length }];
       });
 
       const result = await collectionService.listCollections(BASE_URL, TOKEN);
-      expect(result).toEqual(data);
+      expect(result).toEqual([
+        { name: 'posts' },
+        { name: 'users' },
+      ]);
     });
 
     it('should throw on error', async () => {
@@ -36,9 +39,9 @@ describe('collectionService', () => {
   });
 
   describe('getCollection', () => {
-    it('should GET /collections:get with name param', async () => {
+    it('should GET /collections:get with name param and unwrap collection object', async () => {
       const data = { name: 'posts', columns: [] };
-      mock.onGet(`${BASE_URL}/collections:get?name=posts`).reply(200, data);
+      mock.onGet(`${BASE_URL}/collections:get?name=posts`).reply(200, { collection: data });
 
       const result = await collectionService.getCollection(BASE_URL, TOKEN, 'posts');
       expect(result).toEqual(data);

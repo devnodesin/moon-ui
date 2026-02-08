@@ -33,11 +33,12 @@ export async function listCollections(
   baseUrl: string,
   accessToken: string,
 ): Promise<CollectionInfo[]> {
-  const response = await axios.get<{ collections: CollectionInfo[]; count?: number }>(
+  const response = await axios.get<{ collections: string[]; count?: number }>(
     `${baseUrl}/collections:list`,
     authHeaders(accessToken),
   );
-  return response.data.collections;
+  // API returns array of collection names, convert to CollectionInfo objects
+  return response.data.collections.map((name) => ({ name }));
 }
 
 export async function getCollection(
@@ -45,11 +46,11 @@ export async function getCollection(
   accessToken: string,
   name: string,
 ): Promise<CollectionInfo> {
-  const response = await axios.get<CollectionInfo>(
+  const response = await axios.get<{ collection: CollectionInfo }>(
     `${baseUrl}/collections:get?name=${encodeURIComponent(name)}`,
     authHeaders(accessToken),
   );
-  return response.data;
+  return response.data.collection;
 }
 
 export async function createCollection(
