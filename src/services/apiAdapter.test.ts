@@ -22,7 +22,7 @@ describe('apiAdapter', () => {
   });
 
   describe('normalizeCollectionListResponse', () => {
-    it('should normalize string array to objects (new API format)', () => {
+    it('should normalize string array to objects (Moon API v1.99+)', () => {
       const response = {
         collections: ['products', 'users', 'orders'],
         count: 3,
@@ -37,28 +37,6 @@ describe('apiAdapter', () => {
       ]);
     });
 
-    it('should pass through object array as-is (old API format)', () => {
-      const columns: CollectionColumn[] = [
-        { name: 'id', type: 'string', nullable: false },
-        { name: 'name', type: 'string', nullable: false },
-      ];
-
-      const response = {
-        collections: [
-          { name: 'products', columns },
-          { name: 'users', columns: [] },
-        ],
-        count: 2,
-      };
-
-      const result = normalizeCollectionListResponse(response);
-
-      expect(result).toEqual([
-        { name: 'products', columns },
-        { name: 'users', columns: [] },
-      ]);
-    });
-
     it('should handle empty array', () => {
       const response = {
         collections: [],
@@ -70,7 +48,7 @@ describe('apiAdapter', () => {
       expect(result).toEqual([]);
     });
 
-    it('should warn on invalid format and return empty array', () => {
+    it('should warn on invalid format (non-array) and return empty array', () => {
       const response = {
         collections: null as unknown as string[],
         count: 0,
@@ -80,14 +58,29 @@ describe('apiAdapter', () => {
 
       expect(result).toEqual([]);
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[API Adapter] Unexpected collections format:',
+        '[API Adapter] Unexpected collections format (expected string array):',
         null,
+      );
+    });
+
+    it('should error on invalid type (object array) and return empty array', () => {
+      const response = {
+        collections: [{ name: 'test' }] as unknown as string[],
+        count: 1,
+      };
+
+      const result = normalizeCollectionListResponse(response);
+
+      expect(result).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[API Adapter] Invalid collections format: expected string[], got:',
+        'object',
       );
     });
   });
 
   describe('normalizeSchemaResponse', () => {
-    it('should extract fields from wrapped response (new API format)', () => {
+    it('should extract fields from wrapped response (Moon API v1.99+)', () => {
       const fields: CollectionColumn[] = [
         { name: 'id', type: 'string', nullable: false },
         { name: 'name', type: 'string', nullable: false },
@@ -103,29 +96,6 @@ describe('apiAdapter', () => {
       expect(result).toEqual(fields);
     });
 
-    it('should pass through array response as-is (old API format)', () => {
-      const fields: CollectionColumn[] = [
-        { name: 'id', type: 'string', nullable: false },
-        { name: 'title', type: 'string', nullable: false },
-      ];
-
-      const result = normalizeSchemaResponse(fields);
-
-      expect(result).toEqual(fields);
-    });
-
-    it('should warn on invalid format and return empty array', () => {
-      const response = { invalid: 'data' };
-
-      const result = normalizeSchemaResponse(response as never);
-
-      expect(result).toEqual([]);
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[API Adapter] Unexpected schema response format:',
-        response,
-      );
-    });
-
     it('should handle empty fields array in wrapped response', () => {
       const response = {
         collection: 'products',
@@ -135,6 +105,29 @@ describe('apiAdapter', () => {
       const result = normalizeSchemaResponse(response);
 
       expect(result).toEqual([]);
+    });
+
+    it('should error on invalid response (not an object) and return empty array', () => {
+      const response = 'invalid' as unknown as { collection: string; fields: CollectionColumn[] };
+
+      const result = normalizeSchemaResponse(response);
+
+      expect(result).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[API Adapter] Invalid schema response: expected object, got:',
+        'string',
+      );
+    });
+
+    it('should error on missing fields property and return empty array', () => {
+      const response = { collection: 'products' } as { collection: string; fields: CollectionColumn[] };
+
+      const result = normalizeSchemaResponse(response);
+
+      expect(result).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[API Adapter] Invalid schema response format: missing or invalid "fields" property',
+      );
     });
   });
 

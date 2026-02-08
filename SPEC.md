@@ -22,28 +22,28 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 - Implement a reusable HTTP client layer that handles authentication (access + refresh tokens), automatic token refresh, retries/backoff, error normalization, and consistent notification on failures.
 - For local development and testing, the app may target a Moon test server, but all interactions must remain standard browser HTTP calls (CORS-aware).
 
-### API Compatibility Layer
+### API Adapter Layer
 
-The app includes an API adapter (`src/services/apiAdapter.ts`) that normalizes Moon API responses to handle breaking changes and ensure stable behavior:
+The app includes an API adapter (`src/services/apiAdapter.ts`) that normalizes Moon API responses and ensures stable behavior:
 
-**Key API Changes (Moon v1.99+):**
+**Moon API v1.99+ Response Formats:**
 
-| Endpoint | Previous Format | Current Format | Adapter Function |
-|----------|----------------|----------------|------------------|
-| `/collections:list` | `{collections: [{name, columns}]}` | `{collections: ["name1", "name2"]}` | `normalizeCollectionListResponse()` |
-| `/{collection}:schema` | `[{name, type, nullable}]` (unwrapped array) | `{collection: "name", fields: [{name, type, nullable}]}` (wrapped) | `normalizeSchemaResponse()` |
+| Endpoint | Response Format | Adapter Function |
+|----------|----------------|------------------|
+| `/collections:list` | `{collections: ["name1", "name2"], count: number}` | `normalizeCollectionListResponse()` |
+| `/{collection}:schema` | `{collection: "name", fields: [{name, type, nullable}]}` | `normalizeSchemaResponse()` |
 
 **Adapter Features:**
-- Transparent normalization of API responses (works with both old and new formats)
+- Normalizes Moon API responses to match app's internal data model
 - Runtime validation with console warnings for debugging
 - Defensive checks to prevent calling endpoints with undefined/empty collection identifiers
-- Backward compatible with older Moon API versions
+- Validates API response structure and provides helpful error messages
 
-**Migration Notes:**
-- Collections list endpoint now returns simple string array instead of objects with columns
-- Schema endpoint now wraps response in `{collection, fields}` object
+**Implementation Notes:**
+- Collections list endpoint returns simple string array, adapter converts to `{name}` objects
+- Schema endpoint wraps response in `{collection, fields}` object, adapter extracts fields array
 - All service functions in `src/services/collectionService.ts` use the adapter
-- No breaking changes to the UI layer - adapter handles all normalization
+- **No backward compatibility**: App only supports Moon API v1.99+
 
 ## Application Flows
 

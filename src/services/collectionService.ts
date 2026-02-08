@@ -89,11 +89,11 @@ export async function getSchema(
   accessToken: string,
   collection: string,
 ): Promise<CollectionColumn[]> {
-  const response = await axios.get<SchemaApiResponse | CollectionColumn[]>(
+  const response = await axios.get<SchemaApiResponse>(
     buildCollectionEndpoint(baseUrl, collection, 'schema'),
     authHeaders(accessToken),
   );
-  // Normalize API response to handle both old and new formats
+  // Normalize API response (Moon API v1.99+ format)
   return normalizeSchemaResponse(response.data);
 }
 

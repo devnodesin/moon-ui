@@ -1,25 +1,26 @@
 /**
- * API Adapter for Moon API compatibility
+ * API Adapter for Moon API v1.99+
  * 
- * This adapter normalizes API responses to match the app's expected data model,
- * providing compatibility with API changes while maintaining backward compatibility.
+ * This adapter normalizes Moon API responses to match the app's expected data model.
+ * Only supports current Moon API format (v1.99+).
  */
 
 import type { CollectionColumn } from './collectionService';
 
 export interface CollectionListApiResponse {
-  collections: string[] | Array<{ name: string; columns?: CollectionColumn[] }>;
+  collections: string[];
   count?: number;
   total?: number;
 }
 
 export interface SchemaApiResponse {
-  collection?: string;
-  fields?: CollectionColumn[];
+  collection: string;
+  fields: CollectionColumn[];
 }
 
 /**
- * Normalizes the /collections:list response to always return CollectionInfo objects
+ * Normalizes the /collections:list response to CollectionInfo objects.
+ * Expects string array format from Moon API v1.99+.
  */
 export function normalizeCollectionListResponse(
   response: CollectionListApiResponse,
@@ -27,42 +28,42 @@ export function normalizeCollectionListResponse(
   const { collections } = response;
   
   if (!Array.isArray(collections)) {
-    console.warn('[API Adapter] Unexpected collections format:', collections);
+    console.warn('[API Adapter] Unexpected collections format (expected string array):', collections);
     return [];
   }
 
-  // If collections is already an array of objects, return as-is
-  if (collections.length > 0 && typeof collections[0] === 'object') {
-    return collections as Array<{ name: string; columns?: CollectionColumn[] }>;
+  if (collections.length === 0) {
+    return [];
   }
 
-  // If collections is an array of strings, convert to objects
-  if (collections.length > 0 && typeof collections[0] === 'string') {
-    return (collections as string[]).map((name) => ({ name }));
+  // Expect string array from Moon API v1.99+
+  if (typeof collections[0] !== 'string') {
+    console.error('[API Adapter] Invalid collections format: expected string[], got:', typeof collections[0]);
+    return [];
   }
 
-  // Empty array is valid - return as-is
-  return [];
+  return collections.map((name) => ({ name }));
 }
 
 /**
- * Normalizes the /{collection}:schema response to always return a CollectionColumn array
+ * Normalizes the /{collection}:schema response to CollectionColumn array.
+ * Expects wrapped format {collection, fields} from Moon API v1.99+.
  */
 export function normalizeSchemaResponse(
-  response: SchemaApiResponse | CollectionColumn[],
+  response: SchemaApiResponse,
 ): CollectionColumn[] {
-  // If response is already an array, return as-is (old API format)
-  if (Array.isArray(response)) {
-    return response;
+  // Expect wrapped format from Moon API v1.99+
+  if (!response || typeof response !== 'object') {
+    console.error('[API Adapter] Invalid schema response: expected object, got:', typeof response);
+    return [];
   }
 
-  // If response has a 'fields' property, extract it (new API format)
-  if (response && 'fields' in response && Array.isArray(response.fields)) {
-    return response.fields;
+  if (!('fields' in response) || !Array.isArray(response.fields)) {
+    console.error('[API Adapter] Invalid schema response format: missing or invalid "fields" property');
+    return [];
   }
 
-  console.warn('[API Adapter] Unexpected schema response format:', response);
-  return [];
+  return response.fields;
 }
 
 /**
