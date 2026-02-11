@@ -26,6 +26,11 @@ Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-dri
   - `https://moon.asensar.in/doc/llms-full.txt` - Backend API reference and JSON appendix
   - `https://daisyui.com/llms.txt` - DaisyUI
   - Live Docs: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable. For testing and verification, use the Playwright MCP server for automated end-to-end (E2E) testing; integrate Playwright tests into CI workflows and document any Playwright tooling that requires Node.js, proposing platform-compatible alternatives or wrappers when needed.
+- Never reference any file in `prd/` unless explicitly provided by the user.
+  - When a `prd/` file is given, use only that file for the specific implementation requested.
+  - Do not use `prd/` files for cross-reference, documentation, or any other purpose unless instructed.
+- Enforce validation at the HTML form level: collection names and field names must be in lowercase snake_case. If the input does not match this format, prevent collection creation.
+ 
 
 ## SPEC.md Compliance
 
