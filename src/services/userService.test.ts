@@ -37,7 +37,7 @@ describe('userService', () => {
       const user = { id: '1', username: 'admin', email: 'admin@test.com', role: 'admin' };
       mock.onGet('https://api.example.com/users:get?id=1').reply((config) => {
         expect(config.headers?.Authorization).toBe('Bearer tok');
-        return [200, user];
+        return [200, { user }];
       });
 
       const result = await userService.getUser('https://api.example.com', 'tok', '1');
@@ -52,7 +52,7 @@ describe('userService', () => {
       mock.onPost('https://api.example.com/users:create').reply((config) => {
         expect(config.headers?.Authorization).toBe('Bearer tok');
         expect(JSON.parse(config.data)).toEqual(payload);
-        return [200, created];
+        return [200, { user: created, message: 'user created successfully' }];
       });
 
       const result = await userService.createUser('https://api.example.com', 'tok', payload);
@@ -67,11 +67,25 @@ describe('userService', () => {
       mock.onPost('https://api.example.com/users:update?id=1').reply((config) => {
         expect(config.headers?.Authorization).toBe('Bearer tok');
         expect(JSON.parse(config.data)).toEqual(payload);
-        return [200, updated];
+        return [200, { message: 'user updated successfully', user: updated }];
       });
 
       const result = await userService.updateUser('https://api.example.com', 'tok', '1', payload);
       expect(result).toEqual(updated);
+    });
+  });
+
+  describe('revokeUserSessions', () => {
+    it('should POST to /users:update?id=1 with revoke_sessions action', async () => {
+      const user = { id: '1', username: 'admin', email: 'admin@test.com', role: 'admin' };
+      mock.onPost('https://api.example.com/users:update?id=1').reply((config) => {
+        expect(config.headers?.Authorization).toBe('Bearer tok');
+        expect(JSON.parse(config.data)).toEqual({ action: 'revoke_sessions' });
+        return [200, { message: 'all sessions revoked successfully', user }];
+      });
+
+      const result = await userService.revokeUserSessions('https://api.example.com', 'tok', '1');
+      expect(result).toEqual(user);
     });
   });
 

@@ -53,6 +53,17 @@ export function UsersPage() {
     }
   };
 
+  const handleClearSession = async (row: UserRecord) => {
+    if (!window.confirm(`Revoke all sessions for "${row.username}"?`)) return;
+    try {
+      await userService.revokeUserSessions(baseUrl, token, row.id);
+      notify.success(`Sessions revoked for "${row.username}"`);
+      fetchUsers();
+    } catch {
+      notify.error(`Failed to revoke sessions for "${row.username}"`);
+    }
+  };
+
   const columns: Column<UserRecord>[] = [
     { key: 'username', label: 'Username', sortable: true },
     { key: 'email', label: 'Email', sortable: true },
@@ -62,17 +73,29 @@ export function UsersPage() {
       key: 'id',
       label: 'Actions',
       render: (_value, row) => (
-        <button
-          className="btn btn-xs btn-error btn-outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete(row);
-          }}
-          disabled={currentUser?.username === row.username}
-          data-testid={`delete-${row.username}`}
-        >
-          Delete
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="btn btn-xs btn-warning btn-outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClearSession(row);
+            }}
+            data-testid={`clear-session-${row.username}`}
+          >
+            Clear Session
+          </button>
+          <button
+            className="btn btn-xs btn-error btn-outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(row);
+            }}
+            disabled={currentUser?.username === row.username}
+            data-testid={`delete-${row.username}`}
+          >
+            Delete
+          </button>
+        </div>
       ),
     },
   ];

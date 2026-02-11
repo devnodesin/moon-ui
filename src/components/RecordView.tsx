@@ -3,9 +3,13 @@ import { useState, useCallback, useEffect } from 'react';
 export interface FieldDefinition {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'boolean' | 'date' | 'email' | 'select';
+  type: 'text' | 'number' | 'boolean' | 'date' | 'email' | 'select' | 'password';
   editable?: boolean;
   options?: string[];
+  pattern?: string;
+  minLength?: number;
+  required?: boolean;
+  placeholder?: string;
 }
 
 export interface RecordViewProps<T extends Record<string, unknown>> {
@@ -26,6 +30,7 @@ export function RecordView<T extends Record<string, unknown>>({
   const [mode, setMode] = useState<'view' | 'edit'>(initialMode);
   const [draft, setDraft] = useState<T>(data);
   const [saving, setSaving] = useState(false);
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
   // Sync draft when data prop changes (e.g., after async fetch)
   useEffect(() => {
@@ -55,6 +60,10 @@ export function RecordView<T extends Record<string, unknown>>({
 
   const updateField = useCallback((key: string, value: unknown) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const togglePasswordVisibility = useCallback((key: string) => {
+    setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
   return (
@@ -87,7 +96,7 @@ export function RecordView<T extends Record<string, unknown>>({
                 {renderViewValue(data[field.key], field)}
               </span>
             ) : (
-              renderEditField(field, draft[field.key], field.editable !== false, updateField)
+              renderEditField(field, draft[field.key], field.editable !== false, updateField, showPasswords[field.key], () => togglePasswordVisibility(field.key))
             )}
           </div>
         ))}
@@ -128,7 +137,9 @@ function renderEditField(
   field: FieldDefinition,
   value: unknown,
   editable: boolean,
-  onChange: (key: string, value: unknown) => void
+  onChange: (key: string, value: unknown) => void,
+  showPassword?: boolean,
+  togglePassword?: () => void
 ) {
   const disabled = !editable;
 
@@ -152,6 +163,7 @@ function renderEditField(
           disabled={disabled}
           onChange={(e) => onChange(field.key, e.target.value)}
           data-testid={`input-${field.key}`}
+          required={field.required}
         >
           <option value="">Select…</option>
           {field.options?.map((opt) => (
@@ -170,6 +182,48 @@ function renderEditField(
           disabled={disabled}
           onChange={(e) => onChange(field.key, e.target.value === '' ? null : Number(e.target.value))}
           data-testid={`input-${field.key}`}
+          required={field.required}
+        />
+      );
+    case 'password':
+      return (
+        <div className="relative">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            className="input input-bordered input-sm w-full pr-10"
+            value={String(value ?? '')}
+            disabled={disabled}
+            onChange={(e) => onChange(field.key, e.target.value)}
+            data-testid={`input-${field.key}`}
+            minLength={field.minLength}
+            required={field.required}
+            placeholder={field.placeholder}
+          />
+          {togglePassword && (
+            <button
+              type="button"
+              className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-xs btn-ghost"
+              onClick={togglePassword}
+              tabIndex={-1}
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          )}
+        </div>
+      );
+    case 'text':
+      return (
+        <input
+          type="text"
+          className="input input-bordered input-sm w-full"
+          value={String(value ?? '')}
+          disabled={disabled}
+          onChange={(e) => onChange(field.key, e.target.value)}
+          data-testid={`input-${field.key}`}
+          pattern={field.pattern}
+          minLength={field.minLength}
+          required={field.required}
+          placeholder={field.placeholder}
         />
       );
     default:
@@ -181,6 +235,8 @@ function renderEditField(
           disabled={disabled}
           onChange={(e) => onChange(field.key, e.target.value)}
           data-testid={`input-${field.key}`}
+          required={field.required}
+          placeholder={field.placeholder}
         />
       );
   }

@@ -5,7 +5,10 @@ export interface UserRecord {
   username: string;
   email: string;
   role: string;
+  can_write?: boolean;
   created_at?: string;
+  updated_at?: string;
+  last_login_at?: string;
 }
 
 export interface CreateUserData {
@@ -19,7 +22,7 @@ export interface UpdateUserData {
   email?: string;
   role?: string;
   action?: 'reset_password' | 'revoke_sessions';
-  password?: string;
+  new_password?: string;
 }
 
 function authHeaders(accessToken: string) {
@@ -42,11 +45,11 @@ export async function getUser(
   accessToken: string,
   id: string,
 ): Promise<UserRecord> {
-  const response = await axios.get<UserRecord>(
+  const response = await axios.get<{ user: UserRecord }>(
     `${baseUrl}/users:get?id=${encodeURIComponent(id)}`,
     authHeaders(accessToken),
   );
-  return response.data;
+  return response.data.user;
 }
 
 export async function createUser(
@@ -54,12 +57,12 @@ export async function createUser(
   accessToken: string,
   data: CreateUserData,
 ): Promise<UserRecord> {
-  const response = await axios.post<UserRecord>(
+  const response = await axios.post<{ user: UserRecord; message?: string }>(
     `${baseUrl}/users:create`,
     data,
     authHeaders(accessToken),
   );
-  return response.data;
+  return response.data.user;
 }
 
 export async function updateUser(
@@ -68,12 +71,25 @@ export async function updateUser(
   id: string,
   data: UpdateUserData,
 ): Promise<UserRecord> {
-  const response = await axios.post<UserRecord>(
+  const response = await axios.post<{ message: string; user: UserRecord }>(
     `${baseUrl}/users:update?id=${encodeURIComponent(id)}`,
     data,
     authHeaders(accessToken),
   );
-  return response.data;
+  return response.data.user;
+}
+
+export async function revokeUserSessions(
+  baseUrl: string,
+  accessToken: string,
+  id: string,
+): Promise<UserRecord> {
+  const response = await axios.post<{ message: string; user: UserRecord }>(
+    `${baseUrl}/users:update?id=${encodeURIComponent(id)}`,
+    { action: 'revoke_sessions' },
+    authHeaders(accessToken),
+  );
+  return response.data.user;
 }
 
 export async function deleteUser(
