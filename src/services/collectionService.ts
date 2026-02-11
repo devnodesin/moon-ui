@@ -1,10 +1,8 @@
 import axios from 'axios';
 import {
-  normalizeCollectionListResponse,
   normalizeSchemaResponse,
   normalizeRecordGetResponse,
   buildCollectionEndpoint,
-  type CollectionListApiResponse,
   type SchemaApiResponse,
 } from './apiAdapter';
 
@@ -16,7 +14,7 @@ export interface CollectionColumn {
 
 export interface CollectionInfo {
   name: string;
-  columns?: CollectionColumn[];
+  records: number;
 }
 
 export interface RecordListParams {
@@ -41,12 +39,11 @@ export async function listCollections(
   baseUrl: string,
   accessToken: string,
 ): Promise<CollectionInfo[]> {
-  const response = await axios.get<CollectionListApiResponse>(
+  const response = await axios.get<{ collections: CollectionInfo[]; count: number }>(
     `${baseUrl}/collections:list`,
     authHeaders(accessToken),
   );
-  // Normalize API response to handle both old and new formats
-  return normalizeCollectionListResponse(response.data);
+  return response.data.collections;
 }
 
 export async function getCollection(

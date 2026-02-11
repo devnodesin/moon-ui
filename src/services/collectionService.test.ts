@@ -18,18 +18,18 @@ describe('collectionService', () => {
   });
 
   describe('listCollections', () => {
-    it('should GET /collections:list with auth header and convert string array to objects', async () => {
-      const collectionNames = ['posts', 'users'];
+    it('should GET /collections:list with auth header and return collection objects', async () => {
+      const collections = [
+        { name: 'posts', records: 10 },
+        { name: 'users', records: 5 }
+      ];
       mock.onGet(`${BASE_URL}/collections:list`).reply((config) => {
         expect(config.headers?.Authorization).toBe(`Bearer ${TOKEN}`);
-        return [200, { collections: collectionNames, count: collectionNames.length }];
+        return [200, { collections, count: collections.length }];
       });
 
       const result = await collectionService.listCollections(BASE_URL, TOKEN);
-      expect(result).toEqual([
-        { name: 'posts' },
-        { name: 'users' },
-      ]);
+      expect(result).toEqual(collections);
     });
 
     it('should throw on error', async () => {

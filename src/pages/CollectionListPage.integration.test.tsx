@@ -52,7 +52,10 @@ describe('Collections Page - API Integration Test', () => {
   it('should not call any endpoint with "undefined" in the URL', async () => {
     // Mock the collections list endpoint
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products', 'users'],
+      collections: [
+        { name: 'products', records: 10 },
+        { name: 'users', records: 5 }
+      ],
       count: 2,
     });
 
@@ -78,7 +81,9 @@ describe('Collections Page - API Integration Test', () => {
   it('should handle missing collection identifier gracefully', async () => {
     // Mock collections list
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products'],
+      collections: [
+        { name: 'products', records: 0 }
+      ],
       count: 1,
     });
 
@@ -102,9 +107,12 @@ describe('Collections Page - API Integration Test', () => {
   });
 
   it('should normalize API responses correctly in end-to-end flow', async () => {
-    // Mock collections list with NEW API format (string array)
+    // Mock collections list with new API format (collection objects)
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products', 'orders'],
+      collections: [
+        { name: 'products', records: 10 },
+        { name: 'orders', records: 5 }
+      ],
       count: 2,
     });
 

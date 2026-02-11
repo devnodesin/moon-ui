@@ -1,17 +1,10 @@
 /**
- * API Adapter for Moon API v1.99+
+ * API Adapter for Moon API
  * 
- * This adapter normalizes Moon API responses to match the app's expected data model.
- * Only supports current Moon API format (v1.99+).
+ * This adapter provides utility functions for Moon API responses.
  */
 
 import type { CollectionColumn } from './collectionService';
-
-export interface CollectionListApiResponse {
-  collections: string[];
-  count?: number;
-  total?: number;
-}
 
 export interface SchemaApiResponse {
   collection: string;
@@ -19,40 +12,12 @@ export interface SchemaApiResponse {
 }
 
 /**
- * Normalizes the /collections:list response to CollectionInfo objects.
- * Expects string array format from Moon API v1.99+.
- */
-export function normalizeCollectionListResponse(
-  response: CollectionListApiResponse,
-): Array<{ name: string; columns?: CollectionColumn[] }> {
-  const { collections } = response;
-  
-  if (!Array.isArray(collections)) {
-    console.warn('[API Adapter] Unexpected collections format (expected string array):', collections);
-    return [];
-  }
-
-  if (collections.length === 0) {
-    return [];
-  }
-
-  // Expect string array from Moon API v1.99+
-  if (typeof collections[0] !== 'string') {
-    console.error('[API Adapter] Invalid collections format: expected string[], got:', typeof collections[0]);
-    return [];
-  }
-
-  return collections.map((name) => ({ name }));
-}
-
-/**
  * Normalizes the /{collection}:schema response to CollectionColumn array.
- * Expects wrapped format {collection, fields} from Moon API v1.99+.
+ * Expects wrapped format {collection, fields} from Moon API.
  */
 export function normalizeSchemaResponse(
   response: SchemaApiResponse,
 ): CollectionColumn[] {
-  // Expect wrapped format from Moon API v1.99+
   if (!response || typeof response !== 'object') {
     console.error('[API Adapter] Invalid schema response: expected object, got:', typeof response);
     return [];
@@ -93,7 +58,7 @@ export function normalizeRecordGetResponse(
     return response.data as Record<string, unknown>;
   }
   
-  // If no 'data' wrapper, return the response as-is (backward compatibility)
+  // If no 'data' wrapper, return the response as-is
   return response as Record<string, unknown>;
 }
 
@@ -101,7 +66,7 @@ export function normalizeRecordGetResponse(
  * Runtime validation: warn if a collection object is missing expected fields
  */
 export function validateCollectionObject(
-  collection: { name: string; columns?: CollectionColumn[] },
+  collection: { name: string; records?: number },
 ): boolean {
   if (!collection.name) {
     console.warn('[API Adapter] Collection object missing "name" field:', collection);

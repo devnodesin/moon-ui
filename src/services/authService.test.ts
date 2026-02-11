@@ -77,7 +77,7 @@ describe('AuthService', () => {
 
       mock.onGet('https://api.example.com/auth:me').reply((config) => {
         expect(config.headers?.Authorization).toBe('Bearer access-token');
-        return [200, user];
+        return [200, { user }];
       });
 
       const result = await authService.getCurrentUser('https://api.example.com', 'access-token');

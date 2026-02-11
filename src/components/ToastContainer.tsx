@@ -59,7 +59,7 @@ export function ToastContainer() {
   }
 
   return (
-    <div className="toast toast-end toast-top z-50" data-testid="toast-container">
+    <div className="toast toast-end toast-top z-[9999]" data-testid="toast-container">
       {toasts.map((notification) => (
         <ToastItem
           key={notification.id}

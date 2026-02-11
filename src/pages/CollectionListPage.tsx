@@ -13,8 +13,7 @@ import { validateName } from '../utils/validation';
 
 interface CollectionRow {
   name: string;
-  columnCount: number;
-  recordCount: number | null;
+  records: number;
 }
 
 interface FieldDraft {
@@ -50,47 +49,13 @@ export function CollectionListPage() {
     try {
       const list: CollectionInfo[] = await collectionService.listCollections(baseUrl, token);
       
-      // Fetch schema and record count for each collection
-      const enrichedCollections = await Promise.all(
-        list.map(async (c) => {
-          try {
-            // Fetch schema to get field count
-            const schema = await collectionService.getSchema(baseUrl, token, c.name);
-            
-            // Fetch first record to check if collection has data
-            // Note: API doesn't provide total count, so we show:
-            // - 0 if empty
-            // - 1 if exactly one record
-            // - -1 (displayed as "1+") if has_more is true
-            const recordsResult = await collectionService.listRecords(baseUrl, token, c.name, { limit: 1 });
-            
-            const hasData = recordsResult.data && recordsResult.data.length > 0;
-            let recordCount: number;
-            if (!hasData) {
-              recordCount = 0;
-            } else if (recordsResult.has_more) {
-              recordCount = -1; // Will be displayed as "1+"
-            } else {
-              recordCount = 1; // Exactly one record
-            }
-            
-            return {
-              name: c.name,
-              columnCount: schema.length,
-              recordCount,
-            };
-          } catch {
-            // If fetching metadata fails, return basic info
-            return {
-              name: c.name,
-              columnCount: 0,
-              recordCount: null,
-            };
-          }
-        }),
-      );
+      // Map to CollectionRow format (API now provides records count directly)
+      const rows: CollectionRow[] = list.map((c) => ({
+        name: c.name,
+        records: c.records,
+      }));
       
-      setCollections(enrichedCollections);
+      setCollections(rows);
     } catch {
       notify.error('Failed to load collections');
     } finally {
@@ -209,18 +174,10 @@ export function CollectionListPage() {
 
   const columns: Column<CollectionRow>[] = [
     { key: 'name', label: 'Name', sortable: true },
-    { key: 'columnCount', label: 'Fields', sortable: true },
     { 
-      key: 'recordCount' as keyof CollectionRow, 
+      key: 'records', 
       label: 'Records', 
       sortable: true,
-      render: (value, row) => {
-        if (value === null) return '—';
-        // Check if we need to show "1+" for collections with more records
-        const data = collections.find(c => c.name === row.name);
-        if (data && data.recordCount === -1) return '1+';
-        return String(value);
-      }
     },
     {
       key: 'name' as keyof CollectionRow,
@@ -259,6 +216,7 @@ export function CollectionListPage() {
 
       {showCreate && (
         <div className="card bg-base-200 mb-4 p-4" data-testid="create-form">
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
           <div className="form-control mb-3">
             <label className="label">
               <span className="label-text font-semibold">Collection Name</span>
@@ -269,6 +227,9 @@ export function CollectionListPage() {
               placeholder="e.g., my_collection, users, product_items"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
+              pattern="[a-z][a-z0-9_]*"
+              title="Collection name must be lowercase snake_case (start with a letter, contain only lowercase letters, numbers, and underscores)"
+              required
               data-testid="create-name-input"
             />
             <label className="label">
@@ -293,6 +254,9 @@ export function CollectionListPage() {
                   placeholder="e.g., user_id, created_at"
                   value={field.name}
                   onChange={(e) => updateField(index, { name: e.target.value })}
+                  pattern="[a-z][a-z0-9_]*"
+                  title="Field name must be lowercase snake_case (start with a letter, contain only lowercase letters, numbers, and underscores)"
+                  required
                   data-testid={`field-name-${index}`}
                 />
                 <select
@@ -341,17 +305,18 @@ export function CollectionListPage() {
           </div>
 
           <div className="flex gap-2 justify-end">
-            <button className="btn btn-sm btn-ghost" onClick={() => {
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => {
               setShowCreate(false);
               setNewName('');
               setNewFields([{ name: '', type: 'string', nullable: false }]);
             }}>
               Cancel
             </button>
-            <button className="btn btn-sm btn-primary" onClick={handleCreate} data-testid="create-submit">
+            <button type="submit" className="btn btn-sm btn-primary" data-testid="create-submit">
               Create Collection
             </button>
           </div>
+          </form>
         </div>
       )}
 

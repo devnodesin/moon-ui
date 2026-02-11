@@ -61,7 +61,7 @@ export async function getCurrentUser(
   baseUrl: string,
   accessToken: string,
 ): Promise<User> {
-  const response = await axios.get<User>(
+  const response = await axios.get<{ user: User }>(
     `${baseUrl}/auth:me`,
     { 
       headers: { 
@@ -70,5 +70,5 @@ export async function getCurrentUser(
       } 
     },
   );
-  return response.data;
+  return response.data.user;
 }

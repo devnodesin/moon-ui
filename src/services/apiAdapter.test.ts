@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
-  normalizeCollectionListResponse,
   normalizeSchemaResponse,
   normalizeRecordGetResponse,
   buildCollectionEndpoint,
@@ -22,66 +21,8 @@ describe('apiAdapter', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  describe('normalizeCollectionListResponse', () => {
-    it('should normalize string array to objects (Moon API v1.99+)', () => {
-      const response = {
-        collections: ['products', 'users', 'orders'],
-        count: 3,
-      };
-
-      const result = normalizeCollectionListResponse(response);
-
-      expect(result).toEqual([
-        { name: 'products' },
-        { name: 'users' },
-        { name: 'orders' },
-      ]);
-    });
-
-    it('should handle empty array', () => {
-      const response = {
-        collections: [],
-        count: 0,
-      };
-
-      const result = normalizeCollectionListResponse(response);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should warn on invalid format (non-array) and return empty array', () => {
-      const response = {
-        collections: null as unknown as string[],
-        count: 0,
-      };
-
-      const result = normalizeCollectionListResponse(response);
-
-      expect(result).toEqual([]);
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[API Adapter] Unexpected collections format (expected string array):',
-        null,
-      );
-    });
-
-    it('should error on invalid type (object array) and return empty array', () => {
-      const response = {
-        collections: [{ name: 'test' }] as unknown as string[],
-        count: 1,
-      };
-
-      const result = normalizeCollectionListResponse(response);
-
-      expect(result).toEqual([]);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[API Adapter] Invalid collections format: expected string[], got:',
-        'object',
-      );
-    });
-  });
-
   describe('normalizeSchemaResponse', () => {
-    it('should extract fields from wrapped response (Moon API v1.99+)', () => {
+    it('should extract fields from wrapped response', () => {
       const fields: CollectionColumn[] = [
         { name: 'id', type: 'string', nullable: false },
         { name: 'name', type: 'string', nullable: false },
@@ -151,7 +92,7 @@ describe('apiAdapter', () => {
       });
     });
 
-    it('should return record directly if not wrapped (backward compatibility)', () => {
+    it('should return record directly if not wrapped', () => {
       const response = {
         id: '123',
         name: 'Test Product',
@@ -206,7 +147,7 @@ describe('apiAdapter', () => {
     it('should return true for valid collection object', () => {
       const collection = {
         name: 'products',
-        columns: [{ name: 'id', type: 'string', nullable: false }],
+        records: 10,
       };
 
       const result = validateCollectionObject(collection);
@@ -214,7 +155,7 @@ describe('apiAdapter', () => {
       expect(result).toBe(true);
     });
 
-    it('should return true for collection without columns', () => {
+    it('should return true for collection without records', () => {
       const collection = { name: 'products' };
 
       const result = validateCollectionObject(collection);
@@ -223,7 +164,7 @@ describe('apiAdapter', () => {
     });
 
     it('should warn and return false for missing name', () => {
-      const collection = { name: '', columns: [] };
+      const collection = { name: '', records: 0 };
 
       const result = validateCollectionObject(collection);
 

@@ -46,10 +46,14 @@ describe('Collections Page - Bug Fix Verification', () => {
     mock.reset();
   });
 
-  it('should display collection names correctly when API returns string array', async () => {
-    // Mock the REAL API response structure (string array)
+  it('should display collection names correctly when API returns collection objects', async () => {
+    // Mock the new API response structure (collection objects with records count)
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products', 'users', 'orders'],
+      collections: [
+        { name: 'products', records: 10 },
+        { name: 'users', records: 5 },
+        { name: 'orders', records: 0 }
+      ],
       count: 3
     });
 
@@ -71,9 +75,11 @@ describe('Collections Page - Bug Fix Verification', () => {
   });
 
   it('should create action buttons with correct collection names (not undefined)', async () => {
-    // Mock the REAL API response structure
+    // Mock the new API response structure
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products'],
+      collections: [
+        { name: 'products', records: 0 }
+      ],
       count: 1
     });
 
@@ -100,9 +106,11 @@ describe('Collections Page - Bug Fix Verification', () => {
   });
 
   it('should make API calls with correct collection names (not undefined)', async () => {
-    // Mock the REAL API response structure
+    // Mock the new API response structure
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products'],
+      collections: [
+        { name: 'products', records: 0 }
+      ],
       count: 1
     });
 
@@ -141,10 +149,13 @@ describe('Collections Page - Bug Fix Verification', () => {
     });
   });
 
-  it('should display column count correctly', async () => {
-    // Mock the REAL API response structure
+  it('should display records count correctly', async () => {
+    // Mock the new API response structure
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products', 'users'],
+      collections: [
+        { name: 'products', records: 10 },
+        { name: 'users', records: 5 }
+      ],
       count: 2
     });
 
@@ -159,8 +170,8 @@ describe('Collections Page - Bug Fix Verification', () => {
       expect(screen.getByText('products')).toBeInTheDocument();
     });
 
-    // Since the list endpoint only returns names, column count should be 0
-    const cells = screen.getAllByText('0');
-    expect(cells.length).toBeGreaterThanOrEqual(2); // At least 2 collections with 0 columns
+    // Verify records count is displayed
+    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
   });
 });

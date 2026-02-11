@@ -3,7 +3,7 @@ import { ConnectionSwitcher } from './ConnectionSwitcher';
 
 export function Navbar() {
   return (
-    <div className="navbar bg-base-100 sticky top-0 z-50 border-b border-base-300">
+    <div className="navbar bg-base-100 border-b border-base-300">
       <div className="flex-1">
         <label
           htmlFor="app-drawer"

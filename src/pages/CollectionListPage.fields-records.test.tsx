@@ -46,27 +46,13 @@ describe('Collections Page - Fields and Records Count', () => {
     mock.reset();
   });
 
-  it('should display correct field count when schema is available', async () => {
-    // Mock collections list
+  it('should display correct records count from API', async () => {
+    // Mock collections list with records count
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products'],
+      collections: [
+        { name: 'products', records: 10 }
+      ],
       count: 1
-    });
-
-    // Mock schema endpoint with 3 fields
-    mock.onGet(`${BASE_URL}/products:schema`).reply(200, {
-      collection: 'products',
-      fields: [
-        { name: 'id', type: 'string' },
-        { name: 'name', type: 'string' },
-        { name: 'price', type: 'decimal' }
-      ]
-    });
-
-    // Mock records list endpoint
-    mock.onGet(new RegExp(`${BASE_URL}/products:list`)).reply(200, {
-      data: [{ id: '1', name: 'Product 1', price: 10.99 }],
-      has_more: false
     });
 
     render(
@@ -80,32 +66,19 @@ describe('Collections Page - Fields and Records Count', () => {
       expect(screen.getByText('products')).toBeInTheDocument();
     });
 
-    // Verify field count is displayed (should be 3)
+    // Verify records count is displayed
     await waitFor(() => {
-      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getByText('10')).toBeInTheDocument();
     });
   });
 
-  it('should display Records column with count or "1+" for multiple records', async () => {
+  it('should display Records column header', async () => {
     // Mock collections list
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['products'],
+      collections: [
+        { name: 'products', records: 5 }
+      ],
       count: 1
-    });
-
-    // Mock schema endpoint
-    mock.onGet(`${BASE_URL}/products:schema`).reply(200, {
-      collection: 'products',
-      fields: [
-        { name: 'id', type: 'string' },
-        { name: 'name', type: 'string' }
-      ]
-    });
-
-    // Mock records list endpoint - return 1 record with has_more=true
-    mock.onGet(new RegExp(`${BASE_URL}/products:list`)).reply(200, {
-      data: [{ id: '1', name: 'Product 1' }],
-      has_more: true // Indicates more records exist
     });
 
     render(
@@ -122,31 +95,19 @@ describe('Collections Page - Fields and Records Count', () => {
     // Verify Records column header exists
     expect(screen.getByText('Records')).toBeInTheDocument();
 
-    // Verify record count is displayed as "1+" when has_more is true
+    // Verify record count is displayed
     await waitFor(() => {
-      expect(screen.getByText('1+')).toBeInTheDocument();
+      expect(screen.getByText('5')).toBeInTheDocument();
     });
   });
 
   it('should display 0 when no records exist', async () => {
     // Mock collections list
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['empty_collection'],
+      collections: [
+        { name: 'empty_collection', records: 0 }
+      ],
       count: 1
-    });
-
-    // Mock schema endpoint
-    mock.onGet(`${BASE_URL}/empty_collection:schema`).reply(200, {
-      collection: 'empty_collection',
-      fields: [
-        { name: 'id', type: 'string' }
-      ]
-    });
-
-    // Mock records list endpoint - return empty array
-    mock.onGet(new RegExp(`${BASE_URL}/empty_collection:list`)).reply(200, {
-      data: [],
-      has_more: false
     });
 
     render(
@@ -162,23 +123,20 @@ describe('Collections Page - Fields and Records Count', () => {
 
     // Verify record count shows 0
     await waitFor(() => {
-      const zeroCells = screen.getAllByText('0');
-      expect(zeroCells.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('0')).toBeInTheDocument();
     });
   });
 
-  it('should display — when metadata fetch fails', async () => {
+  it('should handle multiple collections with different record counts', async () => {
     // Mock collections list
     mock.onGet(`${BASE_URL}/collections:list`).reply(200, {
-      collections: ['broken_collection'],
-      count: 1
+      collections: [
+        { name: 'users', records: 100 },
+        { name: 'products', records: 25 },
+        { name: 'orders', records: 0 }
+      ],
+      count: 3
     });
-
-    // Mock schema endpoint to fail
-    mock.onGet(`${BASE_URL}/broken_collection:schema`).reply(500);
-
-    // Mock records list endpoint to fail
-    mock.onGet(new RegExp(`${BASE_URL}/broken_collection:list`)).reply(500);
 
     render(
       <MemoryRouter>
@@ -186,15 +144,18 @@ describe('Collections Page - Fields and Records Count', () => {
       </MemoryRouter>
     );
 
-    // Wait for data to load
+    // Wait for all collections to load
     await waitFor(() => {
-      expect(screen.getByText('broken_collection')).toBeInTheDocument();
+      expect(screen.getByText('users')).toBeInTheDocument();
+      expect(screen.getByText('products')).toBeInTheDocument();
+      expect(screen.getByText('orders')).toBeInTheDocument();
     });
 
-    // Verify field count shows 0 and record count shows —
+    // Verify all record counts are displayed
     await waitFor(() => {
+      expect(screen.getByText('100')).toBeInTheDocument();
+      expect(screen.getByText('25')).toBeInTheDocument();
       expect(screen.getByText('0')).toBeInTheDocument();
-      expect(screen.getByText('—')).toBeInTheDocument();
     });
   });
 });
