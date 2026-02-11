@@ -20,10 +20,7 @@ export function ConnectionSwitcher() {
   return (
     <div className="dropdown dropdown-end">
       <div tabIndex={0} role="button" className="btn btn-ghost btn-sm gap-1" aria-label="Switch connection">
-        🔌
-        <span className="hidden sm:inline text-xs max-w-24 truncate">
-          {connections.find((c) => c.id === currentConnectionId)?.label || 'Connections'}
-        </span>
+        🔌  
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
