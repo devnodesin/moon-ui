@@ -47,12 +47,18 @@ export function RecordView<T extends Record<string, unknown>>({
     setMode('view');
   }, [data]);
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     if (!onSave) return;
     setSaving(true);
     try {
       await onSave(draft);
       setMode('view');
+    } catch (error) {
+      // Keep draft data on error, don't reset
+      console.error('Save failed:', error);
     } finally {
       setSaving(false);
     }
@@ -85,43 +91,51 @@ export function RecordView<T extends Record<string, unknown>>({
       </div>
 
       {/* Fields */}
-      <div className="space-y-4">
-        {fields.map((field) => (
-          <div key={field.key} className="form-control" data-testid={`field-${field.key}`}>
-            <label className="label">
-              <span className="label-text font-medium">{field.label}</span>
-            </label>
-            {mode === 'view' ? (
+      {mode === 'view' ? (
+        <div className="space-y-4">
+          {fields.map((field) => (
+            <div key={field.key} className="form-control" data-testid={`field-${field.key}`}>
+              <label className="label">
+                <span className="label-text font-medium">{field.label}</span>
+              </label>
               <span className="px-1 py-2" data-testid={`value-${field.key}`}>
                 {renderViewValue(data[field.key], field)}
               </span>
-            ) : (
-              renderEditField(field, draft[field.key], field.editable !== false, updateField, showPasswords[field.key], () => togglePasswordVisibility(field.key))
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Edit mode buttons */}
-      {mode === 'edit' && (
-        <div className="flex gap-2 mt-6 justify-end">
-          <button
-            className="btn btn-sm btn-ghost"
-            onClick={handleCancel}
-            disabled={saving}
-            data-testid="record-cancel"
-          >
-            Cancel
-          </button>
-          <button
-            className="btn btn-sm btn-primary"
-            onClick={handleSave}
-            disabled={saving}
-            data-testid="record-save"
-          >
-            {saving ? <span className="loading loading-spinner loading-xs" /> : 'Save'}
-          </button>
+            </div>
+          ))}
         </div>
+      ) : (
+        <form onSubmit={handleSave} className="space-y-4">
+          {fields.map((field) => (
+            <div key={field.key} className="form-control" data-testid={`field-${field.key}`}>
+              <label className="label">
+                <span className="label-text font-medium">{field.label}</span>
+              </label>
+              {renderEditField(field, draft[field.key], field.editable !== false, updateField, showPasswords[field.key], () => togglePasswordVisibility(field.key))}
+            </div>
+          ))}
+          
+          {/* Edit mode buttons */}
+          <div className="flex gap-2 mt-6 justify-end">
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={handleCancel}
+              disabled={saving}
+              data-testid="record-cancel"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-sm btn-primary"
+              disabled={saving}
+              data-testid="record-save"
+            >
+              {saving ? <span className="loading loading-spinner loading-xs" /> : 'Save'}
+            </button>
+          </div>
+        </form>
       )}
     </div>
   );

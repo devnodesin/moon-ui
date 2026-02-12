@@ -72,22 +72,28 @@ export function CollectionRecordsPage() {
     setPage(p);
   }, []);
 
-  const columns: Column<Record<string, unknown>>[] = schema.map((col) => ({
-    key: col.name as keyof Record<string, unknown>,
-    label: col.name,
-    sortable: true,
-  }));
+  const columns: Column<Record<string, unknown>>[] = schema
+    .filter((col) => col.name !== 'id')
+    .slice(0, 4)
+    .map((col) => ({
+      key: col.name as keyof Record<string, unknown>,
+      label: col.name,
+      sortable: true,
+    }));
 
   // If no schema yet, derive columns from first record
   const derivedColumns: Column<Record<string, unknown>>[] =
     columns.length > 0
       ? columns
       : records.length > 0
-        ? Object.keys(records[0]).map((key) => ({
-            key: key as keyof Record<string, unknown>,
-            label: key,
-            sortable: true,
-          }))
+        ? Object.keys(records[0])
+            .filter((key) => key !== 'id')
+            .slice(0, 4)
+            .map((key) => ({
+              key: key as keyof Record<string, unknown>,
+              label: key,
+              sortable: true,
+            }))
         : [];
 
   const pagination: Pagination = {

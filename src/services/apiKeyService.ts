@@ -26,6 +26,13 @@ export interface UpdateApiKeyData {
   action?: 'rotate';
 }
 
+export interface RotateApiKeyResponse {
+  message: string;
+  warning: string;
+  apikey: ApiKeyRecord;
+  key: string;
+}
+
 function authHeaders(accessToken: string) {
   return { headers: { Authorization: `Bearer ${accessToken}` } };
 }
@@ -75,6 +82,19 @@ export async function updateApiKey(
   const response = await axios.post<ApiKeyRecord>(
     `${baseUrl}/apikeys:update?id=${encodeURIComponent(id)}`,
     data,
+    authHeaders(accessToken),
+  );
+  return response.data;
+}
+
+export async function rotateApiKey(
+  baseUrl: string,
+  accessToken: string,
+  id: string,
+): Promise<RotateApiKeyResponse> {
+  const response = await axios.post<RotateApiKeyResponse>(
+    `${baseUrl}/apikeys:update?id=${encodeURIComponent(id)}`,
+    { action: 'rotate' },
     authHeaders(accessToken),
   );
   return response.data;

@@ -77,6 +77,18 @@ export function ApiKeysPage() {
     }
   };
 
+  const handleRotate = async (row: ApiKeyRecord) => {
+    if (!window.confirm(`Regenerate API key "${row.name}"? The old key will be immediately invalidated.`)) return;
+    try {
+      const result = await apiKeyService.rotateApiKey(baseUrl, token, row.id);
+      setCreatedKey(result.key);
+      notify.success(`API key "${row.name}" regenerated`);
+      fetchKeys();
+    } catch {
+      notify.error(`Failed to regenerate "${row.name}"`);
+    }
+  };
+
   const handleCopyKey = async () => {
     if (!createdKey) return;
     try {
@@ -101,16 +113,28 @@ export function ApiKeysPage() {
       key: 'id',
       label: 'Actions',
       render: (_value, row) => (
-        <button
-          className="btn btn-xs btn-error btn-outline"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete(row);
-          }}
-          data-testid={`delete-${row.name}`}
-        >
-          Revoke
-        </button>
+        <div className="flex gap-1">
+          <button
+            className="btn btn-xs btn-warning btn-outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRotate(row);
+            }}
+            data-testid={`rotate-${row.name}`}
+          >
+            Regenerate
+          </button>
+          <button
+            className="btn btn-xs btn-error btn-outline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(row);
+            }}
+            data-testid={`delete-${row.name}`}
+          >
+            Delete
+          </button>
+        </div>
       ),
     },
   ];
@@ -120,15 +144,15 @@ export function ApiKeysPage() {
       <h1 className="text-2xl font-bold mb-4">API Keys</h1>
 
       {createdKey && (
-        <div className="alert alert-success mb-4" data-testid="created-key-alert">
+        <div className="alert alert-success mb-4 shadow-lg" data-testid="created-key-alert">
           <div className="flex flex-col gap-2 w-full">
             <span className="font-bold">API Key created! Copy it now — it won't be shown again.</span>
             <div className="flex items-center gap-2">
-              <code className="flex-1 break-all bg-base-200 p-2 rounded" data-testid="created-key-value">
+              <code className="flex-1 break-all bg-base-100 text-base-content p-2 rounded border border-success" data-testid="created-key-value">
                 {createdKey}
               </code>
               <button
-                className="btn btn-sm btn-ghost"
+                className="btn btn-sm btn-primary"
                 onClick={handleCopyKey}
                 data-testid="copy-key-btn"
               >
@@ -136,7 +160,7 @@ export function ApiKeysPage() {
               </button>
             </div>
             <button
-              className="btn btn-sm btn-ghost self-end"
+              className="btn btn-sm btn-outline self-end"
               onClick={() => setCreatedKey(null)}
               data-testid="dismiss-key-alert"
             >
