@@ -72,8 +72,23 @@ describe('ApiKeysPage', () => {
     });
   });
 
-  it('should show error notification on fetch failure', async () => {
-    mockListApiKeys.mockRejectedValue(new Error('fail'));
+  it('should show backend error message in notification on fetch failure', async () => {
+    mockListApiKeys.mockRejectedValue({
+      code: 'BACKEND_ERROR',
+      message: 'Request failed',
+      error: 'specific backend error message',
+    });
+    renderPage();
+
+    await waitFor(() => {
+      expect(mockNotify.error).toHaveBeenCalledWith('specific backend error message');
+    });
+  });
+
+  it('should show fallback error message when backend error field missing', async () => {
+    mockListApiKeys.mockRejectedValue({
+      code: 'NETWORK_ERROR',
+    });
     renderPage();
 
     await waitFor(() => {

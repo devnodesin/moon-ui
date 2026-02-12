@@ -7,6 +7,7 @@ import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
 import * as userService from '../services/userService';
 import type { UserRecord } from '../services/userService';
+import { extractUserMessage } from '../utils/errorUtils';
 
 export function UsersPage() {
   const { currentConnection, user: currentUser } = useAuth();
@@ -26,8 +27,8 @@ export function UsersPage() {
     try {
       const list = await userService.listUsers(baseUrl, token);
       setUsers(list);
-    } catch {
-      notify.error('Failed to load users');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to load users'));
     } finally {
       setLoading(false);
       stopLoading();
@@ -48,8 +49,8 @@ export function UsersPage() {
       await userService.deleteUser(baseUrl, token, row.id);
       notify.success(`User "${row.username}" deleted`);
       fetchUsers();
-    } catch {
-      notify.error(`Failed to delete "${row.username}"`);
+    } catch (error) {
+      notify.error(extractUserMessage(error, `Failed to delete "${row.username}"`));
     }
   };
 
@@ -59,8 +60,8 @@ export function UsersPage() {
       await userService.revokeUserSessions(baseUrl, token, row.id);
       notify.success(`Sessions revoked for "${row.username}"`);
       fetchUsers();
-    } catch {
-      notify.error(`Failed to revoke sessions for "${row.username}"`);
+    } catch (error) {
+      notify.error(extractUserMessage(error, `Failed to revoke sessions for "${row.username}"`));
     }
   };
 

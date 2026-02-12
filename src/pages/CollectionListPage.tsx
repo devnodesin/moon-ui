@@ -10,6 +10,7 @@ import { useLoading } from '../contexts/LoadingContext';
 import * as collectionService from '../services/collectionService';
 import type { CollectionInfo, CollectionColumn } from '../services/collectionService';
 import { validateName } from '../utils/validation';
+import { extractUserMessage } from '../utils/errorUtils';
 
 interface CollectionRow {
   name: string;
@@ -56,8 +57,8 @@ export function CollectionListPage() {
       }));
       
       setCollections(rows);
-    } catch {
-      notify.error('Failed to load collections');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to load collections'));
     } finally {
       setLoading(false);
       stopLoading();
@@ -74,8 +75,8 @@ export function CollectionListPage() {
       await collectionService.deleteCollection(baseUrl, token, name);
       notify.success(`Collection "${name}" deleted`);
       fetchCollections();
-    } catch {
-      notify.error(`Failed to delete "${name}"`);
+    } catch (error) {
+      notify.error(extractUserMessage(error, `Failed to delete "${name}"`));
     }
   };
 
@@ -84,8 +85,8 @@ export function CollectionListPage() {
       startLoading();
       const schema = await collectionService.getSchema(baseUrl, token, name);
       setEditingSchema({ collectionName: name, fields: schema });
-    } catch {
-      notify.error(`Failed to load schema for "${name}"`);
+    } catch (error) {
+      notify.error(extractUserMessage(error, `Failed to load schema for "${name}"`));
     } finally {
       stopLoading();
     }
@@ -98,8 +99,8 @@ export function CollectionListPage() {
       notify.success(`Schema updated for "${editingSchema.collectionName}"`);
       setEditingSchema(null);
       fetchCollections();
-    } catch {
-      notify.error(`Failed to update schema for "${editingSchema.collectionName}"`);
+    } catch (error) {
+      notify.error(extractUserMessage(error, `Failed to update schema for "${editingSchema.collectionName}"`));
       throw new Error('Failed to update schema');
     }
   };
@@ -151,8 +152,8 @@ export function CollectionListPage() {
       setNewFields([{ name: '', type: 'string', nullable: false }]);
       setShowCreate(false);
       fetchCollections();
-    } catch {
-      notify.error('Failed to create collection');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to create collection'));
     }
   };
 

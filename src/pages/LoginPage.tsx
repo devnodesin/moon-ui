@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
 import * as connectionManager from '../services/connectionManager';
 import type { ConnectionProfile } from '../types/connection';
+import { extractUserMessage } from '../utils/errorUtils';
 
 interface FormErrors {
   serverUrl?: string;
@@ -115,7 +116,7 @@ export function LoginPage() {
         message = (err as { message?: string })?.message || message;
       }
       
-      setApiError(message);
+      setApiError(extractUserMessage(err, message));
     } finally {
       setLoading(false);
     }

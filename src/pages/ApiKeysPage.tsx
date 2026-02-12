@@ -4,6 +4,7 @@ import type { Column } from '../components/DataTable';
 import { useAuth } from '../hooks/useAuth';
 import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
+import { extractUserMessage } from '../utils/errorUtils';
 import * as apiKeyService from '../services/apiKeyService';
 import type { ApiKeyRecord } from '../services/apiKeyService';
 
@@ -31,8 +32,8 @@ export function ApiKeysPage() {
     try {
       const list = await apiKeyService.listApiKeys(baseUrl, token);
       setKeys(list);
-    } catch {
-      notify.error('Failed to load API keys');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to load API keys'));
     } finally {
       setLoading(false);
       stopLoading();
@@ -61,8 +62,8 @@ export function ApiKeysPage() {
       setFormCanWrite(false);
       setShowCreate(false);
       fetchKeys();
-    } catch {
-      notify.error('Failed to create API key');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to create API key'));
     }
   };
 
@@ -72,8 +73,8 @@ export function ApiKeysPage() {
       await apiKeyService.deleteApiKey(baseUrl, token, row.id);
       notify.success(`API key "${row.name}" deleted`);
       fetchKeys();
-    } catch {
-      notify.error(`Failed to delete "${row.name}"`);
+    } catch (error) {
+      notify.error(extractUserMessage(error, `Failed to delete "${row.name}"`));
     }
   };
 
@@ -84,8 +85,8 @@ export function ApiKeysPage() {
       setCreatedKey(result.key);
       notify.success(`API key "${row.name}" regenerated`);
       fetchKeys();
-    } catch {
-      notify.error(`Failed to regenerate "${row.name}"`);
+    } catch (error) {
+      notify.error(extractUserMessage(error, `Failed to regenerate "${row.name}"`));
     }
   };
 
@@ -94,8 +95,8 @@ export function ApiKeysPage() {
     try {
       await navigator.clipboard.writeText(createdKey);
       notify.success('Key copied to clipboard');
-    } catch {
-      notify.error('Failed to copy key');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to copy key'));
     }
   };
 

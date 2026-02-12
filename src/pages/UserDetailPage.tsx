@@ -7,6 +7,7 @@ import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
 import * as userService from '../services/userService';
 import type { UserRecord } from '../services/userService';
+import { extractUserMessage } from '../utils/errorUtils';
 
 const viewFields: FieldDefinition[] = [
   { key: 'id', label: 'ID', type: 'text', editable: false },
@@ -95,8 +96,8 @@ export function UserDetailPage() {
     try {
       const data = await userService.getUser(baseUrl, token, id!);
       setUser(data);
-    } catch {
-      notify.error('Failed to load user');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to load user'));
     } finally {
       setLoading(false);
       stopLoading();
@@ -140,8 +141,8 @@ export function UserDetailPage() {
           notify.success('User updated');
           await fetchUser();
         }
-      } catch {
-        notify.error('Failed to save user');
+      } catch (error) {
+        notify.error(extractUserMessage(error, 'Failed to save user'));
         throw new Error('Save failed');
       }
     },
@@ -167,8 +168,8 @@ export function UserDetailPage() {
       setNewPassword('');
       setPasswordError(null);
       await fetchUser();
-    } catch {
-      notify.error('Failed to change password');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to change password'));
     } finally {
       setChangingPassword(false);
     }

@@ -9,7 +9,10 @@
 - **Accessibility:** Not required (private/internal app).
 - **No Modals for Records:** Viewing and editing records must always be inline—never use modals.
 - **No Data Caching:** All data views must always fetch fresh data from the backend (no client-side caching).
-- **Error Handling:** All API/network errors and important events must trigger a user notification.
+- **Error Handling:** All API/network errors and important events must trigger a user notification. Error messages are extracted from backend API responses:
+  - When an API error response includes an `"error"` field, that message is displayed in the notification (e.g., `{"error": "invalid email format"}` → notification shows "invalid email format")
+  - When an API error response does not include an `"error"` field, a context-aware fallback message is displayed (e.g., "Failed to load collections")
+  - This ensures users see relevant, actionable error messages from the backend while maintaining graceful degradation for other error types
 - **Session Timeout:** On session expiration or token refresh failure, show a notification and redirect user to login.
 
 

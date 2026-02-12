@@ -7,6 +7,7 @@ import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
 import * as collectionService from '../services/collectionService';
 import type { CollectionColumn } from '../services/collectionService';
+import { extractUserMessage } from '../utils/errorUtils';
 
 function mapColumnType(type: string): FieldDefinition['type'] {
   const lower = type.toLowerCase();
@@ -70,8 +71,8 @@ export function RecordDetailPage() {
         const data = await collectionService.getRecord(baseUrl, token, collection, id!);
         setRecord(data);
       }
-    } catch {
-      notify.error('Failed to load record');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to load record'));
     } finally {
       setLoading(false);
       stopLoading();
@@ -94,8 +95,8 @@ export function RecordDetailPage() {
           notify.success('Record updated');
           await fetchData();
         }
-      } catch {
-        notify.error('Failed to save record');
+      } catch (error) {
+        notify.error(extractUserMessage(error, 'Failed to save record'));
         throw new Error('Save failed');
       }
     },

@@ -22,6 +22,27 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 - Implement a reusable HTTP client layer that handles authentication (access + refresh tokens), automatic token refresh, retries/backoff, error normalization, and consistent notification on failures.
 - For local development and testing, the app may target a Moon test server, but all interactions must remain standard browser HTTP calls (CORS-aware).
 
+### Error Handling and User Notifications
+
+All API errors must be handled consistently and surfaced to users through notifications:
+
+**Backend Error Message Extraction:**
+- When an API call returns an error response with an `"error"` property (e.g., `{"code": 400, "error": "invalid email format", "error_code": "INVALID_EMAIL_FORMAT"}`), the app **MUST** use the value of `"error"` as the message in user-facing notifications/toasters.
+- If the response does not have an `"error"` property, use the app's existing/fallback error handling message instead.
+- This behavior is implemented via `extractUserMessage()` utility in `src/utils/errorUtils.ts` and applied across all API error handling code paths.
+
+**Error Priority:**
+1. Backend error message from `error` field (highest priority)
+2. Standard error message from `message` field
+3. Context-aware fallback message provided by the caller
+4. Generic "An error occurred" message (final fallback)
+
+**Implementation:**
+- All API errors are normalized to `AppError` type in `src/services/httpClient.ts`
+- The `AppError` interface includes an optional `error` field for backend-provided user messages
+- All pages use `extractUserMessage(error, fallbackMessage)` when displaying error notifications
+- This ensures consistent, user-friendly error messages across the application
+
 ### API Adapter Layer
 
 The app includes an API adapter (`src/services/apiAdapter.ts`) that normalizes Moon API responses and ensures stable behavior:
