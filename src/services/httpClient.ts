@@ -102,6 +102,7 @@ export class HttpClient {
       return {
         code: data?.code || `HTTP_${error.response?.status || 'ERROR'}`,
         message: data?.message || error.message || 'An error occurred',
+        error: data?.error, // Extract backend error field for user notifications
         details: data,
       };
     }

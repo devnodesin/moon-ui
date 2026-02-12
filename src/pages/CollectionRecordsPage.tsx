@@ -7,6 +7,7 @@ import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
 import * as collectionService from '../services/collectionService';
 import type { CollectionColumn } from '../services/collectionService';
+import { extractUserMessage } from '../utils/errorUtils';
 
 const PAGE_SIZE = 20;
 
@@ -50,8 +51,8 @@ export function CollectionRecordsPage() {
       if (recordsResult.next_cursor && page > cursorsRef.current.length) {
         cursorsRef.current = [...cursorsRef.current, recordsResult.next_cursor];
       }
-    } catch {
-      notify.error('Failed to load records');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to load records'));
     } finally {
       setLoading(false);
       stopLoading();
@@ -187,8 +188,8 @@ export function CollectionRecordsPage() {
         }
         notify.success(`Imported ${created} records`);
         fetchData();
-      } catch {
-        notify.error('Import failed');
+      } catch (error) {
+        notify.error(extractUserMessage(error, 'Import failed'));
       }
     };
     reader.readAsText(file);
@@ -210,8 +211,8 @@ export function CollectionRecordsPage() {
       await collectionService.deleteRecord(baseUrl, token, collection, id);
       notify.success('Record deleted successfully');
       fetchData();
-    } catch {
-      notify.error('Failed to delete record');
+    } catch (error) {
+      notify.error(extractUserMessage(error, 'Failed to delete record'));
     }
   }, [baseUrl, token, collection, notify, fetchData]);
 

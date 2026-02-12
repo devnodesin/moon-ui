@@ -81,6 +81,28 @@ describe('HttpClient', () => {
     }
   });
 
+  it('should extract error field from backend API response', async () => {
+    const client = new HttpClient({
+      baseUrl: 'https://api.example.com',
+      tokenStorage,
+    });
+
+    mock.onPost('https://api.example.com/users').reply(400, {
+      code: 400,
+      error: 'invalid email format',
+      error_code: 'INVALID_EMAIL_FORMAT',
+    });
+
+    try {
+      await client.post('/users', { email: 'not-an-email' });
+      expect.fail('Should have thrown an error');
+    } catch (error) {
+      const appError = error as { code: string; message: string; error?: string };
+      expect(appError.error).toBe('invalid email format');
+      expect(appError.code).toBe(400);
+    }
+  });
+
   it('should refresh token on 401 and retry request', async () => {
     tokenStorage.setTokens('expired-token', 'refresh-token-456', Date.now() - 1000);
 

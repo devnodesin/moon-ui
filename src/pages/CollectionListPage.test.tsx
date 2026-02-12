@@ -79,8 +79,23 @@ describe('CollectionListPage', () => {
     });
   });
 
-  it('should show error notification on fetch failure', async () => {
-    mockListCollections.mockRejectedValue(new Error('fail'));
+  it('should show backend error message in notification on fetch failure', async () => {
+    mockListCollections.mockRejectedValue({
+      code: 'BACKEND_ERROR',
+      message: 'Request failed',
+      error: 'specific backend error message',
+    });
+    renderPage();
+
+    await waitFor(() => {
+      expect(mockNotify.error).toHaveBeenCalledWith('specific backend error message');
+    });
+  });
+
+  it('should show fallback error message when backend error field missing', async () => {
+    mockListCollections.mockRejectedValue({
+      code: 'NETWORK_ERROR',
+    });
     renderPage();
 
     await waitFor(() => {

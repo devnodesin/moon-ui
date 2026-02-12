@@ -1,6 +1,7 @@
 export interface AppError {
   code: string;
   message: string;
+  error?: string; // User-facing error message from backend API
   details?: unknown;
 }
 
