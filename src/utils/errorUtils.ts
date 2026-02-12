@@ -17,9 +17,9 @@ export function extractUserMessage(error: unknown, fallback?: string): string {
     'error' in error &&
     typeof (error as AppError).error === 'string'
   ) {
-    const errorMsg = (error as AppError).error.trim();
-    if (errorMsg.length > 0) {
-      return errorMsg;
+    const errorMsg = (error as AppError).error;
+    if (errorMsg && errorMsg.trim().length > 0) {
+      return errorMsg.trim();
     }
   }
 
