@@ -209,4 +209,57 @@ describe('SchemaEditorModal', () => {
       });
     });
   });
+
+  it('should disable editing for readonly fields', async () => {
+    const initialFields = [
+      { name: 'id', type: 'string', nullable: false, readonly: true },
+      { name: 'name', type: 'string', nullable: false },
+    ];
+    
+    render(<SchemaEditorModal {...defaultProps} mode="edit" initialFields={initialFields} />);
+    
+    // Field 0 (id) should be disabled
+    const idInput = screen.getByTestId('schema-field-name-0') as HTMLInputElement;
+    const idTypeSelect = screen.getByTestId('schema-field-type-0') as HTMLSelectElement;
+    const idNullableCheckbox = screen.getByTestId('schema-field-nullable-0') as HTMLInputElement;
+    const idUniqueCheckbox = screen.getByTestId('schema-field-unique-0') as HTMLInputElement;
+    const idRemoveButton = screen.getByTestId('schema-remove-field-0') as HTMLButtonElement;
+    
+    expect(idInput).toBeDisabled();
+    expect(idTypeSelect).toBeDisabled();
+    expect(idNullableCheckbox).toBeDisabled();
+    expect(idUniqueCheckbox).toBeDisabled();
+    expect(idRemoveButton).toBeDisabled();
+    
+    // Field 1 (name) should be enabled
+    const nameInput = screen.getByTestId('schema-field-name-1') as HTMLInputElement;
+    const nameRemoveButton = screen.getByTestId('schema-remove-field-1') as HTMLButtonElement;
+    
+    expect(nameInput).not.toBeDisabled();
+    expect(nameRemoveButton).not.toBeDisabled();
+  });
+
+  it('should show readonly badge for readonly fields', async () => {
+    const initialFields = [
+      { name: 'id', type: 'string', nullable: false, readonly: true },
+      { name: 'name', type: 'string', nullable: false },
+    ];
+    
+    render(<SchemaEditorModal {...defaultProps} mode="edit" initialFields={initialFields} />);
+    
+    // Check for "Read-only" badge for the id field
+    expect(screen.getByText('Read-only')).toBeInTheDocument();
+  });
+
+  it('should not allow removing readonly fields', async () => {
+    const user = userEvent.setup();
+    const initialFields = [
+      { name: 'id', type: 'string', nullable: false, readonly: true },
+    ];
+    
+    render(<SchemaEditorModal {...defaultProps} mode="edit" initialFields={initialFields} />);
+    
+    const removeButton = screen.getByTestId('schema-remove-field-0');
+    expect(removeButton).toBeDisabled();
+  });
 });

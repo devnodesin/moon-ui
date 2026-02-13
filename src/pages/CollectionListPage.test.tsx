@@ -140,10 +140,36 @@ describe('CollectionListPage', () => {
         'test-token',
         { 
           name: 'newcol', 
-          columns: [{ name: 'id', type: 'string', nullable: false }] 
+          columns: [{ name: 'id', type: 'string', nullable: false, unique: false }] 
         },
       );
       expect(mockNotify.success).toHaveBeenCalledWith('Collection "newcol" created');
+    });
+  });
+
+  it('should create a collection with unique field', async () => {
+    mockCreateCollection.mockResolvedValue(undefined);
+    mockListCollections.mockResolvedValue([]);
+
+    renderPage();
+    await userEvent.click(screen.getByTestId('create-collection-btn'));
+    await userEvent.type(screen.getByTestId('create-name-input'), 'users');
+    
+    // Fill in the first field with unique checkbox
+    await userEvent.type(screen.getByTestId('field-name-0'), 'email');
+    await userEvent.click(screen.getByTestId('field-unique-0'));
+    
+    await userEvent.click(screen.getByTestId('create-submit'));
+
+    await waitFor(() => {
+      expect(mockCreateCollection).toHaveBeenCalledWith(
+        'https://api.example.com',
+        'test-token',
+        { 
+          name: 'users', 
+          columns: [{ name: 'email', type: 'string', nullable: false, unique: true }] 
+        },
+      );
     });
   });
 

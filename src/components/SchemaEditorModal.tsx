@@ -206,7 +206,9 @@ export function SchemaEditorModal({
               </tr>
             </thead>
             <tbody>
-              {fields.map((field, index) => (
+              {fields.map((field, index) => {
+                const isReadonly = field.readonly === true;
+                return (
                 <tr key={index} data-testid={`schema-field-row-${index}`}>
                   <td>
                     <input
@@ -215,6 +217,7 @@ export function SchemaEditorModal({
                       placeholder="Field name"
                       value={field.name}
                       onChange={(e) => updateField(index, { name: e.target.value })}
+                      disabled={isReadonly}
                       data-testid={`schema-field-name-${index}`}
                     />
                   </td>
@@ -223,6 +226,7 @@ export function SchemaEditorModal({
                       className="select select-bordered select-sm w-full"
                       value={field.type}
                       onChange={(e) => updateField(index, { type: e.target.value })}
+                      disabled={isReadonly}
                       data-testid={`schema-field-type-${index}`}
                     >
                       {FIELD_TYPES.map(type => (
@@ -236,6 +240,7 @@ export function SchemaEditorModal({
                       className="checkbox checkbox-sm"
                       checked={field.nullable}
                       onChange={(e) => updateField(index, { nullable: e.target.checked })}
+                      disabled={isReadonly}
                       data-testid={`schema-field-nullable-${index}`}
                     />
                   </td>
@@ -245,18 +250,22 @@ export function SchemaEditorModal({
                       className="checkbox checkbox-sm"
                       checked={field.unique || false}
                       onChange={(e) => updateField(index, { unique: e.target.checked })}
+                      disabled={isReadonly}
                       data-testid={`schema-field-unique-${index}`}
                     />
                   </td>
                   {mode === 'edit' && (
                     <td>
+                      {/* Badge shows readonly status with highest priority, followed by action states */}
                       <span className={`badge badge-sm ${
+                        isReadonly ? 'badge-warning' :
                         field._action === 'add' ? 'badge-success' :
                         field._action === 'rename' ? 'badge-warning' :
                         field._action === 'modify' ? 'badge-info' :
                         'badge-ghost'
                       }`}>
-                        {field._action === 'add' ? 'New' :
+                        {isReadonly ? 'Read-only' :
+                         field._action === 'add' ? 'New' :
                          field._action === 'rename' ? 'Renamed' :
                          field._action === 'modify' ? 'Modified' :
                          '—'}
@@ -268,14 +277,15 @@ export function SchemaEditorModal({
                       type="button"
                       className="btn btn-xs btn-error btn-outline"
                       onClick={() => removeField(index)}
-                      disabled={mode === 'create' && fields.length === 1}
+                      disabled={(mode === 'create' && fields.length === 1) || isReadonly}
                       data-testid={`schema-remove-field-${index}`}
                     >
                       ✕
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           

@@ -11,6 +11,7 @@ export interface CollectionColumn {
   type: string;
   nullable?: boolean;
   unique?: boolean;
+  readonly?: boolean;
 }
 
 export interface CollectionInfo {

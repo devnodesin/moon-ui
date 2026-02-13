@@ -75,12 +75,20 @@ The app supports field-level constraints when creating or modifying collections:
 - `type`: Data type (string, integer, boolean, datetime, decimal, json)
 - `nullable`: Whether the field accepts null values (boolean)
 - `unique`: Whether the field must have unique values across records (boolean)
+- `readonly`: Whether the field is read-only and cannot be modified in the schema editor (boolean)
 
 **Unique Constraint:**
 - When creating a collection, fields can be marked as unique by setting `unique: true`
 - The backend enforces uniqueness for marked fields
 - If a field is `nullable: true`, the API may return a `default_value` in the response schema
 - Example: `{name: "email", type: "string", nullable: false, unique: true}`
+
+**Read-Only Fields:**
+- Fields marked with `readonly: true` cannot be edited, renamed, or removed in the schema editor
+- The `id` field is typically marked as readonly by the backend
+- Read-only fields are visually indicated with a "Read-only" badge in the schema editor
+- All input controls (name, type, nullable, unique) are disabled for readonly fields
+- Example: `{name: "id", type: "string", nullable: false, readonly: true}`
 
 **API Request Example:**
 ```json
