@@ -21,6 +21,7 @@ interface FieldDraft {
   name: string;
   type: string;
   nullable: boolean;
+  unique: boolean;
 }
 
 interface EditingSchema {
@@ -37,7 +38,7 @@ export function CollectionListPage() {
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newFields, setNewFields] = useState<FieldDraft[]>([{ name: '', type: 'string', nullable: false }]);
+  const [newFields, setNewFields] = useState<FieldDraft[]>([{ name: '', type: 'string', nullable: false, unique: false }]);
   const [editingSchema, setEditingSchema] = useState<EditingSchema | null>(null);
 
   const baseUrl = currentConnection?.baseUrl ?? '';
@@ -143,13 +144,14 @@ export function CollectionListPage() {
       name: f.name.trim(),
       type: f.type,
       nullable: f.nullable,
+      unique: f.unique,
     }));
     
     try {
       await collectionService.createCollection(baseUrl, token, { name: trimmed, columns });
       notify.success(`Collection "${trimmed}" created`);
       setNewName('');
-      setNewFields([{ name: '', type: 'string', nullable: false }]);
+      setNewFields([{ name: '', type: 'string', nullable: false, unique: false }]);
       setShowCreate(false);
       fetchCollections();
     } catch (error) {
@@ -158,7 +160,7 @@ export function CollectionListPage() {
   };
 
   const addField = () => {
-    setNewFields([...newFields, { name: '', type: 'string', nullable: false }]);
+    setNewFields([...newFields, { name: '', type: 'string', nullable: false, unique: false }]);
   };
 
   const removeField = (index: number) => {
@@ -283,6 +285,16 @@ export function CollectionListPage() {
                   />
                   <span className="label-text text-sm">Nullable</span>
                 </label>
+                <label className="label cursor-pointer gap-2">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm"
+                    checked={field.unique}
+                    onChange={(e) => updateField(index, { unique: e.target.checked })}
+                    data-testid={`field-unique-${index}`}
+                  />
+                  <span className="label-text text-sm">Unique</span>
+                </label>
                 {newFields.length > 1 && (
                   <button
                     type="button"
@@ -309,7 +321,7 @@ export function CollectionListPage() {
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => {
               setShowCreate(false);
               setNewName('');
-              setNewFields([{ name: '', type: 'string', nullable: false }]);
+              setNewFields([{ name: '', type: 'string', nullable: false, unique: false }]);
             }}>
               Cancel
             </button>
