@@ -10,7 +10,6 @@ import { Layout } from './components/Layout';
 import { ToastContainer } from './components/ToastContainer';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { NotificationsPage } from './pages/NotificationsPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { CollectionListPage } from './pages/CollectionListPage';
 import { CollectionRecordsPage } from './pages/CollectionRecordsPage';
@@ -41,16 +40,6 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <DashboardPage />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/notifications"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <NotificationsPage />
                       </Layout>
                     </ProtectedRoute>
                   }

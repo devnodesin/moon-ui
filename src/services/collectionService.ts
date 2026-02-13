@@ -10,6 +10,7 @@ export interface CollectionColumn {
   name: string;
   type: string;
   nullable?: boolean;
+  unique?: boolean;
 }
 
 export interface CollectionInfo {
