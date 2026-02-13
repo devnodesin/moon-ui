@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { ConnectionProvider } from '../contexts/ConnectionContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
 import { Navbar } from './Navbar';
 
 describe('Navbar', () => {
@@ -10,36 +11,42 @@ describe('Navbar', () => {
     render(
       <ThemeProvider>
         <ConnectionProvider>
-          <HashRouter>
-            <Navbar />
-          </HashRouter>
+          <NotificationProvider>
+            <HashRouter>
+              <Navbar />
+            </HashRouter>
+          </NotificationProvider>
         </ConnectionProvider>
       </ThemeProvider>
     );
     expect(screen.getByText(/Moon Admin/i)).toBeInTheDocument();
   });
 
-  it('should render theme toggle button', () => {
+  it('should render settings dropdown button', () => {
     render(
       <ThemeProvider>
         <ConnectionProvider>
-          <HashRouter>
-            <Navbar />
-          </HashRouter>
+          <NotificationProvider>
+            <HashRouter>
+              <Navbar />
+            </HashRouter>
+          </NotificationProvider>
         </ConnectionProvider>
       </ThemeProvider>
     );
-    const themeButton = screen.getByRole('button', { name: /toggle theme/i });
-    expect(themeButton).toBeInTheDocument();
+    const settingsButton = screen.getByRole('button', { name: /settings/i });
+    expect(settingsButton).toBeInTheDocument();
   });
 
   it('should render menu toggle button', () => {
     render(
       <ThemeProvider>
         <ConnectionProvider>
-          <HashRouter>
-            <Navbar />
-          </HashRouter>
+          <NotificationProvider>
+            <HashRouter>
+              <Navbar />
+            </HashRouter>
+          </NotificationProvider>
         </ConnectionProvider>
       </ThemeProvider>
     );
