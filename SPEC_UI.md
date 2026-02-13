@@ -95,6 +95,34 @@ Sidebar (Overlay on toggle):
 - The Content Area is changed dynamically based on context.
 - Default: `Table View`, On click of a row item in the table show `Record View`
 
+## Navbar Settings Dropdown
+
+The navbar includes a settings icon button (⚙️) that opens a dropdown menu with organized sections:
+
+**Settings Dropdown Structure:**
+
+```md
+┌─────────────────────────────────────┐
+│ Connection                          │ ← Section: Connection Management
+│ • Moon Production (active)          │
+│ • Local Development                 │
+│ • Manage Connections                │
+├─────────────────────────────────────┤
+│ Appearance                          │ ← Section: Theme
+│ • Light Mode / Dark Mode (toggle)   │
+├─────────────────────────────────────┤
+│ Notifications                       │ ← Section: Notification Management
+│ • Clear All Notifications           │
+└─────────────────────────────────────┘
+```
+
+**Features:**
+- **Connection switcher:** Quick access to switch between saved connections
+- **Theme toggle:** Switch between light (autumn) and dark (abyss) themes
+- **Clear All Notifications:** Manually clear all pinned error/warning notifications
+- Items are grouped by functionality for clarity
+- Connection switcher and theme toggle moved from main navbar into settings dropdown for cleaner UI
+
 ## Table View (Collections, Users, API Keys)
 
 ```md
@@ -188,34 +216,25 @@ This ensures users always know when the app is working and prevents confusion du
 - Notifications should:
   - Appear immediately when triggered (e.g., on error, success, or important info).
   - Be styled to indicate type (error = red, warning = yellow, info/success = green/blue).
-  - Auto-dismiss after a short duration (e.g., 4–6 seconds), but allow manual dismissal (close button).
+  - **Success and info notifications** auto-dismiss after 5 seconds.
+  - **Error and warning notifications** remain pinned and require manual dismissal.
+  - Include a close button (✕) for manual dismissal.
   - Never block user interaction with the main UI.
-- All notifications from the current session are stored in memory (in-session only, do not persist across reloads for now).
-- Provide a dedicated **Notification Page** accessible from the main menu:
-  - Lists all notifications from the current session.
-  - Each notification shows its type, message, and timestamp.
-  - Include a **Clear All Notifications** button to remove all notifications from the list.
+- All notifications from the current session are stored in memory (in-session only, do not persist across reloads).
+- **No separate notifications page is required.** All notification management is handled via the navbar settings dropdown:
+  - Settings dropdown (navbar) includes a "Clear All Notifications" option.
+  - This allows users to manually clear all pinned error/warning notifications at once.
 
 - All errors, API failures, and important events must be handled using the notification system. Any API failure must trigger a notification to the user.
 
-**Notification Banner Example:**
+**Notification Toast Example:**
 
 ```md
 ┌─────────────────────────────────────────────┐
-│  ⚠️  Error: Failed to save changes. [✕]     │ ← Error notification (red, auto-dismiss)
+│  ⚠️  Error: Failed to save changes. [✕]     │ ← Error notification (red, stays pinned)
 └─────────────────────────────────────────────┘
-```
-
-**Notification Page Example:**
-
-```md
 ┌─────────────────────────────────────────────┐
-│ Notifications                [Clear All]    │
-├─────────────────────────────────────────────┤
-│ [!] Error: Failed to save changes.   12:01  │
-│ [i] Info: Profile updated.           11:59  │
-│ [✓] Success: Record created.         11:58  │
-│                                         ▼  │
+│  ✓  Success: Record saved! [✕]              │ ← Success notification (green, auto-clears after 5s)
 └─────────────────────────────────────────────┘
 ```
 
