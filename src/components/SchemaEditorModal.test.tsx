@@ -114,7 +114,7 @@ describe('SchemaEditorModal', () => {
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith({
         add_columns: [
-          { name: 'id', type: 'integer', nullable: false },
+          { name: 'id', type: 'integer', nullable: false, unique: false },
         ],
       });
     });
@@ -204,7 +204,7 @@ describe('SchemaEditorModal', () => {
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith({
         add_columns: [
-          { name: 'name', type: 'string', nullable: false },
+          { name: 'name', type: 'string', nullable: false, unique: false },
         ],
       });
     });

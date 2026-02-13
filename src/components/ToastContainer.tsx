@@ -21,12 +21,16 @@ function getAlertClass(type: NotificationType): string {
 
 function ToastItem({ notification, onDismiss }: { notification: Notification; onDismiss: () => void }) {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onDismiss();
-    }, AUTO_DISMISS_DELAY);
+    // Only auto-dismiss success and info notifications
+    // Error and warning notifications remain pinned until manually dismissed
+    if (notification.type === 'success' || notification.type === 'info') {
+      const timer = setTimeout(() => {
+        onDismiss();
+      }, AUTO_DISMISS_DELAY);
 
-    return () => clearTimeout(timer);
-  }, [onDismiss]);
+      return () => clearTimeout(timer);
+    }
+  }, [onDismiss, notification.type]);
 
   return (
     <div

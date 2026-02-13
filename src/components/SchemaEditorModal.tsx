@@ -42,7 +42,7 @@ export function SchemaEditorModal({
       if (mode === 'edit' && initialFields.length > 0) {
         setFields(initialFields.map(f => ({ ...f, _action: 'keep' as const })));
       } else if (mode === 'create') {
-        setFields([{ name: '', type: 'string', nullable: false, _action: 'add' as const }]);
+        setFields([{ name: '', type: 'string', nullable: false, unique: false, _action: 'add' as const }]);
       }
       setRemovedFields([]);
       setError('');
@@ -50,7 +50,7 @@ export function SchemaEditorModal({
   }, [isOpen, initialFields, mode]);
 
   const addField = () => {
-    setFields([...fields, { name: '', type: 'string', nullable: false, _action: 'add' as const }]);
+    setFields([...fields, { name: '', type: 'string', nullable: false, unique: false, _action: 'add' as const }]);
   };
 
   const removeField = (index: number) => {
@@ -78,13 +78,14 @@ export function SchemaEditorModal({
           const nameChanged = updatedField.name !== initialField.name;
           const typeChanged = updatedField.type !== initialField.type;
           const nullableChanged = updatedField.nullable !== initialField.nullable;
+          const uniqueChanged = updatedField.unique !== initialField.unique;
           
           if (nameChanged) {
             // Name changed - this is a rename
             updatedField._action = 'rename';
             updatedField._oldName = initialField.name;
-          } else if (typeChanged || nullableChanged) {
-            // Type or nullable changed - this is a modify
+          } else if (typeChanged || nullableChanged || uniqueChanged) {
+            // Type, nullable, or unique changed - this is a modify
             updatedField._action = 'modify';
             // Clear old name if we're no longer renaming
             delete updatedField._oldName;
@@ -127,6 +128,7 @@ export function SchemaEditorModal({
         name: f.name.trim(),
         type: f.type,
         nullable: f.nullable,
+        unique: f.unique || false,
       }));
     } else {
       // For edit mode, determine changes
@@ -136,6 +138,7 @@ export function SchemaEditorModal({
           name: f.name.trim(),
           type: f.type,
           nullable: f.nullable,
+          unique: f.unique || false,
         }));
       
       changes.rename_columns = validFields
@@ -151,6 +154,7 @@ export function SchemaEditorModal({
           name: f.name.trim(),
           type: f.type,
           nullable: f.nullable,
+          unique: f.unique || false,
         }));
       
       if (removedFields.length > 0) {
@@ -196,6 +200,7 @@ export function SchemaEditorModal({
                 <th>Field Name</th>
                 <th>Type</th>
                 <th>Nullable</th>
+                <th>Unique</th>
                 {mode === 'edit' && <th>Status</th>}
                 <th>Actions</th>
               </tr>
@@ -232,6 +237,15 @@ export function SchemaEditorModal({
                       checked={field.nullable}
                       onChange={(e) => updateField(index, { nullable: e.target.checked })}
                       data-testid={`schema-field-nullable-${index}`}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm"
+                      checked={field.unique || false}
+                      onChange={(e) => updateField(index, { unique: e.target.checked })}
+                      data-testid={`schema-field-unique-${index}`}
                     />
                   </td>
                   {mode === 'edit' && (

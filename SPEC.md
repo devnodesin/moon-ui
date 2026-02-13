@@ -66,6 +66,34 @@ The app includes an API adapter (`src/services/apiAdapter.ts`) that normalizes M
 - All service functions in `src/services/collectionService.ts` use the adapter
 - **No backward compatibility**: App only supports Moon API v1.99+
 
+### Collection Field Constraints
+
+The app supports field-level constraints when creating or modifying collections:
+
+**Supported Field Properties:**
+- `name`: Field name (lowercase snake_case required)
+- `type`: Data type (string, integer, boolean, datetime, decimal, json)
+- `nullable`: Whether the field accepts null values (boolean)
+- `unique`: Whether the field must have unique values across records (boolean)
+
+**Unique Constraint:**
+- When creating a collection, fields can be marked as unique by setting `unique: true`
+- The backend enforces uniqueness for marked fields
+- If a field is `nullable: true`, the API may return a `default_value` in the response schema
+- Example: `{name: "email", type: "string", nullable: false, unique: true}`
+
+**API Request Example:**
+```json
+POST /collections:create
+{
+  "name": "users",
+  "columns": [
+    {"name": "email", "type": "string", "nullable": false, "unique": true},
+    {"name": "name", "type": "string", "nullable": false, "unique": false}
+  ]
+}
+```
+
 ## Application Flows
 
 **Authentication Flow**
@@ -120,7 +148,12 @@ Fetch Fresh Data → Update UI
 - Support only the latest major browsers.
 - TypeScript is required (strict mode and type-checking enforced).
 - Use DaisyUI themes: `autumn` for light mode, `abyss` for dark mode.
-- Require a robust notification system: all errors, API failures, and important events must create user notifications (auto-dismiss) and there must be a Notifications page with a 'clear all' option.
+- **Notification System:**
+  - All errors, API failures, and important events must create user notifications.
+  - Success and info notifications auto-dismiss after a short duration (5 seconds).
+  - Error and warning notifications remain pinned and require manual dismissal.
+  - Provide a "Clear All Notifications" option in the settings dropdown (navbar).
+  - No separate notifications page is required—all notification management is handled via the navbar settings.
 - Show a smart loading/progress indicator for async operations (global or route-level) to improve UX.
 - Support data import and export in CSV and JSON formats for collections and records.
 - Follow session timeout and auto-logout rules as specified in `https://moon.asensar.in/doc/llms-full.txt` (enforce via the app HTTP client).

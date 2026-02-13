@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { ConnectionProvider } from '../contexts/ConnectionContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
 import { Layout } from './Layout';
 import * as useAuthModule from '../hooks/useAuth';
 
@@ -15,9 +16,11 @@ function renderLayout(children: React.ReactNode) {
   return render(
     <ThemeProvider>
       <ConnectionProvider>
-        <HashRouter>
-          <Layout>{children}</Layout>
-        </HashRouter>
+        <NotificationProvider>
+          <HashRouter>
+            <Layout>{children}</Layout>
+          </HashRouter>
+        </NotificationProvider>
       </ConnectionProvider>
     </ThemeProvider>
   );
