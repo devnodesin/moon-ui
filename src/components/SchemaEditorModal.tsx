@@ -256,6 +256,7 @@ export function SchemaEditorModal({
                   </td>
                   {mode === 'edit' && (
                     <td>
+                      {/* Badge shows readonly status with highest priority, followed by action states */}
                       <span className={`badge badge-sm ${
                         isReadonly ? 'badge-warning' :
                         field._action === 'add' ? 'badge-success' :

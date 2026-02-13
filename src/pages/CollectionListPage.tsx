@@ -24,6 +24,13 @@ interface FieldDraft {
   unique: boolean;
 }
 
+const createEmptyField = (): FieldDraft => ({ 
+  name: '', 
+  type: 'string', 
+  nullable: false, 
+  unique: false 
+});
+
 interface EditingSchema {
   collectionName: string;
   fields: CollectionColumn[];
@@ -38,7 +45,7 @@ export function CollectionListPage() {
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newFields, setNewFields] = useState<FieldDraft[]>([{ name: '', type: 'string', nullable: false, unique: false }]);
+  const [newFields, setNewFields] = useState<FieldDraft[]>([createEmptyField()]);
   const [editingSchema, setEditingSchema] = useState<EditingSchema | null>(null);
 
   const baseUrl = currentConnection?.baseUrl ?? '';
@@ -151,7 +158,7 @@ export function CollectionListPage() {
       await collectionService.createCollection(baseUrl, token, { name: trimmed, columns });
       notify.success(`Collection "${trimmed}" created`);
       setNewName('');
-      setNewFields([{ name: '', type: 'string', nullable: false, unique: false }]);
+      setNewFields([createEmptyField()]);
       setShowCreate(false);
       fetchCollections();
     } catch (error) {
@@ -160,7 +167,7 @@ export function CollectionListPage() {
   };
 
   const addField = () => {
-    setNewFields([...newFields, { name: '', type: 'string', nullable: false, unique: false }]);
+    setNewFields([...newFields, createEmptyField()]);
   };
 
   const removeField = (index: number) => {
@@ -321,7 +328,7 @@ export function CollectionListPage() {
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => {
               setShowCreate(false);
               setNewName('');
-              setNewFields([{ name: '', type: 'string', nullable: false, unique: false }]);
+              setNewFields([createEmptyField()]);
             }}>
               Cancel
             </button>
