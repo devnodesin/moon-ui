@@ -197,6 +197,70 @@ The navbar includes a settings icon button (⚙️) that opens a dropdown menu w
 - Cancel will not save the data
 - Edit button disabled
 
+## Collection Management
+
+### Collection Creation Form
+
+When creating a new collection, users can define the schema by specifying fields with the following properties:
+
+- **Field Name**: Must be lowercase snake_case (e.g., `user_id`, `email_address`)
+- **Field Type**: Select from string, integer, boolean, datetime, decimal, or json
+- **Nullable**: Checkbox to allow null values
+- **Unique**: Checkbox to enforce unique values across all records
+
+**Collection Creation UI:**
+```md
+┌──────────────────────────────────────────────┐
+│ Collection Name                              │
+│ ┌──────────────────────────────────────────┐ │
+│ │ my_collection                            │ │
+│ └──────────────────────────────────────────┘ │
+│                                              │
+│ Fields                                       │
+│ ┌────────┬─────────┬─────────┬──────────┐   │
+│ │ Name   │ Type    │ Nullable│ Unique   │   │
+│ │ email  │ String ▼│ ☐       │ ☑        │ ✕ │
+│ │ name   │ String ▼│ ☐       │ ☐        │ ✕ │
+│ └────────┴─────────┴─────────┴──────────┘   │
+│ [ + Add Field ]                              │
+│                                              │
+│ [ Cancel ]  [ Create Collection ]            │
+└──────────────────────────────────────────────┘
+```
+
+### Schema Editor
+
+When editing an existing collection schema:
+
+- **Read-only fields** (e.g., `id`) are marked with a "Read-only" badge
+- Read-only fields have all controls disabled:
+  - Field name input is disabled
+  - Type selector is disabled
+  - Nullable and Unique checkboxes are disabled
+  - Remove button is disabled
+- Non-readonly fields can be edited, renamed, or removed
+- Field changes are tracked with status badges:
+  - "New" (green) for newly added fields
+  - "Modified" (blue) for fields with type/constraint changes
+  - "Renamed" (yellow) for fields with name changes
+  - "Read-only" (yellow) for read-only system fields
+
+**Schema Editor UI:**
+```md
+┌──────────────────────────────────────────────────────┐
+│ Edit Schema: users                                   │
+│ ┌──────────────────────────────────────────────────┐ │
+│ │ Field  │ Type    │ Null │ Unique │ Status │ Act │ │
+│ │ id     │ string ▼│ ☐    │ ☐      │[Rdonly]│ ✕  │ │ (disabled)
+│ │ email  │ string ▼│ ☐    │ ☑      │ [Mod]  │ ✕  │ │
+│ │ name   │ string ▼│ ☐    │ ☐      │  —     │ ✕  │ │
+│ └──────────────────────────────────────────────────┘ │
+│ [ + Add Field ]                                      │
+│                                                      │
+│ [ Cancel ]  [ Save Changes ]                         │
+└──────────────────────────────────────────────────────┘
+```
+
 ## Smart Loading/Progress Bar UX
 
 During any async operation (such as data fetch, save, or authentication), display a visible progress indicator at the top of the screen (e.g., a thin animated bar or subtle loader). The progress bar should:
