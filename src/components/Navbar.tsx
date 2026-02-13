@@ -87,6 +87,7 @@ export function Navbar() {
                     <button
                       className={conn.id === currentConnectionId ? 'active' : ''}
                       onClick={() => handleSwitch(conn.id)}
+                      disabled={conn.id === currentConnectionId}
                     >
                       <span className="truncate">{conn.label}</span>
                     </button>
@@ -97,7 +98,7 @@ export function Navbar() {
                     Manage Connections
                   </button>
                 </li>
-                <li><div className="divider my-1" /></li>
+                <div className="divider my-1" />
               </>
             )}
             
@@ -147,7 +148,7 @@ export function Navbar() {
               </button>
             </li>
             
-            <li><div className="divider my-1" /></li>
+            <div className="divider my-1" />
             
             {/* Notifications Section */}
             <li className="menu-title">
