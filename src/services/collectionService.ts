@@ -134,7 +134,14 @@ export async function listRecords(
   const qs = query.toString();
   const url = `${baseUrl}/${encodeURIComponent(collection)}:list${qs ? `?${qs}` : ''}`;
   const response = await axios.get<RecordListResponse>(url, authHeaders(accessToken));
-  return response.data;
+  
+  // Derive has_more from next_cursor if not explicitly set
+  const result = response.data;
+  if (result.has_more === undefined && result.next_cursor !== undefined) {
+    result.has_more = result.next_cursor.length > 0;
+  }
+  
+  return result;
 }
 
 export async function getRecord(
