@@ -93,7 +93,45 @@ Sidebar (Overlay on toggle):
 **Content Area Behavior:**
 
 - The Content Area is changed dynamically based on context.
-- Default: `Table View`, On click of a row item in the table show `Record View`
+- Default: `Dashboard View` showing summary statistics and recent activity
+- Table pages: `Table View` for Collections, Users, API Keys
+- Record pages: On click of a row item in the table show `Record View`
+
+## Dashboard View
+
+The dashboard is the default landing page after login, providing an overview of the system:
+
+**Dashboard Layout:**
+
+```md
+┌─────────────────────────────────────────────┐
+│ Dashboard                                    │
+├─────────────────────────────────────────────┤
+│ ┌───────────┐ ┌───────────┐ ┌───────────┐  │
+│ │ 📚        │ │ 👥        │ │ 🔑        │  │
+│ │Collections│ │  Users    │ │ API Keys  │  │
+│ │    25     │ │    12     │ │     8     │  │
+│ └───────────┘ └───────────┘ └───────────┘  │
+│                                              │
+│ Collections                                  │
+│ ┌──────────────────────────────────────┐    │
+│ │ Name      │ Records │ Actions         │    │
+│ ├──────────┼─────────┼──────────────────┤    │
+│ │ products  │   124   │ View →          │    │
+│ │ users     │    45   │ View →          │    │
+│ │ orders    │   892   │ View →          │    │
+│ └──────────────────────────────────────┘    │
+└─────────────────────────────────────────────┘
+```
+
+**Dashboard Features:**
+- **Summary Cards:** Display total counts for Collections, Users, and API Keys
+- **Clickable Cards:** Each summary card is clickable and navigates to the respective resource page
+- **Collections Table:** Shows all collections with record counts
+- **Quick Actions:** Direct "View" buttons for each collection
+- **Responsive Design:** Cards stack vertically on mobile, display in a grid on desktop
+- **Loading States:** Show loading spinner while fetching dashboard data
+- **Error Handling:** Display error notifications if data fails to load
 
 ## Navbar Settings Dropdown
 
@@ -138,6 +176,13 @@ The navbar includes a settings icon button (⚙️) that opens a dropdown menu w
 │ [← Prev] Page 1 of 10 [Next →]              │ ← Pagination
 └─────────────────────────────────────────────┘
 ```
+
+**Pagination:**
+- All table views (Collections records, Users, API Keys) support cursor-based pagination
+- Pagination controls show Previous and Next buttons with current page indicator
+- Buttons are automatically disabled when there are no more pages in that direction
+- Default page size is 20 records per page
+- Pagination state resets when search criteria change
 
 - Clicking a row in any data table opens a **Single Record View** using `Record View` component
 
