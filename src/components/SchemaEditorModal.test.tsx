@@ -252,7 +252,6 @@ describe('SchemaEditorModal', () => {
   });
 
   it('should not allow removing readonly fields', async () => {
-    const user = userEvent.setup();
     const initialFields = [
       { name: 'id', type: 'string', nullable: false, readonly: true },
     ];
