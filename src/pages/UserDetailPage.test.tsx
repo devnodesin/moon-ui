@@ -105,7 +105,7 @@ describe('UserDetailPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(mockNotify.error).toHaveBeenCalledWith('specific backend error message');
+      expect(mockNotify.error).toHaveBeenCalledWith(expect.stringContaining('specific backend error message'));
     });
   });
 

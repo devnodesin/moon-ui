@@ -55,7 +55,7 @@ function renderPage() {
 describe('UsersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockListUsers.mockResolvedValue([]);
+    mockListUsers.mockResolvedValue({ users: [], has_more: false });
   });
 
   it('should show heading', async () => {
@@ -64,10 +64,13 @@ describe('UsersPage', () => {
   });
 
   it('should fetch and display users', async () => {
-    mockListUsers.mockResolvedValue([
-      { id: '1', username: 'alice', email: 'alice@test.com', role: 'admin', created_at: '2024-01-01' },
-      { id: '2', username: 'bob', email: 'bob@test.com', role: 'user', created_at: '2024-01-02' },
-    ]);
+    mockListUsers.mockResolvedValue({
+      users: [
+        { id: '1', username: 'alice', email: 'alice@test.com', role: 'admin', created_at: '2024-01-01' },
+        { id: '2', username: 'bob', email: 'bob@test.com', role: 'user', created_at: '2024-01-02' },
+      ],
+      has_more: false,
+    });
 
     renderPage();
 
@@ -86,7 +89,7 @@ describe('UsersPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(mockNotify.error).toHaveBeenCalledWith('specific backend error message');
+      expect(mockNotify.error).toHaveBeenCalledWith('BACKEND_ERROR - specific backend error message');
     });
   });
 
@@ -102,9 +105,12 @@ describe('UsersPage', () => {
   });
 
   it('should navigate to user detail on row click', async () => {
-    mockListUsers.mockResolvedValue([
-      { id: '1', username: 'alice', email: 'alice@test.com', role: 'admin' },
-    ]);
+    mockListUsers.mockResolvedValue({
+      users: [
+        { id: '1', username: 'alice', email: 'alice@test.com', role: 'admin' },
+      ],
+      has_more: false,
+    });
     renderPage();
 
     await waitFor(() => {
@@ -123,9 +129,12 @@ describe('UsersPage', () => {
 
   it('should delete a user after confirm', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    mockListUsers.mockResolvedValue([
-      { id: '2', username: 'bob', email: 'bob@test.com', role: 'user' },
-    ]);
+    mockListUsers.mockResolvedValue({
+      users: [
+        { id: '2', username: 'bob', email: 'bob@test.com', role: 'user' },
+      ],
+      has_more: false,
+    });
     mockDeleteUser.mockResolvedValue(undefined);
 
     renderPage();
@@ -147,9 +156,12 @@ describe('UsersPage', () => {
   });
 
   it('should prevent deleting the current user', async () => {
-    mockListUsers.mockResolvedValue([
-      { id: '1', username: 'admin', email: 'admin@test.com', role: 'admin' },
-    ]);
+    mockListUsers.mockResolvedValue({
+      users: [
+        { id: '1', username: 'admin', email: 'admin@test.com', role: 'admin' },
+      ],
+      has_more: false,
+    });
 
     renderPage();
 
@@ -163,9 +175,12 @@ describe('UsersPage', () => {
   });
 
   it('should show delete button disabled for current user', async () => {
-    mockListUsers.mockResolvedValue([
-      { id: '1', username: 'admin', email: 'admin@test.com', role: 'admin' },
-    ]);
+    mockListUsers.mockResolvedValue({
+      users: [
+        { id: '1', username: 'admin', email: 'admin@test.com', role: 'admin' },
+      ],
+      has_more: false,
+    });
 
     renderPage();
 

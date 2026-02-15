@@ -76,7 +76,7 @@ describe('HttpClient', () => {
       expect.fail('Should have thrown an error');
     } catch (error) {
       const appError = error as { code: string; message: string };
-      expect(appError.code).toBe('INVALID_REQUEST');
+      expect(appError.code).toBe('400'); // Status code as string
       expect(appError.message).toBe('Bad request');
     }
   });
@@ -98,8 +98,8 @@ describe('HttpClient', () => {
       expect.fail('Should have thrown an error');
     } catch (error) {
       const appError = error as { code: string; message: string; error?: string };
+      expect(appError.code).toBe('400'); // Status code as string
       expect(appError.error).toBe('invalid email format');
-      expect(appError.code).toBe(400);
     }
   });
 

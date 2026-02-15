@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../components/DataTable';
-import type { Column } from '../components/DataTable';
+import type { Column, Pagination } from '../components/DataTable';
 import { useAuth } from '../hooks/useAuth';
 import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
 import * as userService from '../services/userService';
 import type { UserRecord } from '../services/userService';
 import { extractUserMessage } from '../utils/errorUtils';
+
+const PAGE_SIZE = 20;
 
 export function UsersPage() {
   const { currentConnection, user: currentUser } = useAuth();
@@ -16,6 +18,11 @@ export function UsersPage() {
   const { startLoading, stopLoading } = useLoading();
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  
+  // Use ref to avoid including cursors in fetchUsers dependencies
+  const cursorsRef = useRef<string[]>([]);
 
   const baseUrl = currentConnection?.baseUrl ?? '';
   const token = currentConnection?.accessToken ?? '';
@@ -25,19 +32,30 @@ export function UsersPage() {
     setLoading(true);
     startLoading();
     try {
-      const list = await userService.listUsers(baseUrl, token);
-      setUsers(list);
+      const result = await userService.listUsers(baseUrl, token, {
+        limit: PAGE_SIZE,
+        after: page > 1 ? cursorsRef.current[page - 2] : undefined,
+      });
+      setUsers(result.users);
+      setHasMore(result.has_more ?? false);
+      if (result.next_cursor && page > cursorsRef.current.length) {
+        cursorsRef.current = [...cursorsRef.current, result.next_cursor];
+      }
     } catch (error) {
       notify.error(extractUserMessage(error, 'Failed to load users'));
     } finally {
       setLoading(false);
       stopLoading();
     }
-  }, [baseUrl, token, startLoading, stopLoading, notify]);
+  }, [baseUrl, token, page, startLoading, stopLoading, notify]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  const handlePageChange = useCallback((p: number) => {
+    setPage(p);
+  }, []);
 
   const handleDelete = async (row: UserRecord) => {
     if (currentUser && row.username === currentUser.username) {
@@ -63,6 +81,13 @@ export function UsersPage() {
     } catch (error) {
       notify.error(extractUserMessage(error, `Failed to revoke sessions for "${row.username}"`));
     }
+  };
+
+  const pagination: Pagination = {
+    currentPage: page,
+    totalPages: hasMore ? page + 1 : page,
+    hasNext: hasMore,
+    hasPrev: page > 1,
   };
 
   const columns: Column<UserRecord>[] = [
@@ -108,6 +133,8 @@ export function UsersPage() {
         columns={columns}
         data={users}
         isLoading={loading}
+        pagination={pagination}
+        onPageChange={handlePageChange}
         onRowClick={(row) => navigate(`/admin/users/${encodeURIComponent(row.id)}`)}
         actions={
           <button

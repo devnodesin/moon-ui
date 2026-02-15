@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { DataTable } from '../components/DataTable';
-import type { Column } from '../components/DataTable';
+import type { Column, Pagination } from '../components/DataTable';
 import { useAuth } from '../hooks/useAuth';
 import { useNotify } from '../hooks/useNotify';
 import { useLoading } from '../contexts/LoadingContext';
 import { extractUserMessage } from '../utils/errorUtils';
 import * as apiKeyService from '../services/apiKeyService';
 import type { ApiKeyRecord } from '../services/apiKeyService';
+
+const PAGE_SIZE = 20;
 
 export function ApiKeysPage() {
   const { currentConnection } = useAuth();
@@ -16,6 +18,11 @@ export function ApiKeysPage() {
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  
+  // Use ref to avoid including cursors in fetchKeys dependencies
+  const cursorsRef = useRef<string[]>([]);
 
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
@@ -30,19 +37,30 @@ export function ApiKeysPage() {
     setLoading(true);
     startLoading();
     try {
-      const list = await apiKeyService.listApiKeys(baseUrl, token);
-      setKeys(list);
+      const result = await apiKeyService.listApiKeys(baseUrl, token, {
+        limit: PAGE_SIZE,
+        after: page > 1 ? cursorsRef.current[page - 2] : undefined,
+      });
+      setKeys(result.apikeys);
+      setHasMore(result.has_more ?? false);
+      if (result.next_cursor && page > cursorsRef.current.length) {
+        cursorsRef.current = [...cursorsRef.current, result.next_cursor];
+      }
     } catch (error) {
       notify.error(extractUserMessage(error, 'Failed to load API keys'));
     } finally {
       setLoading(false);
       stopLoading();
     }
-  }, [baseUrl, token, startLoading, stopLoading, notify]);
+  }, [baseUrl, token, page, startLoading, stopLoading, notify]);
 
   useEffect(() => {
     fetchKeys();
   }, [fetchKeys]);
+
+  const handlePageChange = useCallback((p: number) => {
+    setPage(p);
+  }, []);
 
   const handleCreate = async () => {
     const trimmedName = formName.trim();
@@ -140,6 +158,13 @@ export function ApiKeysPage() {
     },
   ];
 
+  const pagination: Pagination = {
+    currentPage: page,
+    totalPages: hasMore ? page + 1 : page,
+    hasNext: hasMore,
+    hasPrev: page > 1,
+  };
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">API Keys</h1>
@@ -232,6 +257,8 @@ export function ApiKeysPage() {
         columns={columns}
         data={keys}
         isLoading={loading}
+        pagination={pagination}
+        onPageChange={handlePageChange}
         actions={
           <button
             className="btn btn-sm btn-primary"

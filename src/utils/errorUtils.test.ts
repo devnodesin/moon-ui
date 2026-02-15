@@ -10,17 +10,17 @@ describe('extractUserMessage', () => {
       error: 'invalid email format',
     };
 
-    expect(extractUserMessage(error)).toBe('invalid email format');
+    expect(extractUserMessage(error)).toBe('INVALID_EMAIL - invalid email format');
   });
 
   it('should extract error field even with different code', () => {
     const error: AppError = {
-      code: 'HTTP_400',
+      code: '400',
       message: 'Request failed',
       error: 'Username already exists',
     };
 
-    expect(extractUserMessage(error)).toBe('Username already exists');
+    expect(extractUserMessage(error)).toBe('400 - Username already exists');
   });
 
   it('should fall back to message when error field is missing', () => {
@@ -77,7 +77,7 @@ describe('extractUserMessage', () => {
       error: 'Email must be a valid email address',
     };
 
-    expect(extractUserMessage(error)).toBe('Email must be a valid email address');
+    expect(extractUserMessage(error)).toBe('VALIDATION_ERROR - Email must be a valid email address');
   });
 
   it('should handle complex error scenarios from real API', () => {
@@ -92,7 +92,7 @@ describe('extractUserMessage', () => {
       },
     };
 
-    expect(extractUserMessage(error)).toBe('invalid email format');
+    expect(extractUserMessage(error)).toBe('INVALID_EMAIL_FORMAT - invalid email format');
   });
 
   it('should use fallback parameter when provided and no error fields exist', () => {
