@@ -1,4 +1,4 @@
-# Moon Admin WebApp
+# MoonUI Admin WebApp
 
 A secure, mobile-first admin web application for managing Moon CMS backends.
 
@@ -73,7 +73,6 @@ moon-ui/
 │   ├── test/           # Test setup files
 │   ├── App.tsx         # Main app component with routing
 │   └── main.tsx        # App entry point
-├── prd/                # Product requirement documents
 ├── SPEC.md             # Technical specification
 └── SPEC_UI.md          # UI/UX specification
 ```
@@ -97,7 +96,6 @@ moon-ui/
 
 - [SPEC.md](./SPEC.md) - Full technical specification
 - [SPEC_UI.md](./SPEC_UI.md) - UI design patterns and components
-- [PRD Directory](./prd/) - Product requirement documents
 
 ## Testing Backend Server
 
@@ -106,6 +104,12 @@ A test Moon backend is available at:
 - **URL**: `https://moon.devnodes.in/`
 - **Username**: `admin`
 - **Password**: `moonadmin12#`
+
+## MoonUI Demo
+
+A demo installation of MoonUI is available at:
+
+- **URL**: `https://moon.devnodes.in/ui/`
 
 ## Security Notes
 
