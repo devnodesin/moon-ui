@@ -36,7 +36,7 @@
 │ ┌─────────────────┐          │
 │ │ Password        │          │
 │ └─────────────────┘          │
-│ [☑] Remember Connection      │
+│ [☑] Remember Me              │ ← Persist session with refresh token
 │                              │
 │ [Connect Button]             │
 │                              │
@@ -45,8 +45,14 @@
 └──────────────────────────────┘
 ```
 
-- Input: User enters server URL, username, password, checks "Remember Connection", clicks Connect.
-- Output: Credentials are validated, JWT tokens are received, all sensitive data is stored in localStorage, user is logged in and redirected to Admin view.
+**Remember Me Checkbox:**
+- When checked: Session tokens (access + refresh) are stored in `localStorage` for the connection
+- When unchecked: Session tokens are kept in-memory only and expire when browser tab closes
+- Refresh tokens enable automatic session restoration and token renewal
+- Users remain logged in across browser restarts when "Remember Me" is enabled
+
+- Input: User enters server URL, username, password, optionally checks "Remember Me", clicks Connect.
+- Output: Credentials are validated, JWT tokens are received. If "Remember Me" is checked, tokens are stored in localStorage; otherwise kept in memory. User is logged in and redirected to Dashboard.
 - Explanation: Connection is isolated.
 
 ## Admin View

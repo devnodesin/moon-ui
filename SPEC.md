@@ -115,8 +115,36 @@ POST /collections:create
 **Authentication Flow**
 
 ```
-Login → API Calls (with token) → Token Refresh → Logout → Clear Tokens
+Login → API Calls (with token) → Token Refresh (if Remember Me enabled) → Logout → Clear Tokens
 ```
+
+**Remember Me Feature:**
+
+The login form includes a "Remember Me" checkbox that controls token persistence:
+
+- **When "Remember Me" is checked:**
+  - Access and refresh tokens are stored in `localStorage` (per connection)
+  - Session is automatically restored on app reload
+  - If the access token expires, the app attempts to refresh it using the refresh token
+  - Refresh tokens have a longer lifetime (default: 7 days)
+  - Each refresh token is single-use: using it invalidates the old token and issues a new one
+  
+- **When "Remember Me" is NOT checked:**
+  - Tokens are kept in-memory only (session-based)
+  - Session expires when the browser tab is closed
+  - No automatic session restoration on reload
+  - User must log in again when accessing the app
+
+**Token Refresh Process:**
+1. When access token expires, the client sends the refresh token to `/auth:refresh`
+2. Server validates the refresh token and issues a new access/refresh token pair
+3. Client updates local tokens with the new values
+4. If refresh token is expired, invalid, or already used, user must log in again
+
+**Security:**
+- Refresh tokens are stored securely in `localStorage` (only when "Remember Me" is enabled)
+- If compromised, a refresh token can allow attackers to obtain new access tokens without a password
+- Tokens are strictly scoped to their issuing `baseUrl` and cannot be reused between backends
 
 **Connection Switching Flow**
 
@@ -130,7 +158,7 @@ Fetch Fresh Data → Update UI
 **Notes for Quick Switch (no mandatory re-login):**
 
 - Per-connection sessions: store `accessToken`, `refreshToken`, `expiresAt`, and `baseUrl` keyed by `connectionId`.
-- `Remember Connection` toggle: when enabled, persist the per-connection session in `localStorage`; otherwise keep in-memory only.
+- `Remember Me` toggle: when enabled during login, persist the per-connection session in `localStorage`; otherwise keep in-memory only.
 - On switch, the app must load the target connection's session (if present), validate the access token, and attempt a refresh before prompting for credentials.
 - Always clear in-memory application data (collections, records, forms) when switching to avoid cross-connection data leaks.
 - If token refresh fails, require explicit login for that connection and surface a notification explaining the reason.
@@ -139,7 +167,7 @@ Fetch Fresh Data → Update UI
 **Security & UX constraints:**
 
 - Do not reuse tokens between different backends; tokens are strictly scoped to their issuing `baseUrl`.
-- Persisted session tokens are allowed only with explicit `Remember Connection` opt-in; otherwise tokens must remain in-memory only. Document the risk and behavior in `INSTALL.md`.
+- Persisted session tokens are allowed only with explicit `Remember Me` opt-in; otherwise tokens must remain in-memory only. Document the risk and behavior in `README.md`.
 - Prompt the user if there are unsaved changes before switching.
 - The notification system must handle refresh failures and expired-session events (see `### MUST` — notification system for canonical rules).
 

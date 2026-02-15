@@ -45,7 +45,7 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText(/server url/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/remember connection/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/remember me/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Connect' })).toBeInTheDocument();
   });
 
@@ -112,7 +112,7 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText(/server url/i), 'https://api.example.com');
     await user.type(screen.getByLabelText(/username/i), 'admin');
     await user.type(screen.getByLabelText(/password/i), 'secret');
-    await user.click(screen.getByLabelText(/remember connection/i));
+    await user.click(screen.getByLabelText(/remember me/i));
     await user.click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() => {
@@ -169,7 +169,7 @@ describe('LoginPage', () => {
       expect(screen.getByLabelText(/server url/i)).toBeDisabled();
       expect(screen.getByLabelText(/username/i)).toBeDisabled();
       expect(screen.getByLabelText(/password/i)).toBeDisabled();
-      expect(screen.getByLabelText(/remember connection/i)).toBeDisabled();
+      expect(screen.getByLabelText(/remember me/i)).toBeDisabled();
     });
   });
 
