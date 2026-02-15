@@ -42,7 +42,7 @@ export function Navbar() {
             />
           </svg>
         </label>
-        <a className="btn btn-ghost text-xl" href="/#/admin">
+        <a className="btn btn-ghost text-xl" href="#/admin">
           🌙 Moon Admin
         </a>
       </div>
