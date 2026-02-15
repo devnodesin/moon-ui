@@ -203,4 +203,31 @@ describe('CollectionRecordsPage', () => {
       { timeout: 500 }
     );
   });
+
+  it('should enable next button when next_cursor is present', async () => {
+    mockListRecords.mockResolvedValue({
+      data: [{ id: '1', title: 'Record 1' }],
+      next_cursor: '01KHGCVYD0NF8KPP3DPR1ZTN41',
+      has_more: true,
+      limit: 20,
+      total: 25,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Record 1')).toBeInTheDocument();
+    });
+
+    // Check that pagination shows current page and recognizes more pages
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+
+    // Check that next button is enabled
+    const nextButton = screen.getByText('»');
+    expect(nextButton).not.toBeDisabled();
+
+    // Check that previous button is disabled on first page
+    const prevButton = screen.getByText('«');
+    expect(prevButton).toBeDisabled();
+  });
 });

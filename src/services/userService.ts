@@ -57,10 +57,10 @@ export async function listUsers(
     
   const response = await axios.get<UserListResponse>(url, authHeaders(accessToken));
   
-  // Ensure has_more is calculated if not provided by backend
+  // Derive has_more from next_cursor if not explicitly set
   const data = response.data;
-  if (data.has_more === undefined && data.next_cursor) {
-    data.has_more = !!data.next_cursor;
+  if (data.has_more === undefined && data.next_cursor !== undefined) {
+    data.has_more = data.next_cursor.length > 0;
   }
   
   return data;
