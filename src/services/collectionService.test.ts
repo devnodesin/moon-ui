@@ -105,6 +105,44 @@ describe('collectionService', () => {
 
       await collectionService.listRecords(BASE_URL, TOKEN, 'posts', { q: 'hello', limit: 10 });
     });
+
+    it('should derive has_more from next_cursor when has_more is not provided', async () => {
+      const response = { 
+        data: [{ id: '1', title: 'Hello' }], 
+        next_cursor: '01KHGCVYD0NF8KPP3DPR1ZTN41',
+        limit: 20,
+        total: 25
+      };
+      mock.onGet(new RegExp(`${BASE_URL}/posts:list`)).reply(200, response);
+
+      const result = await collectionService.listRecords(BASE_URL, TOKEN, 'posts');
+      expect(result.has_more).toBe(true);
+      expect(result.next_cursor).toBe('01KHGCVYD0NF8KPP3DPR1ZTN41');
+    });
+
+    it('should keep has_more false when next_cursor is empty', async () => {
+      const response = { 
+        data: [{ id: '1', title: 'Hello' }], 
+        next_cursor: '',
+        limit: 20
+      };
+      mock.onGet(new RegExp(`${BASE_URL}/posts:list`)).reply(200, response);
+
+      const result = await collectionService.listRecords(BASE_URL, TOKEN, 'posts');
+      expect(result.has_more).toBe(false);
+    });
+
+    it('should not override explicit has_more value', async () => {
+      const response = { 
+        data: [{ id: '1', title: 'Hello' }], 
+        has_more: false,
+        next_cursor: 'some-cursor'
+      };
+      mock.onGet(new RegExp(`${BASE_URL}/posts:list`)).reply(200, response);
+
+      const result = await collectionService.listRecords(BASE_URL, TOKEN, 'posts');
+      expect(result.has_more).toBe(false);
+    });
   });
 
   describe('getRecord', () => {
