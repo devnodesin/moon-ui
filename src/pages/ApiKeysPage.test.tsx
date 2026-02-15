@@ -51,7 +51,7 @@ function renderPage() {
 describe('ApiKeysPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockListApiKeys.mockResolvedValue([]);
+    mockListApiKeys.mockResolvedValue({ apikeys: [], has_more: false });
   });
 
   it('should show heading', async () => {
@@ -60,9 +60,12 @@ describe('ApiKeysPage', () => {
   });
 
   it('should fetch and display keys', async () => {
-    mockListApiKeys.mockResolvedValue([
-      { id: '1', name: 'key1', description: 'My key', role: 'admin', can_write: true, created_at: '2024-01-01' },
-    ]);
+    mockListApiKeys.mockResolvedValue({
+      apikeys: [
+        { id: '1', name: 'key1', description: 'My key', role: 'admin', can_write: true, created_at: '2024-01-01' },
+      ],
+      has_more: false,
+    });
 
     renderPage();
 
@@ -81,7 +84,7 @@ describe('ApiKeysPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(mockNotify.error).toHaveBeenCalledWith('specific backend error message');
+      expect(mockNotify.error).toHaveBeenCalledWith('BACKEND_ERROR - specific backend error message');
     });
   });
 
@@ -156,9 +159,12 @@ describe('ApiKeysPage', () => {
 
   it('should delete an API key after confirm', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    mockListApiKeys.mockResolvedValue([
-      { id: '1', name: 'key1', description: 'desc', role: 'admin', can_write: true },
-    ]);
+    mockListApiKeys.mockResolvedValue({
+      apikeys: [
+        { id: '1', name: 'key1', description: 'desc', role: 'admin', can_write: true },
+      ],
+      has_more: false,
+    });
     mockDeleteApiKey.mockResolvedValue(undefined);
 
     renderPage();
@@ -180,10 +186,13 @@ describe('ApiKeysPage', () => {
   });
 
   it('should display can_write as Yes/No', async () => {
-    mockListApiKeys.mockResolvedValue([
-      { id: '1', name: 'key1', description: 'desc', role: 'admin', can_write: true },
-      { id: '2', name: 'key2', description: 'desc2', role: 'user', can_write: false },
-    ]);
+    mockListApiKeys.mockResolvedValue({
+      apikeys: [
+        { id: '1', name: 'key1', description: 'desc', role: 'admin', can_write: true },
+        { id: '2', name: 'key2', description: 'desc2', role: 'user', can_write: false },
+      ],
+      has_more: false,
+    });
 
     renderPage();
 

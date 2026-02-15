@@ -224,7 +224,7 @@ export function LoginPage() {
               )}
             </div>
 
-            {/* Remember Connection */}
+            {/* Remember Me */}
             <div className="form-control mb-4">
               <label className="label cursor-pointer justify-start gap-2" htmlFor="remember">
                 <input
@@ -235,7 +235,7 @@ export function LoginPage() {
                   onChange={(e) => setRemember(e.target.checked)}
                   disabled={loading}
                 />
-                <span className="label-text">Remember Connection</span>
+                <span className="label-text">Remember Me</span>
               </label>
             </div>
 

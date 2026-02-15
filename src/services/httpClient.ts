@@ -5,7 +5,7 @@ import type { HttpClientConfig, AppError } from '../types/http';
 export class HttpClient {
   private client: AxiosInstance;
   private tokenStorage: HttpClientConfig['tokenStorage'];
-  private onSessionExpired?: () => void;
+  private onSessionExpired?: (error?: AppError) => void;
   private isRefreshing = false;
   private refreshPromise: Promise<void> | null = null;
 
@@ -62,11 +62,12 @@ export class HttpClient {
             // Retry original request with new token
             return this.client(originalRequest);
           } catch (refreshError) {
-            // Refresh failed, trigger session expired
+            // Refresh failed, trigger session expired with error details
+            const normalizedError = this.normalizeError(error);
             if (this.onSessionExpired) {
-              this.onSessionExpired();
+              this.onSessionExpired(normalizedError);
             }
-            throw this.normalizeError(refreshError);
+            throw normalizedError;
           } finally {
             this.isRefreshing = false;
             this.refreshPromise = null;
@@ -99,8 +100,13 @@ export class HttpClient {
   private normalizeError(error: unknown): AppError {
     if (axios.isAxiosError(error)) {
       const data = error.response?.data;
+      const status = error.response?.status;
+      
+      // Use status code if available, otherwise use generic code
+      const code = status ? String(status) : (data?.code || 'HTTP_ERROR');
+      
       return {
-        code: data?.code || `HTTP_${error.response?.status || 'ERROR'}`,
+        code,
         message: data?.message || error.message || 'An error occurred',
         error: data?.error, // Extract backend error field for user notifications
         details: data,

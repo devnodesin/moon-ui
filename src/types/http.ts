@@ -17,5 +17,5 @@ export interface HttpClientConfig {
   baseUrl: string;
   timeout?: number;
   tokenStorage: TokenStorage;
-  onSessionExpired?: () => void;
+  onSessionExpired?: (error?: AppError) => void;
 }

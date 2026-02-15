@@ -29,15 +29,41 @@ function authHeaders(accessToken: string) {
   return { headers: { Authorization: `Bearer ${accessToken}` } };
 }
 
+export interface UserListParams {
+  limit?: number;
+  after?: string;
+}
+
+export interface UserListResponse {
+  users: UserRecord[];
+  next_cursor?: string;
+  has_more?: boolean;
+  total?: number;
+  limit?: number;
+}
+
 export async function listUsers(
   baseUrl: string,
   accessToken: string,
-): Promise<UserRecord[]> {
-  const response = await axios.get<{ users: UserRecord[]; next_cursor?: string | null; limit?: number }>(
-    `${baseUrl}/users:list`,
-    authHeaders(accessToken),
-  );
-  return response.data.users;
+  params?: UserListParams,
+): Promise<UserListResponse> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.after) queryParams.append('after', params.after);
+  
+  const url = queryParams.toString() 
+    ? `${baseUrl}/users:list?${queryParams}`
+    : `${baseUrl}/users:list`;
+    
+  const response = await axios.get<UserListResponse>(url, authHeaders(accessToken));
+  
+  // Ensure has_more is calculated if not provided by backend
+  const data = response.data;
+  if (data.has_more === undefined && data.next_cursor) {
+    data.has_more = !!data.next_cursor;
+  }
+  
+  return data;
 }
 
 export async function getUser(

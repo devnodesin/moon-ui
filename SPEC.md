@@ -28,20 +28,28 @@ All API errors must be handled consistently and surfaced to users through notifi
 
 **Backend Error Message Extraction:**
 - When an API call returns an error response with an `"error"` property (e.g., `{"code": 400, "error": "invalid email format", "error_code": "INVALID_EMAIL_FORMAT"}`), the app **MUST** use the value of `"error"` as the message in user-facing notifications/toasters.
+- **Error Message Format:** When both `code` and `error` fields are available, the notification displays `{code} - {error}` (e.g., `401 - invalid or expired token`). This format provides clear context about both the error type (code) and the specific issue (error message).
 - If the response does not have an `"error"` property, use the app's existing/fallback error handling message instead.
 - This behavior is implemented via `extractUserMessage()` utility in `src/utils/errorUtils.ts` and applied across all API error handling code paths.
 
 **Error Priority:**
-1. Backend error message from `error` field (highest priority)
-2. Standard error message from `message` field
-3. Context-aware fallback message provided by the caller
-4. Generic "An error occurred" message (final fallback)
+1. Backend error message from `error` field formatted as `{code} - {error}` (highest priority)
+2. Backend error message from `error` field alone (when code is not available)
+3. Standard error message from `message` field
+4. Context-aware fallback message provided by the caller
+5. Generic "An error occurred" message (final fallback)
 
 **Implementation:**
 - All API errors are normalized to `AppError` type in `src/services/httpClient.ts`
 - The `AppError` interface includes an optional `error` field for backend-provided user messages
+- The HTTP client uses the numeric status code (e.g., `401`) as the `code` field when available
 - All pages use `extractUserMessage(error, fallbackMessage)` when displaying error notifications
 - This ensures consistent, user-friendly error messages across the application
+
+**Token Expiration Handling:**
+- When a 401 error occurs with "invalid or expired token" message, the app should provide helpful context
+- Future enhancement: Automatically redirect users to login page with a "Session expired. Please log in again." message
+- The intended destination should be preserved for post-login redirect
 
 ### API Adapter Layer
 
@@ -107,8 +115,36 @@ POST /collections:create
 **Authentication Flow**
 
 ```
-Login → API Calls (with token) → Token Refresh → Logout → Clear Tokens
+Login → API Calls (with token) → Token Refresh (if Remember Me enabled) → Logout → Clear Tokens
 ```
+
+**Remember Me Feature:**
+
+The login form includes a "Remember Me" checkbox that controls token persistence:
+
+- **When "Remember Me" is checked:**
+  - Access and refresh tokens are stored in `localStorage` (per connection)
+  - Session is automatically restored on app reload
+  - If the access token expires, the app attempts to refresh it using the refresh token
+  - Refresh tokens have a longer lifetime (default: 7 days)
+  - Each refresh token is single-use: using it invalidates the old token and issues a new one
+  
+- **When "Remember Me" is NOT checked:**
+  - Tokens are kept in-memory only (session-based)
+  - Session expires when the browser tab is closed
+  - No automatic session restoration on reload
+  - User must log in again when accessing the app
+
+**Token Refresh Process:**
+1. When access token expires, the client sends the refresh token to `/auth:refresh`
+2. Server validates the refresh token and issues a new access/refresh token pair
+3. Client updates local tokens with the new values
+4. If refresh token is expired, invalid, or already used, user must log in again
+
+**Security:**
+- Refresh tokens are stored securely in `localStorage` (only when "Remember Me" is enabled)
+- If compromised, a refresh token can allow attackers to obtain new access tokens without a password
+- Tokens are strictly scoped to their issuing `baseUrl` and cannot be reused between backends
 
 **Connection Switching Flow**
 
@@ -122,7 +158,7 @@ Fetch Fresh Data → Update UI
 **Notes for Quick Switch (no mandatory re-login):**
 
 - Per-connection sessions: store `accessToken`, `refreshToken`, `expiresAt`, and `baseUrl` keyed by `connectionId`.
-- `Remember Connection` toggle: when enabled, persist the per-connection session in `localStorage`; otherwise keep in-memory only.
+- `Remember Me` toggle: when enabled during login, persist the per-connection session in `localStorage`; otherwise keep in-memory only.
 - On switch, the app must load the target connection's session (if present), validate the access token, and attempt a refresh before prompting for credentials.
 - Always clear in-memory application data (collections, records, forms) when switching to avoid cross-connection data leaks.
 - If token refresh fails, require explicit login for that connection and surface a notification explaining the reason.
@@ -131,7 +167,7 @@ Fetch Fresh Data → Update UI
 **Security & UX constraints:**
 
 - Do not reuse tokens between different backends; tokens are strictly scoped to their issuing `baseUrl`.
-- Persisted session tokens are allowed only with explicit `Remember Connection` opt-in; otherwise tokens must remain in-memory only. Document the risk and behavior in `INSTALL.md`.
+- Persisted session tokens are allowed only with explicit `Remember Me` opt-in; otherwise tokens must remain in-memory only. Document the risk and behavior in `README.md`.
 - Prompt the user if there are unsaved changes before switching.
 - The notification system must handle refresh failures and expired-session events (see `### MUST` — notification system for canonical rules).
 
@@ -143,6 +179,35 @@ Fetch Fresh Data → Update UI
  	- Root `/` is the public login entrypoint. Unauthenticated users visiting any internal route MUST be redirected to `/` and the original target preserved as a `next` parameter inside the hash. Example: `https://example.com/#/admin/collections` → redirect to `https://example.com/#/login?next=%2Fadmin%2Fcollections`.
  	- Authenticated users visiting `/` MUST be redirected to `/#/admin/` (or `/#/app/` when configured).
  	- Servers only need to serve the SPA base path (e.g., `/` or `/admin/`); all route guards, token validation, and redirects are enforced client-side.
+ 	- **Dashboard Route:** The default authenticated route (`/admin/` or `/app/`) displays a dashboard showing total counts for Collections, Users, and API Keys, along with a table of collections. Each count card is clickable and navigates to the respective resource page.
+
+## Pagination Support
+
+The app supports cursor-based pagination for list endpoints (Collections records, Users, API Keys):
+
+**Implementation:**
+- List services (`userService.listUsers`, `apiKeyService.listApiKeys`, `collectionService.listRecords`) return pagination information including `next_cursor` and `has_more` flags
+- Pages track pagination state using React state (`page`, `hasMore`) and store cursors in refs to avoid unnecessary re-renders
+- The DataTable component displays pagination controls when pagination data is provided
+- Pagination UI shows "Previous" and "Next" buttons with current page indicator
+- Buttons are automatically disabled when there are no more pages in that direction
+
+**API Response Format:**
+```json
+{
+  "data": [...],
+  "next_cursor": "cursor_string",
+  "has_more": true,
+  "total": 24,
+  "limit": 20
+}
+```
+
+**User Experience:**
+- Users can navigate through pages using Previous/Next buttons
+- The current page number and total pages are displayed
+- Loading states are shown while fetching data
+- Pagination state resets when search/filter criteria change
 
 ## MUST
 

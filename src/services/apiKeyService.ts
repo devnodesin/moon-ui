@@ -37,15 +37,41 @@ function authHeaders(accessToken: string) {
   return { headers: { Authorization: `Bearer ${accessToken}` } };
 }
 
+export interface ApiKeyListParams {
+  limit?: number;
+  after?: string;
+}
+
+export interface ApiKeyListResponse {
+  apikeys: ApiKeyRecord[];
+  next_cursor?: string;
+  has_more?: boolean;
+  total?: number;
+  limit?: number;
+}
+
 export async function listApiKeys(
   baseUrl: string,
   accessToken: string,
-): Promise<ApiKeyRecord[]> {
-  const response = await axios.get<{ apikeys: ApiKeyRecord[]; next_cursor?: string | null; limit?: number }>(
-    `${baseUrl}/apikeys:list`,
-    authHeaders(accessToken),
-  );
-  return response.data.apikeys;
+  params?: ApiKeyListParams,
+): Promise<ApiKeyListResponse> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.after) queryParams.append('after', params.after);
+  
+  const url = queryParams.toString() 
+    ? `${baseUrl}/apikeys:list?${queryParams}`
+    : `${baseUrl}/apikeys:list`;
+    
+  const response = await axios.get<ApiKeyListResponse>(url, authHeaders(accessToken));
+  
+  // Ensure has_more is calculated if not provided by backend
+  const data = response.data;
+  if (data.has_more === undefined && data.next_cursor) {
+    data.has_more = !!data.next_cursor;
+  }
+  
+  return data;
 }
 
 export async function getApiKey(
