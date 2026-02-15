@@ -7,7 +7,7 @@ export function NotFoundPage() {
         <p className="text-lg opacity-70 mb-8">
           The page you're looking for doesn't exist.
         </p>
-        <a href="/#/admin" className="btn btn-primary">
+        <a href="#/admin" className="btn btn-primary">
           Go to Dashboard
         </a>
       </div>

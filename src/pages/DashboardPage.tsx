@@ -117,7 +117,7 @@ export function DashboardPage() {
               title="API Keys"
               count={stats.apiKeysCount}
               icon="🔑"
-              onClick={() => navigate('/admin/apikeys')}
+              onClick={() => navigate('/admin/keys')}
             />
           </div>
 
