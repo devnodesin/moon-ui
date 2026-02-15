@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 
-export const TEST_SERVER = 'https://moon.asensar.in';
+export const TEST_SERVER = 'https://moon.devnodes.in';
 export const TEST_USERNAME = 'admin';
 export const TEST_PASSWORD = 'moonadmin12#';
 

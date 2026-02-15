@@ -46,7 +46,7 @@ Tests are configured in `playwright.config.ts` at the project root.
 
 Tests use the Moon test server by default:
 
-- **Server**: https://moon.asensar.in/
+- **Server**: https://moon.devnodes.in/
 - **Username**: admin
 - **Password**: moonadmin12#
 

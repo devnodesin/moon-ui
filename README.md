@@ -103,7 +103,7 @@ moon-ui/
 
 A test Moon backend is available at:
 
-- **URL**: `https://moon.asensar.in/`
+- **URL**: `https://moon.devnodes.in/`
 - **Username**: `admin`
 - **Password**: `moonadmin12#`
 

@@ -2,12 +2,12 @@
 ## Documentation (MUST REFER)
 
 - **UI Layouts and Components**: refer [SPEC_UI.md](./SPEC_UI.md) for UI design.
-- For external Moon backends, see <https://moon.asensar.in/doc/llms-full.txt>
+- For external Moon backends, see <https://moon.devnodes.in/doc/llms-full.txt>
 - Moon github repo: <https://github.com/devnodesin/moon>
 
 ## BACKEND (MOON SERVER)
 
-- Testing server: `https://moon.asensar.in/`
+- Testing server: `https://moon.devnodes.in/`
 - Credentials: (username: `admin`, password: `moonadmin12#`)
 - If the test server is not accessible, install and run the local Moon server from `https://github.com/devnodesin/moon`
 
@@ -18,7 +18,7 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 ## Backend Integration
 
 - The UI is responsible for connecting to external Moon API‑compliant backends via standard HTTP requests (use `fetch` or an HTTP client like Axios).
-- All `curl` examples in `https://moon.asensar.in/doc/llms-full.txt` are reference snippets for humans and agents only — the application must perform equivalent REST calls from the browser, not by invoking `curl`.
+- All `curl` examples in `https://moon.devnodes.in/doc/llms-full.txt` are reference snippets for humans and agents only — the application must perform equivalent REST calls from the browser, not by invoking `curl`.
 - Implement a reusable HTTP client layer that handles authentication (access + refresh tokens), automatic token refresh, retries/backoff, error normalization, and consistent notification on failures.
 - For local development and testing, the app may target a Moon test server, but all interactions must remain standard browser HTTP calls (CORS-aware).
 
@@ -126,7 +126,7 @@ Fetch Fresh Data → Update UI
 - On switch, the app must load the target connection's session (if present), validate the access token, and attempt a refresh before prompting for credentials.
 - Always clear in-memory application data (collections, records, forms) when switching to avoid cross-connection data leaks.
 - If token refresh fails, require explicit login for that connection and surface a notification explaining the reason.
-- Follow session timeout and forced-logout rules from `https://moon.asensar.in/doc/llms-full.txt` when validating/refreshing tokens.
+- Follow session timeout and forced-logout rules from `https://moon.devnodes.in/doc/llms-full.txt` when validating/refreshing tokens.
 
 **Security & UX constraints:**
 
@@ -164,7 +164,7 @@ Fetch Fresh Data → Update UI
   - No separate notifications page is required—all notification management is handled via the navbar settings.
 - Show a smart loading/progress indicator for async operations (global or route-level) to improve UX.
 - Support data import and export in CSV and JSON formats for collections and records.
-- Follow session timeout and auto-logout rules as specified in `https://moon.asensar.in/doc/llms-full.txt` (enforce via the app HTTP client).
+- Follow session timeout and auto-logout rules as specified in `https://moon.devnodes.in/doc/llms-full.txt` (enforce via the app HTTP client).
 - Notifications are in-session only and must not persist across full page reloads.
 - Storing sensitive session data in-memory (JS variables) during an active session is acceptable; persisted tokens require explicit `Remember Connection` opt-in.
 

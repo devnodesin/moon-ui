@@ -5,7 +5,7 @@ import { CollectionListPage } from './CollectionListPage';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
-const BASE_URL = 'https://moon.asensar.in';
+const BASE_URL = 'https://moon.devnodes.in';
 
 // Mock auth and loading contexts
 vi.mock('../hooks/useAuth', () => ({

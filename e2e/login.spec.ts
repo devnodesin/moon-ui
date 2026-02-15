@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const TEST_SERVER = 'https://moon.asensar.in';
+const TEST_SERVER = 'https://moon.devnodes.in';
 const TEST_USERNAME = 'admin';
 const TEST_PASSWORD = 'moonadmin12#';
 
