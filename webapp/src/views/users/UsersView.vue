@@ -1,0 +1,17 @@
+<script setup lang="ts">
+import AppLayout from '@/components/layout/AppLayout.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+</script>
+
+<template>
+  <AppLayout>
+    <div class="container-fluid p-4">
+      <h1 class="h3 fw-bold mb-4"><i class="bi bi-people me-2 text-primary" />Users</h1>
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <EmptyState icon="bi-people" title="Users management" message="Coming soon." />
+        </div>
+      </div>
+    </div>
+  </AppLayout>
+</template>

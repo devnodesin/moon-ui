@@ -71,85 +71,110 @@ No other frameworks, CSS libraries, or UI component libraries are permitted.
 
 ```
 webapp/
-├── AGENTS.md
-├── SPEC.md
-├── moon-llms.md
-├── INSTALL.md
-├── README.md
 ├── index.html
-├── vite.config.ts
+├── vite.config.ts               # Vite + Vitest config (@ alias, jsdom env)
 ├── tsconfig.json
+├── tsconfig.app.json
+├── tsconfig.node.json
 ├── package.json
-├── playwright.config.ts
+├── .eslintrc.cjs
+├── .prettierrc
 ├── src/
-│   ├── main.ts                  # App entry point
-│   ├── App.vue                  # Root component
+│   ├── main.ts                  # App entry point (Vue + Pinia + Router + Bootstrap)
+│   ├── App.vue                  # Root: ProgressBar + RouterView + ToastContainer + ConfirmModal
+│   ├── test-setup.ts            # Vitest global setup
 │   ├── router/
-│   │   └── index.ts             # Vue Router configuration
+│   │   └── index.ts             # Vue Router 4 — all routes, auth guards, progress integration
 │   ├── stores/                  # Pinia stores
-│   │   ├── auth.ts              # Authentication store
-│   │   ├── connections.ts       # Backend connections store
-│   │   └── toast.ts             # Notification (toast) store
+│   │   ├── auth.ts              # AuthState: user, tokens, setSession, loadFromStorage, clearSession
+│   │   ├── connections.ts       # ConnectionsState: CRUD, localStorage persistence
+│   │   ├── toast.ts             # ToastState: show, dismiss, clear (auto-dismiss support)
+│   │   └── progress.ts          # ProgressState: smart progress bar (start/finish/tick)
 │   ├── services/                # HTTP client and API services
-│   │   ├── http.ts              # Core HTTP client (fetch wrapper)
-│   │   ├── auth.ts              # Auth service (login, logout, refresh)
-│   │   ├── users.ts             # Users API service
-│   │   ├── apikeys.ts           # API Keys service
-│   │   ├── collections.ts       # Collections service
-│   │   └── records.ts           # Records service
+│   │   ├── http.ts              # Core HTTP client: fetch wrapper, token refresh queue, X-Request-ID, error normalization
+│   │   ├── auth.ts              # Auth service: authLogin, authLogout, authRefresh, authMe, getHealth
+│   │   ├── users.ts             # Users API service (future)
+│   │   ├── apikeys.ts           # API Keys service (future)
+│   │   ├── collections.ts       # Collections service (future)
+│   │   └── records.ts           # Records service (future)
 │   ├── composables/             # Reusable Vue composables
-│   │   ├── useAsync.ts          # Async operation + loading state
-│   │   ├── usePagination.ts     # Cursor-based pagination
-│   │   ├── useImportExport.ts   # CSV/JSON import-export
-│   │   └── useConfirm.ts        # Confirmation modal
+│   │   ├── useAsync.ts          # Async operation: loading, error, data, execute
+│   │   ├── usePagination.ts     # Cursor-based pagination: after, limit, goNext, goPrev, reset
+│   │   ├── useImportExport.ts   # CSV/JSON export + import (FileReader-based)
+│   │   └── useConfirm.ts        # Singleton confirm modal: confirm(msg, opts) → Promise<boolean>
 │   ├── components/              # Reusable UI components
 │   │   ├── layout/
-│   │   │   ├── AppHeader.vue
-│   │   │   ├── AppSidebar.vue
-│   │   │   └── AppLayout.vue
+│   │   │   ├── AppHeader.vue    # Navbar: logo, connection name, user dropdown, logout
+│   │   │   ├── AppSidebar.vue   # Sidebar: Bootstrap Icons nav links, admin-only filtering
+│   │   │   └── AppLayout.vue    # Layout wrapper: header + collapsible sidebar + main slot
 │   │   ├── ui/
-│   │   │   ├── ToastContainer.vue
-│   │   │   ├── ProgressBar.vue
-│   │   │   ├── ConfirmModal.vue
-│   │   │   ├── DataTable.vue
-│   │   │   ├── Pagination.vue
-│   │   │   ├── SearchBar.vue
-│   │   │   ├── FilterBar.vue
-│   │   │   ├── SortControl.vue
-│   │   │   ├── FieldBadge.vue
-│   │   │   └── EmptyState.vue
+│   │   │   ├── ToastContainer.vue  # Bootstrap 5.3 toasts (fixed bottom-right, max 5)
+│   │   │   ├── ProgressBar.vue     # Global top progress bar (moon:progress event-driven)
+│   │   │   ├── ConfirmModal.vue    # Bootstrap modal via useConfirm composable
+│   │   │   ├── EmptyState.vue      # Empty state display with icon + message
+│   │   │   ├── DataTable.vue       # (future) Sortable, selectable data table
+│   │   │   ├── Pagination.vue      # (future) Cursor-based pagination controls
+│   │   │   ├── SearchBar.vue       # (future) Full-text search input
+│   │   │   ├── FilterBar.vue       # (future) Field filter with operator selection
+│   │   │   ├── SortControl.vue     # (future) Sort field/direction control
+│   │   │   ├── FieldBadge.vue      # (future) Field type badge
+│   │   │   └── EmptyState.vue      # Empty state display
 │   │   └── forms/
-│   │       ├── FieldInput.vue    # Dynamic field input by type
-│   │       └── FormErrors.vue
+│   │       ├── FieldInput.vue      # (future) Dynamic field input by type
+│   │       └── FormErrors.vue      # (future) Form error display
 │   ├── views/                   # Page-level components (route targets)
-│   │   ├── LoginView.vue
-│   │   ├── DashboardView.vue
-│   │   ├── ConnectionsView.vue
+│   │   ├── LoginView.vue        # Login: URL + connection name + username + password + Remember Me
+│   │   ├── DashboardView.vue    # Dashboard: health status card, connection info, quick-access cards
+│   │   ├── ConnectionsView.vue  # Connections: list, add (with /health validation), switch, delete
 │   │   ├── users/
-│   │   │   ├── UsersView.vue
-│   │   │   └── UserFormView.vue
+│   │   │   ├── UsersView.vue       # (stub) Users list
+│   │   │   └── UserFormView.vue    # (future) Create/edit user
 │   │   ├── apikeys/
-│   │   │   ├── ApiKeysView.vue
-│   │   │   └── ApiKeyFormView.vue
+│   │   │   ├── ApiKeysView.vue     # (stub) API Keys list
+│   │   │   └── ApiKeyFormView.vue  # (future) Create/edit API key
 │   │   ├── collections/
-│   │   │   ├── CollectionsView.vue
-│   │   │   ├── CollectionFormView.vue
-│   │   │   └── CollectionSchemaView.vue
+│   │   │   ├── CollectionsView.vue    # (stub) Collections list
+│   │   │   ├── CollectionFormView.vue # (future) Create/edit collection
+│   │   │   └── CollectionSchemaView.vue # (future) Schema management
 │   │   └── records/
-│   │       ├── RecordsView.vue
-│   │       └── RecordFormView.vue
+│   │       ├── RecordsView.vue     # (future) Records list with full features
+│   │       └── RecordFormView.vue  # (future) Dynamic record form
 │   ├── types/                   # TypeScript interfaces
-│   │   ├── api.ts               # API request/response types
-│   │   ├── connection.ts        # Backend connection types
-│   │   └── ui.ts                # UI state types
+│   │   ├── api.ts               # ApiError, ApiListResponse, AuthTokens, AuthUser, HealthData, etc.
+│   │   ├── connection.ts        # Connection interface
+│   │   └── ui.ts                # Toast, ToastType interfaces
 │   └── utils/
-│       ├── validators.ts        # Input validation utilities
-│       ├── formatters.ts        # Data formatting helpers
-│       └── csv.ts               # CSV parse/serialize
+│       ├── validators.ts        # isValidUrl, isValidCollectionName, isValidFieldName, etc.
+│       ├── formatters.ts        # formatDate, formatBytes, toRfc3339, collectionFilename
+│       └── csv.ts               # parseCsv, serializeCsv
 └── tests/
     ├── unit/                    # Vitest unit tests (mirrors src/)
-    └── e2e/                     # Playwright E2E tests
+    │   ├── stores/              # toast.spec.ts, connections.spec.ts
+    │   ├── composables/         # useAsync.spec.ts, usePagination.spec.ts
+    │   ├── services/            # auth.spec.ts
+    │   └── utils/               # validators.spec.ts
+    └── e2e/                     # Playwright E2E tests (future)
 ```
+
+### Implementation Status
+
+| Module | Status |
+|--------|--------|
+| Project scaffold + config | ✅ Done |
+| Types (api, connection, ui) | ✅ Done |
+| HTTP client (http.ts) | ✅ Done |
+| Auth service | ✅ Done |
+| Pinia stores (auth, connections, toast, progress) | ✅ Done |
+| Composables (useAsync, usePagination, useImportExport, useConfirm) | ✅ Done |
+| Layout components (AppHeader, AppSidebar, AppLayout) | ✅ Done |
+| UI components (ToastContainer, ProgressBar, ConfirmModal, EmptyState) | ✅ Done |
+| Router with auth/admin guards | ✅ Done |
+| LoginView (URL + username + password form) | ✅ Done |
+| DashboardView (health status + quick access) | ✅ Done |
+| ConnectionsView (list, add, switch, delete) | ✅ Done |
+| Users/ApiKeys/Collections views | 🔲 Stub only |
+| Unit tests (23 passing) | ✅ Done |
+| E2E tests | 🔲 Future |
 
 ---
 
