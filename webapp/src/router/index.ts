@@ -33,15 +33,53 @@ const router = createRouter({
       meta: { adminOnly: true },
     },
     {
+      path: '/users/new',
+      name: 'user-create',
+      component: () => import('@/views/users/UserFormView.vue'),
+      meta: { adminOnly: true },
+    },
+    {
+      path: '/users/:id/edit',
+      name: 'user-edit',
+      component: () => import('@/views/users/UserFormView.vue'),
+      props: true,
+      meta: { adminOnly: true },
+    },
+    {
       path: '/apikeys',
       name: 'apikeys',
       component: () => import('@/views/apikeys/ApiKeysView.vue'),
       meta: { adminOnly: true },
     },
     {
+      path: '/apikeys/new',
+      name: 'apikey-create',
+      component: () => import('@/views/apikeys/ApiKeyFormView.vue'),
+      meta: { adminOnly: true },
+    },
+    {
+      path: '/apikeys/:id/edit',
+      name: 'apikey-edit',
+      component: () => import('@/views/apikeys/ApiKeyFormView.vue'),
+      props: true,
+      meta: { adminOnly: true },
+    },
+    {
       path: '/collections',
       name: 'collections',
       component: () => import('@/views/collections/CollectionsView.vue'),
+    },
+    {
+      path: '/collections/:collection/records',
+      name: 'records',
+      component: () => import('@/views/records/RecordsView.vue'),
+      props: true,
+    },
+    {
+      path: '/collections/:collection/records/:id',
+      name: 'record-view',
+      component: () => import('@/views/records/RecordView.vue'),
+      props: true,
     },
   ],
 })
