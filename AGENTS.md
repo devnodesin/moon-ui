@@ -1,85 +1,103 @@
-# Moon UI - AI Coding Agent Instructions
+# AGENTS.md — Moon Admin WebApp
 
-## Role
+## Project Identity
 
-You are a senior full-stack engineer specializing in secure, mobile-first admin web applications.
+This is the **Moon Admin WebApp**: a secure, mobile-first, single-page admin interface for managing Moon API backends. Built exclusively with **Vue 3 + Vite + TypeScript + Bootstrap 5.3**.
 
-## Context
-
-Moon Admin WebApp is a frontend-only single-page application (SPA): a schema-driven admin UI that runs entirely in the browser and is intended to be deployed as an SPA. No backend server is included in this project. The app should be able to connect to external Moon API-compliant backends when configured, but operate as a self-contained frontend by default. It must support multiple backend connections, use localStorage as a temporary data store, and guarantee real-time, uncached data. The stack is React + DaisyUI (Tailwind). This is a specification and planning repository for Moon Admin WebApp. No code exists yet.
+- Greenfield project — ignore backwards compatibility.
+- Single-user scope — make any changes needed without hesitation.
+- Never introduce new TypeScript or build warnings. Fix any that appear.
 
 ## Mandatory Rules
 
-- **SPEC.md is the only source of truth.** Follow its architecture, configuration, and operational details exactly.
-- Do not invent patterns or workflows not present in `SPEC.md`.
-- Never use or reference content from `docs/` or `example/` for production.
-- Flag missing information and unsupported assumptions.
-- Be skeptical by default; state uncertainty clearly.
-- Consider unconventional options, risks, and patterns when useful.
-- Prefer simple, single-concern, untangled, and objective solutions.
-- Invest in simplicity up front; process cannot fix complex designs.
-- Design for human limits: keep components small and independent.
-- Use only the Recat standard library unless a third-party dependency is absolutely essential.
-- Tech Stack: React (TypeScript strict) · DaisyUI (Tailwind)
-- Framework Docs:
-  - `SPEC.md` - Moon UI design specification (UI, flows, security, constraints)
-  - `https://moon.devnodes.in/doc/llms.json` - Backend API reference in JSON format
-  - `https://moon.devnodes.in/doc/llms.md` - Backend API reference in markdown format
-  - `https://daisyui.com/llms.txt` - DaisyUI
-  - Live Docs: Use Context7 MCP and GitHub MCP servers for latest docs when local files are outdated/unavailable. For testing and verification, use the Playwright MCP server for automated end-to-end (E2E) testing; integrate Playwright tests into CI workflows and document any Playwright tooling that requires Node.js, proposing platform-compatible alternatives or wrappers when needed.
+- **SPEC.md is the only source of truth for architecture, design, and behavior.**
+  - Follow its structure, component patterns, and operational details exactly.
+  - For Moon API endpoints, request/response formats, and error codes, see **moon-llms.md**.
+- Do not invent patterns or workflows not described in SPEC.md or moon-llms.md.
+- Do not use any UI/component library other than **Bootstrap 5.3** and **Bootstrap Icons**.
+- Do not use any framework other than **Vue 3 + Vite + TypeScript**. Remove all references to other frameworks.
+- Never cache backend data between sessions or connections.
 - Never reference any file in `prd/` unless explicitly provided by the user.
   - When a `prd/` file is given, use only that file for the specific implementation requested.
-  - Do not use `prd/` files for cross-reference, documentation, or any other purpose unless instructed.
-- Enforce validation at the HTML form level: collection names and field names must be in lowercase snake_case. If the input does not match this format, prevent collection creation.
- 
+  - Do not use `prd/` files for cross-reference or any other purpose unless instructed.
+- Flag missing information and unsupported assumptions explicitly.
+- Be skeptical by default; state uncertainty clearly.
 
-## SPEC.md Compliance
+## Documentation Compliance
 
-Strictly follow all guidelines and structures in `SPEC.md` for every task.
+- **SPEC.md**: Frontend architecture, component design, authentication flow, HTTP client layer, state management, routing, and all UI/UX behavior.
+- **moon-llms.md**: Complete Moon API reference — endpoints, request/response patterns, query options, aggregation, error codes, and authentication.
+
+Strictly follow all guidelines and structures in these documents for every task.
+
+## Stack (Non-Negotiable)
+
+| Concern      | Technology                        |
+| ------------ | --------------------------------- |
+| Framework    | Vue 3 (Composition API)           |
+| Build tool   | Vite (latest)                     |
+| Language     | TypeScript (strict mode)          |
+| UI           | Bootstrap 5.3 + Bootstrap Icons   |
+| HTTP         | `fetch` (native browser API)      |
+| Testing      | Vitest + Vue Test Utils           |
+| E2E Testing  | Playwright                        |
+| Linting      | ESLint + Prettier                 |
+
+No other frameworks, UI libraries, or CSS frameworks are permitted.
 
 ## Best Practices
 
-- Follow idiomatic React and TypeScript best practices.
-- Research as needed; use MCP servers (context7) for up-to-date documentation.
+- Follow idiomatic Vue 3 (Composition API, `<script setup>`) and TypeScript best practices.
+- Research as needed; use the **context7 MCP server** for up-to-date Vue 3, Vite, and Bootstrap docs.
+- Use **Playwright MCP server** for visual/E2E testing.
 - Keep code, configuration, and docs lean, simple, and clean.
 - Avoid unnecessary complexity and duplication.
-- **Do not include commands unless absolutely necessary for context.**
 - **Test-Driven Development (TDD) is required:**
-  - Start each feature, bugfix, or refactor by writing a failing test.
-  - Place unit and integration tests next to implementation files as `*.test.ts` or `*.test.tsx`.
-  - Prefer the project's test runner (e.g., Vitest) and aim for high coverage (target 90%+).
-  - Installation and usage docs belong in ; keep `README.md` concise and high-level.
+  - Write a failing test first, then implement to make it pass.
+  - Every component, composable, utility, and service must have a corresponding `.spec.ts` test file.
+  - Target **90%+ test coverage** and **100% test pass rate**.
+  - Fix any failing test, even if unrelated to the current task.
+- Always check for existing, well-maintained npm packages before building custom solutions. Document evaluation and rationale for any custom implementation.
 
 ## Workflow & Verification
 
-- Plan: List minimal, reviewable steps; note risks and edge cases.
-- Patch: Make small, focused diffs; avoid unrelated changes in the same commit.
-- Test: Run the test suite; add minimal tests that prove behavior and fix failures promptly.
-  - All tests in the repository must pass (100% pass rate) before merging any change to a protected branch.
-  - Even when failures are unrelated to your current changes, diagnose and fix them before merging.
-- Decompose: Split work into small, reviewable commits or PRs.
-- Double-check: Re-evaluate logic, trade-offs, and backwards-compatibility before finalizing.
-- Verify: Note how you validated changes and any remaining risks or follow-ups.
-- If uncertain: Ask clarifying questions. If proceeding conservatively, state assumptions in the Task Summary.
+- **Plan:** List minimal steps; note risks and edge cases.
+- **Patch:** Make small, focused diffs; exclude unrelated changes.
+- **Test:** Write failing tests first; run tests with timeout; fix failures; add or update only minimal tests to cover new logic.
+- **Decompose:** Split work into small, reviewable steps/commits.
+- **Double-check:** Re-evaluate logic and trade-offs before finalizing.
+- **Verify:** Briefly note how you validated; optionally record trade-offs and related follow-ups.
+- **If uncertain:** Ask clarifying questions. If you must proceed, choose the conservative/simple path and state assumptions.
 
 ## Code Quality & Style
 
-- Keep code readable and easy to extend; follow project style and naming conventions.
-- Use clear names; avoid magic values; extract constants or types when helpful.
-- Keep components and functions small and single-purpose.
-- Prefer simple, maintainable solutions over clever optimizations.
-- Add abstractions only when justified by repeated patterns.
-- Fail fast; surface and handle errors explicitly—do not swallow exceptions silently.
-- Handle edge cases and validate inputs and API responses.
-- Aim for high test coverage and meaningful tests that exercise behavior, not implementation details.
--- Do not create new documentation files unless explicitly requested; update `README.md`, and `SPEC.md` as needed.
+- Use Vue 3 Composition API with `<script setup lang="ts">` for all components.
+- Enforce TypeScript strict mode throughout; no `any` unless absolutely unavoidable and documented.
+- Use clear, descriptive names; avoid magic values; extract constants.
+- Keep composables and components small and single-purpose.
+- Prefer the simplest working solution over cleverness.
+- Add abstractions only when justified.
+- Fail fast: surface errors explicitly; do not swallow them silently.
+- Handle all errors and edge cases. No TODOs, dead code, or partial fixes.
+- Always use Bootstrap 5.3 utility classes and components — no custom CSS unless Bootstrap cannot achieve the result.
+- Always use Bootstrap toasts for all user notifications (success, error, warning, info).
+- Always display the error `message` from the API response in notifications; use a fallback only if the API provides none.
+- Show a smart loading/progress indicator for all async operations.
 
-### Format TypeScript/React Files
+### Format All TypeScript & Vue Files
 
-Format and lint TypeScript and React files consistently across the project:
+Format all `.ts`, `.vue`, and `.js` files using `prettier` for consistent style:
 
-1. Find all `*.ts`, `*.tsx`, `*.js`, and `*.jsx` files (including subdirectories).
-2. Apply the project's formatter and linter (Prettier + ESLint or equivalent) to ensure consistent style.
-3. Fix linting issues and type errors; enforce `tsconfig.json` strict mode and resolve any TypeScript complaints.
+1. Find all `*.ts`, `*.vue`, `*.js` files (including subdirectories).
+2. Run `npx prettier --write` on each file.
+3. Fix any remaining ESLint issues with `npx eslint --fix`.
 
-Keep tooling configuration (`tsconfig.json`, `.eslintrc`, `.prettierrc`) in the repo root and ensure formatting and linting rules.
+## Documentation Sync
+
+Always keep the following in sync with code changes:
+
+- AI Agent Rules: `AGENTS.md`
+- Software Specification: `SPEC.md`
+- API Reference: `moon-llms.md`
+- Installation & Setup: `INSTALL.md`
+- Project Overview: `README.md`
