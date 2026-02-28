@@ -26,18 +26,8 @@ Design and implement a secure, mobile-first admin webapp that enables seamless m
 
 All API errors must be handled consistently and surfaced to users through notifications:
 
-**Backend Error Message Extraction:**
-- When an API call returns an error response with an `"error"` property (e.g., `{"code": 400, "error": "invalid email format", "error_code": "INVALID_EMAIL_FORMAT"}`), the app **MUST** use the value of `"error"` as the message in user-facing notifications/toasters.
-- **Error Message Format:** When both `code` and `error` fields are available, the notification displays `{code} - {error}` (e.g., `401 - invalid or expired token`). This format provides clear context about both the error type (code) and the specific issue (error message).
-- If the response does not have an `"error"` property, use the app's existing/fallback error handling message instead.
-- This behavior is implemented via `extractUserMessage()` utility in `src/utils/errorUtils.ts` and applied across all API error handling code paths.
 
-**Error Priority:**
-1. Backend error message from `error` field formatted as `{code} - {error}` (highest priority)
-2. Backend error message from `error` field alone (when code is not available)
-3. Standard error message from `message` field
-4. Context-aware fallback message provided by the caller
-5. Generic "An error occurred" message (final fallback)
+
 
 **Implementation:**
 - All API errors are normalized to `AppError` type in `src/services/httpClient.ts`
