@@ -18,6 +18,11 @@ import type { CollectionCreatePayload, CollectionUpdatePayload } from '@/service
 
 const COLUMN_TYPES = ['string', 'integer', 'decimal', 'boolean', 'datetime', 'json'] as const
 const SKELETON_COUNT = 5
+const SNAKE_CASE_RE = /^[a-z][a-z0-9_]*$/
+
+function toSnakeCase(val: string): string {
+  return val.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/^_+/, '').replace(/_+/g, '_')
+}
 
 const router = useRouter()
 const connectionsStore = useConnectionsStore()
@@ -159,7 +164,12 @@ function removeCreateColumn(index: number): void {
 
 function validateCreate(): boolean {
   const errors: Record<string, string> = {}
-  if (!createName.value.trim()) errors['name'] = 'Collection name is required'
+  const name = createName.value.trim()
+  if (!name) {
+    errors['name'] = 'Collection name is required'
+  } else if (!SNAKE_CASE_RE.test(name)) {
+    errors['name'] = 'Must be lowercase snake_case (letters, digits, underscores; start with a letter)'
+  }
   if (createColumns.value.length === 0) errors['columns'] = 'At least one column is required'
   createValidationErrors.value = errors
   return Object.keys(errors).length === 0
@@ -458,16 +468,18 @@ onMounted(() => loadCollections('initial'))
                   Collection Name <span class="text-danger">*</span>
                 </label>
                 <input
-                  v-model="createName"
+                  :value="createName"
                   type="text"
                   class="form-control"
                   :class="{ 'is-invalid': createValidationErrors['name'] }"
-                  placeholder="e.g. products"
+                  placeholder="e.g. product_catalog"
                   :disabled="createLoading"
+                  @input="createName = toSnakeCase(($event.target as HTMLInputElement).value)"
                 />
                 <div v-if="createValidationErrors['name']" class="invalid-feedback">
                   {{ createValidationErrors['name'] }}
                 </div>
+                <div v-else class="form-text">Lowercase letters, digits, and underscores only (snake_case).</div>
               </div>
 
               <!-- Columns -->

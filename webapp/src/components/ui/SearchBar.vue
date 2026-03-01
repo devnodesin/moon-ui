@@ -21,10 +21,10 @@ function clear(): void {
 </script>
 
 <template>
-  <div class="input-group">
+  <div class="input-group input-group-sm">
     <input
       type="search"
-      class="form-control"
+      class="form-control form-control-sm"
       :placeholder="placeholder ?? 'Search…'"
       :value="modelValue"
       :disabled="loading"
@@ -33,7 +33,7 @@ function clear(): void {
     />
     <button
       v-if="modelValue"
-      class="btn btn-outline-secondary"
+      class="btn btn-sm btn-outline-secondary"
       type="button"
       title="Clear search"
       :disabled="loading"
@@ -42,14 +42,13 @@ function clear(): void {
       <i class="bi bi-x" />
     </button>
     <button
-      class="btn btn-primary"
+      class="btn btn-sm btn-primary"
       type="button"
       :disabled="loading"
       @click="emit('search')"
     >
       <span v-if="loading" class="spinner-border spinner-border-sm me-1" role="status" />
-      <i v-else class="bi bi-search me-1" />
-      Search
+      <i v-else class="bi bi-search" />
     </button>
   </div>
 </template>

@@ -38,6 +38,13 @@ export function createRecordsService(baseUrl: string, connId: string) {
       return http.post<ApiMutateResponse<MoonRecord>>(`/${collection}:update`, { data: [patch] })
     },
 
+    async createRecord(
+      collection: string,
+      data: Omit<MoonRecord, 'id'>,
+    ): Promise<ApiMutateResponse<MoonRecord>> {
+      return http.post<ApiMutateResponse<MoonRecord>>(`/${collection}:create`, { data: [data] })
+    },
+
     async deleteRecords(collection: string, ids: string[]): Promise<ApiDestroyResponse> {
       return http.post<ApiDestroyResponse>(`/${collection}:destroy`, { data: ids })
     },

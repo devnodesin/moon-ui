@@ -6,6 +6,8 @@ import DataTable from '@/components/ui/DataTable.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import SearchBar from '@/components/ui/SearchBar.vue'
 import FilterBar from '@/components/ui/FilterBar.vue'
+import FieldInput from '@/components/forms/FieldInput.vue'
+import FormErrors from '@/components/forms/FormErrors.vue'
 import { useConnectionsStore } from '@/stores/connections'
 import { useToastStore } from '@/stores/toast'
 import { useConfirm } from '@/composables/useConfirm'
@@ -31,6 +33,9 @@ const schema = ref<CollectionSchema | null>(null)
 const schemaError = ref<string | null>(null)
 
 const columns = computed<CollectionField[]>(() => schema.value?.fields ?? [])
+const createableFields = computed<CollectionField[]>(() =>
+  columns.value.filter((f) => f.type !== 'id' && !f.readonly),
+)
 
 // Records state
 const rows = ref<MoonRecord[]>([])
@@ -41,8 +46,8 @@ const loadError = ref<string | null>(null)
 
 // Pagination — cursor-based, always ?after= for both directions
 const limit = ref(15)
-const afterCursor = ref<string | null>(null)   // current page cursor sent as ?after=
-const prevCursor = ref<string | null>(null)     // meta.prev of current page (for going back)
+const afterCursor = ref<string | null>(null)
+const prevCursor = ref<string | null>(null)
 const hasNext = ref(false)
 const hasPrev = ref(false)
 
@@ -95,7 +100,6 @@ async function loadRecords(type: typeof loadingType.value = 'initial'): Promise<
     const res = await service.value.listRecords(props.collection, buildParams())
     rows.value = res.data
     meta.value = res.meta
-    // Both next and prev use ?after= — store cursors from meta
     hasNext.value = !!res.meta.next
     hasPrev.value = !!res.meta.prev
     prevCursor.value = res.meta.prev
@@ -142,7 +146,6 @@ function resetPagination(): void {
   hasPrev.value = false
 }
 
-// Pagination: pass meta.next as ?after= for next page
 function goNext(): void {
   if (meta.value?.next) {
     afterCursor.value = meta.value.next
@@ -150,7 +153,6 @@ function goNext(): void {
   }
 }
 
-// Pagination: pass meta.prev as ?after= for previous page
 function goPrev(): void {
   if (prevCursor.value) {
     afterCursor.value = prevCursor.value
@@ -162,6 +164,10 @@ function handleLimitChange(newLimit: number): void {
   limit.value = newLimit
   resetPagination()
   loadRecords('page')
+}
+
+function goBack(): void {
+  router.push({ name: 'collections' })
 }
 
 // Row navigation
@@ -192,6 +198,109 @@ async function handleDelete(id: string): Promise<void> {
   }
 }
 
+// ─── Add Record Modal ─────────────────────────────────────────────────────────
+const showAddModal = ref(false)
+const addDraft = ref<Record<string, unknown>>({})
+const addErrors = ref<Record<string, string>>({})
+const addFormError = ref<string | null>(null)
+const addLoading = ref(false)
+
+function defaultValueForField(field: CollectionField): unknown {
+  if (field.nullable) return ''
+  switch (field.type) {
+    case 'boolean': return false
+    case 'integer': return ''
+    case 'decimal': return ''
+    default: return ''
+  }
+}
+
+function openAddModal(): void {
+  const draft: Record<string, unknown> = {}
+  for (const f of createableFields.value) {
+    draft[f.name] = defaultValueForField(f)
+  }
+  addDraft.value = draft
+  addErrors.value = {}
+  addFormError.value = null
+  showAddModal.value = true
+}
+
+function onAddFieldChange(fieldName: string, value: unknown): void {
+  addDraft.value = { ...addDraft.value, [fieldName]: value }
+  if (addErrors.value[fieldName]) {
+    const { [fieldName]: _, ...rest } = addErrors.value
+    addErrors.value = rest
+  }
+}
+
+function validateAdd(): boolean {
+  const errors: Record<string, string> = {}
+  for (const field of createableFields.value) {
+    const val = addDraft.value[field.name]
+    const isEmpty = val === null || val === undefined || val === ''
+    if (!field.nullable && isEmpty) {
+      errors[field.name] = 'This field is required'
+    } else if (!isEmpty) {
+      switch (field.type) {
+        case 'integer':
+          if (!Number.isInteger(Number(val))) errors[field.name] = 'Must be a whole number'
+          break
+        case 'decimal':
+          if (!/^-?\d+(\.\d{1,10})?$/.test(String(val))) errors[field.name] = 'Must be a valid decimal (e.g. 9.99)'
+          break
+        case 'datetime':
+          if (isNaN(Date.parse(String(val)))) errors[field.name] = 'Must be a valid date/time'
+          break
+        case 'json':
+          try { JSON.parse(String(val)) } catch { errors[field.name] = 'Must be valid JSON' }
+          break
+      }
+    }
+  }
+  addErrors.value = errors
+  return Object.keys(errors).length === 0
+}
+
+function sanitizeAdd(): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const field of createableFields.value) {
+    const val = addDraft.value[field.name]
+    if (val === null || val === undefined || val === '') {
+      out[field.name] = null
+      continue
+    }
+    switch (field.type) {
+      case 'integer': out[field.name] = parseInt(String(val), 10); break
+      case 'decimal': out[field.name] = String(val).trim(); break
+      case 'boolean': out[field.name] = Boolean(val); break
+      case 'json':
+        try { out[field.name] = JSON.parse(String(val)) } catch { out[field.name] = String(val) }
+        break
+      default: out[field.name] = String(val).trim()
+    }
+  }
+  return out
+}
+
+async function submitAdd(): Promise<void> {
+  if (!validateAdd()) return
+  addLoading.value = true
+  addFormError.value = null
+  try {
+    const payload = sanitizeAdd()
+    const res = await service.value!.createRecord(props.collection, payload)
+    toastStore.show(res.message, 'success')
+    showAddModal.value = false
+    await loadRecords('initial')
+  } catch (err) {
+    addFormError.value = (err as { message?: string }).message ?? 'Failed to create record'
+    console.error('[RecordsView] create error:', err)
+  } finally {
+    addLoading.value = false
+  }
+}
+
 onMounted(async () => {
   await loadSchema()
   await loadRecords('initial')
@@ -200,17 +309,22 @@ onMounted(async () => {
 
 <template>
   <AppLayout>
-    <div class="container-fluid p-4">
+    <div class="container-fluid p-3">
       <!-- Header -->
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
-        <div>
-          <h1 class="h3 fw-bold mb-0">
-            <i class="bi bi-table me-2 text-primary" />
-            {{ collection }}
-          </h1>
-          <p class="text-muted small mb-0">Records</p>
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-outline-secondary" @click="goBack">
+            <i class="bi bi-arrow-left" />
+          </button>
+          <div>
+            <h1 class="h4 fw-bold mb-0">
+              <i class="bi bi-table me-2 text-primary" />
+              {{ collection }}
+            </h1>
+            <p class="text-muted small mb-0">Records</p>
+          </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-center">
           <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
             <input
               id="show-id-toggle"
@@ -223,6 +337,13 @@ onMounted(async () => {
           </div>
           <button class="btn btn-sm btn-outline-secondary" :disabled="loading" @click="loadRecords('filter')">
             <i class="bi bi-arrow-clockwise" />
+          </button>
+          <button
+            class="btn btn-sm btn-primary"
+            :disabled="!schema || !!schemaError"
+            @click="openAddModal"
+          >
+            <i class="bi bi-plus-lg me-1" />Add Record
           </button>
         </div>
       </div>
@@ -294,5 +415,70 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <!-- ─── Add Record Modal ──────────────────────────────────────────────────── -->
+    <Teleport to="body">
+      <div
+        v-if="showAddModal"
+        class="modal show d-block"
+        tabindex="-1"
+        style="background: rgba(0, 0, 0, 0.5)"
+        @click.self="showAddModal = false"
+      >
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">
+                <i class="bi bi-plus-circle me-2 text-primary" />Add Record
+                <span class="font-monospace small text-muted ms-1">{{ collection }}</span>
+              </h5>
+              <button type="button" class="btn-close" @click="showAddModal = false" />
+            </div>
+            <div class="modal-body">
+              <div v-if="addFormError" class="alert alert-danger py-2 mb-3">{{ addFormError }}</div>
+              <FormErrors :errors="addErrors" />
+
+              <div v-if="createableFields.length === 0" class="text-muted small">
+                No editable fields in this collection.
+              </div>
+
+              <div
+                v-for="field in createableFields"
+                :key="field.name"
+                class="row mb-3 align-items-start"
+              >
+                <div class="col-4">
+                  <label :for="`add-${field.name}`" class="form-label fw-semibold small text-capitalize mb-0 pt-1">
+                    {{ field.name.replace(/_/g, ' ') }}
+                    <span v-if="!field.nullable" class="text-danger">*</span>
+                  </label>
+                  <div class="text-muted" style="font-size: 0.7rem">{{ field.type }}</div>
+                </div>
+                <div class="col-8">
+                  <FieldInput
+                    :id="`add-${field.name}`"
+                    :field="field"
+                    :model-value="addDraft[field.name]"
+                    :disabled="addLoading"
+                    :error="addErrors[field.name]"
+                    @update:model-value="onAddFieldChange(field.name, $event)"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" :disabled="addLoading" @click="showAddModal = false">
+                Cancel
+              </button>
+              <button class="btn btn-primary" :disabled="addLoading" @click="submitAdd">
+                <span v-if="addLoading" class="spinner-border spinner-border-sm me-1" role="status" />
+                <i v-else class="bi bi-check2 me-1" />
+                Create Record
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </AppLayout>
 </template>
