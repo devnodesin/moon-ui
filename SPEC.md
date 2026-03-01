@@ -95,7 +95,7 @@ webapp/
 │   │   ├── auth.ts              # Auth service: authLogin, authLogout, authRefresh, authMe, getHealth
 │   │   ├── users.ts             # Users API service (future)
 │   │   ├── apikeys.ts           # API Keys service (future)
-│   │   ├── collections.ts       # Collections service (future)
+│   │   ├── collections.ts       # Collections service
 │   │   └── records.ts           # Records service (future)
 │   ├── composables/             # Reusable Vue composables
 │   │   ├── useAsync.ts          # Async operation: loading, error, data, execute
@@ -133,7 +133,7 @@ webapp/
 │   │   │   ├── ApiKeysView.vue     # (stub) API Keys list
 │   │   │   └── ApiKeyFormView.vue  # (future) Create/edit API key
 │   │   ├── collections/
-│   │   │   ├── CollectionsView.vue    # (stub) Collections list
+│   │   │   ├── CollectionsView.vue    # Collections list with create/schema modals
 │   │   │   ├── CollectionFormView.vue # (future) Create/edit collection
 │   │   │   └── CollectionSchemaView.vue # (future) Schema management
 │   │   └── records/
@@ -172,8 +172,10 @@ webapp/
 | LoginView (URL + username + password form) | ✅ Done |
 | DashboardView (health status + quick access) | ✅ Done |
 | ConnectionsView (list, add, switch, delete) | ✅ Done |
-| Users/ApiKeys/Collections views | 🔲 Stub only |
-| Unit tests (23 passing) | ✅ Done |
+| UsersView (list, create, edit, delete) | ✅ Done |
+| ApiKeysView (list, create, edit, rotate, delete) | ✅ Done |
+| CollectionsView (list, create, schema view/edit, delete, view records) | ✅ Done |
+| Unit tests (73 passing) | ✅ Done |
 | E2E tests | 🔲 Future |
 
 ---
@@ -492,9 +494,11 @@ Provides a reusable confirmation modal pattern:
 ### Collections (`/collections`)
 
 - Paginated list table: name, record count, actions.
-- Actions: View Records, View Schema, Edit Schema, Delete (with confirm).
-- Create form: name, and dynamic column builder (add/remove columns with name, type, nullable, unique).
-- Schema view: table of fields (name, type, nullable, unique, default, readonly).
+- Actions per row: View Records (navigates to `/collections/:name/records`), Edit Schema (opens schema modal), Delete (confirm then delete).
+- **Create Collection modal** (inline in CollectionsView): collection name input + dynamic column builder (add/remove columns with name, type, nullable, unique). Triggered by "Add Collection" header button.
+- **Schema modal** (inline in CollectionsView): shows current columns table (name, type, nullable, unique, default). "Edit Schema" button enters edit mode: mark existing columns for removal, add new columns, then save. Uses `/collections:update` with `add_columns` and/or `remove_columns` payloads.
+- All notifications use Bootstrap toasts with API error messages.
+- `ApiListMeta.total` is optional (collections list does not include it). `Pagination` component handles missing total gracefully.
 
 ### Collection Schema (`/collections/:name/schema`)
 

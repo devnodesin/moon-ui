@@ -9,7 +9,7 @@ export interface ApiListMeta {
   limit: number
   next: string | null
   prev: string | null
-  total: number
+  total?: number
 }
 
 export interface ApiListResponse<T> {
@@ -74,6 +74,32 @@ export interface HealthData {
 export interface CollectionSummary {
   name: string
   records: number
+}
+
+// Column definition used in the collections management API (/collections:create, :get, :update)
+export interface CollectionColumn {
+  name: string
+  type: 'string' | 'integer' | 'decimal' | 'boolean' | 'datetime' | 'json'
+  nullable: boolean
+  unique?: boolean
+  default?: string
+}
+
+// Full collection definition returned by /collections:get
+export interface CollectionDetail {
+  name: string
+  columns: CollectionColumn[]
+}
+
+// Response from /collections:create and /collections:update
+export interface CollectionActionResponse {
+  data: CollectionDetail
+  message: string
+}
+
+// Response from /collections:destroy
+export interface CollectionDestroyResponse {
+  message: string
 }
 
 export interface CollectionField {

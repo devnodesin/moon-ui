@@ -20,6 +20,7 @@ const PAGE_SIZES = [15, 30, 50, 100]
 const rangeText = computed(() => {
   if (!props.meta) return ''
   const { count, total } = props.meta
+  if (total == null) return `Showing ${count} item${count !== 1 ? 's' : ''}`
   return `Showing ${count} of ${total} record${total !== 1 ? 's' : ''}`
 })
 </script>
