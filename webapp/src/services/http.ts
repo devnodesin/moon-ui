@@ -31,6 +31,7 @@ function isTokenExpiringSoon(connId: string): boolean {
 }
 
 async function doRefresh(baseUrl: string, connId: string): Promise<string> {
+  baseUrl = baseUrl.replace(/\/+$/, '')
   const refreshToken = getRefreshToken(connId)
   if (!refreshToken) throw { message: 'No refresh token', status: 401 } as ApiError
 
@@ -79,6 +80,7 @@ export function clearTokens(connId: string): void {
 }
 
 export function createHttpClient(baseUrl: string, connId: string) {
+  baseUrl = baseUrl.replace(/\/+$/, '')
   let progressCount = 0
 
   function notifyProgress(delta: number): void {
