@@ -8,6 +8,14 @@ This is the **Moon Admin WebApp**: a secure, mobile-first, single-page admin int
 - Single-user scope — make any changes needed without hesitation.
 - Never introduce new TypeScript or build warnings. Fix any that appear.
 
+## Moon Test Server 
+
+For testing, use the following server details. Do not hard-code these values; 
+
+- URL: https://moon.devnodes.in/
+- Username: `admin`
+- Password: `moonadmin12#`
+
 ## Mandatory Rules
 
 - **SPEC.md is the only source of truth for architecture, design, and behavior.**
@@ -22,6 +30,7 @@ This is the **Moon Admin WebApp**: a secure, mobile-first, single-page admin int
   - Do not use `prd/` files for cross-reference or any other purpose unless instructed.
 - Flag missing information and unsupported assumptions explicitly.
 - Be skeptical by default; state uncertainty clearly.
+- Normalize paths to prevent double slashes. If a connection's baseUrl ends with a trailing slash (e.g., https://moon.devnodes.in/), the HTTP client must construct URLs without double slashes in the path (e.g., https://moon.devnodes.in/users:list).
 
 ## Documentation Compliance
 
