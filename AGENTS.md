@@ -20,7 +20,9 @@ For testing, use the following server details. Do not hard-code these values;
 
 - **SPEC.md is the only source of truth for architecture, design, and behavior.**
   - Follow its structure, component patterns, and operational details exactly.
+- Always refer to the API documentation in `moon-llms.md`.
   - For Moon API endpoints, request/response formats, and error codes, see **moon-llms.md**.
+  - `moon-llms.md` is read-only; never edit this file.
 - Do not invent patterns or workflows not described in SPEC.md or moon-llms.md.
 - Do not use any UI/component library other than **Bootstrap 5.3** and **Bootstrap Icons**.
 - Do not use any framework other than **Vue 3 + Vite + TypeScript**. Remove all references to other frameworks.
@@ -31,6 +33,9 @@ For testing, use the following server details. Do not hard-code these values;
 - Flag missing information and unsupported assumptions explicitly.
 - Be skeptical by default; state uncertainty clearly.
 - Normalize paths to prevent double slashes. If a connection's baseUrl ends with a trailing slash (e.g., https://moon.devnodes.in/), the HTTP client must construct URLs without double slashes in the path (e.g., https://moon.devnodes.in/users:list).
+- Ensure that code, functions, components, and services are modular and reusable.
+- Adhere to industry best practices throughout development.
+- Update SPEC.md to document any features that are not already included in the specification.
 
 ## Documentation Compliance
 
@@ -107,6 +112,6 @@ Always keep the following in sync with code changes:
 
 - AI Agent Rules: `AGENTS.md`
 - Software Specification: `SPEC.md`
-- API Reference: `moon-llms.md`
+- API Reference: `moon-llms.md` (Read only; never edit this file)
 - Installation & Setup: `INSTALL.md`
 - Project Overview: `README.md`
