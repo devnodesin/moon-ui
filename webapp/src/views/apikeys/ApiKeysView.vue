@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import ApiKeyModal from '@/components/ui/ApiKeyModal.vue'
 import { useConnectionsStore } from '@/stores/connections'
 import { useToastStore } from '@/stores/toast'
 import { useConfirm } from '@/composables/useConfirm'
@@ -40,7 +41,7 @@ const actionKeyId = ref<string | null>(null)
 // API Key display modal — shown once after create or rotate
 const revealedKey = ref<string | null>(null)
 const revealedKeyName = ref('')
-const keyCopied = ref(false)
+const revealedKeyWarning = ref<string | undefined>(undefined)
 
 const SKELETON_COUNT = 5
 
@@ -108,29 +109,16 @@ function formatDate(dt: string): string {
 }
 
 // Show the revealed key modal
-function showKeyModal(key: string, name: string): void {
+function showKeyModal(key: string, name: string, warning?: string): void {
   revealedKey.value = key
   revealedKeyName.value = name
-  keyCopied.value = false
+  revealedKeyWarning.value = warning
 }
 
 function closeKeyModal(): void {
   revealedKey.value = null
   revealedKeyName.value = ''
-  keyCopied.value = false
-}
-
-async function copyKey(): Promise<void> {
-  if (!revealedKey.value) return
-  try {
-    await navigator.clipboard.writeText(revealedKey.value)
-    keyCopied.value = true
-    setTimeout(() => {
-      keyCopied.value = false
-    }, 2000)
-  } catch {
-    toastStore.show('Copy failed — please select and copy manually.', 'warning')
-  }
+  revealedKeyWarning.value = undefined
 }
 
 // --- Row actions ---
@@ -149,8 +137,7 @@ async function rotateKey(key: ApiKey): Promise<void> {
   try {
     const res = await service.value!.rotateApiKey(key.id)
     toastStore.show(res.message, 'success')
-    const newKey = res.data[0]?.key
-    if (newKey) showKeyModal(newKey, key.name)
+    if (res.data?.key) showKeyModal(res.data.key, key.name, res.warning)
     await loadApiKeys('initial')
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to rotate key'
@@ -327,47 +314,14 @@ onMounted(() => loadApiKeys('initial'))
     </div>
 
     <!-- API Key Display Modal (shown once after create or rotate) -->
-    <Teleport to="body">
-      <div
-        v-if="revealedKey"
-        class="modal show d-block"
-        tabindex="-1"
-        style="background: rgba(0,0,0,0.5)"
-      >
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header border-bottom-0">
-              <h5 class="modal-title"><i class="bi bi-key me-2 text-warning" />API Key — {{ revealedKeyName }}</h5>
-            </div>
-            <div class="modal-body">
-              <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
-                <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1" />
-                <div>
-                  <strong>Store this key securely.</strong> It will not be shown again.
-                </div>
-              </div>
-              <label class="form-label fw-semibold small text-muted">API Key</label>
-              <div class="input-group">
-                <input
-                  type="text"
-                  class="form-control font-monospace small"
-                  :value="revealedKey"
-                  readonly
-                  @focus="($event.target as HTMLInputElement).select()"
-                />
-                <button class="btn btn-outline-secondary" @click="copyKey">
-                  <i class="bi" :class="keyCopied ? 'bi-check-lg text-success' : 'bi-clipboard'" />
-                  {{ keyCopied ? 'Copied!' : 'Copy' }}
-                </button>
-              </div>
-            </div>
-            <div class="modal-footer border-top-0">
-              <button class="btn btn-primary" @click="closeKeyModal">I've saved the key</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <ApiKeyModal
+      v-if="revealedKey"
+      :api-key="revealedKey"
+      :key-name="revealedKeyName"
+      title="API Key Rotated"
+      :warning="revealedKeyWarning"
+      @close="closeKeyModal"
+    />
   </AppLayout>
 </template>
 

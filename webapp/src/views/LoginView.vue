@@ -16,6 +16,7 @@ const url = ref('')
 const username = ref('')
 const password = ref('')
 const rememberMe = ref(false)
+const showPassword = ref(false)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
 const connName = ref('My Server')
@@ -144,13 +145,22 @@ async function handleLogin(): Promise<void> {
               <input
                 id="password"
                 v-model="password"
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 class="form-control"
                 placeholder="Password"
                 autocomplete="current-password"
                 required
                 :disabled="loading"
               />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                :title="showPassword ? 'Hide password' : 'Show password'"
+                :disabled="loading"
+                @click="showPassword = !showPassword"
+              >
+                <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'" />
+              </button>
             </div>
           </div>
 

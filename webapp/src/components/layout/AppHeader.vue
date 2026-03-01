@@ -45,10 +45,14 @@ async function handleLogout(): Promise<void> {
     <div class="d-flex align-items-center gap-3">
       <span
         v-if="connectionsStore.activeConnection"
-        class="text-secondary small d-none d-md-inline"
+        class="badge bg-success text-white d-none d-md-inline-flex align-items-center gap-1"
       >
-        <i class="bi bi-server me-1" />
+        <i class="bi bi-server" />
         {{ connectionsStore.activeConnection.name }}
+      </span>
+      <span v-else class="badge bg-secondary text-light d-none d-md-inline-flex align-items-center gap-1">
+        <i class="bi bi-server" />
+        Not connected
       </span>
       <div class="dropdown">
         <button
@@ -61,7 +65,7 @@ async function handleLogout(): Promise<void> {
         </button>
         <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
           <li>
-            <span class="dropdown-item-text small text-muted">
+            <span class="dropdown-item-text small text-white-50">
               {{ authStore.user?.email }}
             </span>
           </li>

@@ -26,9 +26,9 @@ export interface ApiKeyCreateResponse {
 }
 
 export interface ApiKeyRotateResponse {
-  data: ApiKeyWithSecret[]
+  data: ApiKeyWithSecret
   message: string
-  meta: { total: number; succeeded: number; failed: number }
+  warning?: string
 }
 
 export interface ApiKeyActionResponse {
