@@ -373,18 +373,19 @@ onMounted(() => loadCollections('initial'))
                   <tr v-for="col in rows" :key="col.name">
                     <td class="fw-semibold">{{ col.name }}</td>
                     <td>
-                      <span class="badge bg-secondary">{{ col.records }}</span>
-                    </td>
-                    <td>
-                      <div class="d-flex gap-1">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary">{{ col.records }}</span>
                         <button
                           class="btn btn-sm btn-outline-primary"
-                          title="View Records"
                           :disabled="actionName === col.name"
                           @click="viewRecords(col.name)"
                         >
-                          <i class="bi bi-list-ul" />
+                          <i class="bi bi-list-ul me-1" />View Records
                         </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="d-flex gap-1">
                         <button
                           class="btn btn-sm btn-outline-secondary"
                           title="View / Edit Schema"
