@@ -3,12 +3,12 @@
 set -e  # Exit on error
 
 # Configuration
-BUILD_DIR="${PWD}/webapps/dist"
+BUILD_DIR="${PWD}/webapp/dist"
 DEPLOY_DIR="/html/moon-ui/"
 
 # Build the project
 echo "Building Moon UI..."
-cd webapps
+cd webapp
 
 # Install dependencies
 echo "Installing dependencies..."
