@@ -6,13 +6,15 @@ set -e  # Exit on error
 BUILD_DIR="${PWD}/webapps/dist"
 DEPLOY_DIR="/html/moon-ui/"
 
+# Build the project
+echo "Building Moon UI..."
+cd webapps
+
 # Install dependencies
 echo "Installing dependencies..."
 npm ci || npm install
 
-# Build the project
-echo "Building Moon UI..."
-cd webapps; npm run build
+npm run build
 
 # Deploy build output
 if [ -d "$BUILD_DIR" ]; then
