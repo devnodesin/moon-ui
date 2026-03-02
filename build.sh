@@ -6,6 +6,14 @@ set -e  # Exit on error
 BUILD_DIR="${PWD}/webapp/dist"
 DEPLOY_DIR="/html/moon-ui/"
 
+# Print important build/deploy details
+echo "==========================================="
+echo "Build directory:   $BUILD_DIR"
+echo "Deploy directory:  $DEPLOY_DIR"
+echo "Node version:      $(node --version 2>/dev/null || echo 'node not found')"
+echo "NPM version:       $(npm --version 2>/dev/null || echo 'npm not found')"
+echo "===========================================\n"
+
 # Build the project
 echo "Building Moon UI..."
 cd webapp
