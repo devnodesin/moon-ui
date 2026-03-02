@@ -289,14 +289,14 @@ onMounted(async () => {
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
         <div class="d-flex align-items-center gap-2">
           <button class="btn btn-sm btn-outline-secondary" @click="goBack">
-            <i class="bi bi-arrow-left" />
+            <i class="bi bi-arrow-left" /> {{ collection }}
           </button>
-          <div>
-            <h1 class="h3 fw-bold mb-0">
-              <i class="bi bi-file-earmark me-2 text-primary" />
-              Record
-            </h1>
-            <p class="text-muted small font-monospace mb-0">{{ id }}</p>
+          <div class="h-100 d-flex align-items-center">
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item active" aria-current="page">{{ id }}</li>
+              </ol>
+            </nav>
           </div>
         </div>
 
@@ -304,11 +304,11 @@ onMounted(async () => {
         <div class="d-flex gap-2">
           <template v-if="mode === 'view'">
             <button
-              class="btn btn-primary"
+              class="btn  btn-sm btn-primary"
               :disabled="isLoading || !!schemaError || !!loadError"
               @click="enterEdit"
             >
-              <i class="bi bi-pencil me-1" />Edit
+              <i class="bi bi-pencil me-1" /> Edit
             </button>
           </template>
           <template v-else>

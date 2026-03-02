@@ -58,7 +58,11 @@ function switchConnection(id: string): void {
   <AppLayout>
     <div class="container-fluid p-4">
       <div class="d-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 fw-bold mb-0"><i class="bi bi-plug me-2 text-primary" />Connections</h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item active fs-4" aria-current="page"><i class="bi bi-plug me-2 text-primary" />Connections</li>
+          </ol>
+        </nav>
         <button class="btn btn-primary btn-sm" @click="adding = !adding">
           <i class="bi bi-plus-lg me-1" />Add Connection
         </button>

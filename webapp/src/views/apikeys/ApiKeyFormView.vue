@@ -129,13 +129,17 @@ onMounted(() => {
       <!-- Header -->
       <div class="d-flex align-items-center gap-2 mb-4">
         <button class="btn btn-sm btn-outline-secondary" @click="goBack">
-          <i class="bi bi-arrow-left" />
+          <i class="bi bi-arrow-left" />API Keys
         </button>
-        <h1 class="h3 fw-bold mb-0">
-          <i class="bi bi-key me-2 text-primary" />
-          {{ isEditMode ? 'Edit API Key' : 'Add API Key' }}
-        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item active fs-4" aria-current="page">
+              {{ isEditMode ? 'Edit API Key' : 'Add API Key' }}
+            </li>
+          </ol>
+        </nav>
       </div>
+
 
       <!-- Load error -->
       <div v-if="loadError" class="alert alert-danger">

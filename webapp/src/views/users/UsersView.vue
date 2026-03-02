@@ -210,8 +210,12 @@ onMounted(() => loadUsers('initial'))
     <div class="container-fluid p-4">
       <!-- Header -->
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
-        <h1 class="h3 fw-bold mb-0"><i class="bi bi-people me-2 text-primary" />Users</h1>
-        <button class="btn btn-primary" @click="router.push({ name: 'user-create' })">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item active fs-4" aria-current="page"><i class="bi bi-people me-2 text-primary" />Users</li>
+          </ol>
+        </nav>
+        <button class="btn btn-sm btn-primary" @click="router.push({ name: 'user-create' })">
           <i class="bi bi-plus-lg me-1" />Add User
         </button>
       </div>

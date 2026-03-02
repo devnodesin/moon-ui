@@ -314,14 +314,14 @@ onMounted(async () => {
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
         <div class="d-flex align-items-center gap-2">
           <button class="btn btn-sm btn-outline-secondary" @click="goBack">
-            <i class="bi bi-arrow-left" />
+            <i class="bi bi-arrow-left" /> Collections
           </button>
-          <div>
-            <h1 class="h4 fw-bold mb-0">
-              <i class="bi bi-table me-2 text-primary" />
-              {{ collection }}
-            </h1>
-            <p class="text-muted small mb-0">Records</p>
+          <div class="h-100 d-flex align-items-center">
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item active fs-4" aria-current="page">/{{ collection }}</li>
+              </ol>
+            </nav>
           </div>
         </div>
         <div class="d-flex gap-2 align-items-center">

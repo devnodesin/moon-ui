@@ -43,10 +43,12 @@ onMounted(async () => {
   <AppLayout>
     <div class="container-fluid p-4">
       <div class="d-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 fw-bold mb-0">
-          <i class="bi bi-speedometer2 me-2 text-primary" />
-          Dashboard
-        </h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item active fs-4" aria-current="page">
+              <i class="bi bi-speedometer2 me-2 text-primary" />Dashboard</li>
+          </ol>
+        </nav>
         <button
           class="btn btn-outline-secondary btn-sm"
           :disabled="healthLoading"
@@ -167,7 +169,7 @@ onMounted(async () => {
         <div class="col-12 col-sm-6 col-lg-4">
           <RouterLink to="/collections" class="card border-0 shadow-sm text-decoration-none h-100">
             <div class="card-body d-flex align-items-center gap-3">
-              <i class="bi bi-table text-primary fs-2" />
+              <i class="bi bi-collection text-primary fs-2" />
               <div>
                 <div class="fw-bold">Collections</div>
                 <div class="small text-muted">Manage your data collections</div>
