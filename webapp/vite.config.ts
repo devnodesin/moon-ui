@@ -2,8 +2,9 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
-export default defineConfig({
-  plugins: [vue()],
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/ui/' : '/',
+    plugins: [vue()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -20,4 +21,4 @@ export default defineConfig({
       exclude: ['src/test-setup.ts', 'src/main.ts'],
     },
   },
-})
+}))
