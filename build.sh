@@ -3,7 +3,7 @@
 set -e  # Exit on error
 
 # Configuration
-BUILD_DIR="dist"
+BUILD_DIR="${PWD}/webapps/dist"
 DEPLOY_DIR="/html/moon-ui/"
 
 # Install dependencies
@@ -12,7 +12,7 @@ npm ci || npm install
 
 # Build the project
 echo "Building Moon UI..."
-npm run build
+cd webapps; npm run build
 
 # Deploy build output
 if [ -d "$BUILD_DIR" ]; then
