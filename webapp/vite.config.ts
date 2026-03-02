@@ -4,7 +4,7 @@ import { resolve } from 'path'
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/ui/' : '/',
-    plugins: [vue()],
+  plugins: [vue()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

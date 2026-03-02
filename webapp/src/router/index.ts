@@ -3,8 +3,9 @@ import { useAuthStore } from '@/stores/auth'
 import { useProgressStore } from '@/stores/progress'
 import { useConnectionsStore } from '@/stores/connections'
 
+const base = import.meta.env.PROD ? '/ui/' : '/';
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(base),
   routes: [
     {
       path: '/login',
