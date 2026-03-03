@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import type { CollectionField } from '@/types/api'
 import type { MoonRecord } from '@/services/records'
 import EmptyState from './EmptyState.vue'
@@ -14,6 +14,7 @@ const props = withDefaults(
     sortDir?: 'asc' | 'desc'
     showId?: boolean
     deletingId?: string | null
+    selectedIds?: string[]
   }>(),
   {
     loadingType: 'initial',
@@ -21,6 +22,7 @@ const props = withDefaults(
     sortDir: 'asc',
     showId: false,
     deletingId: null,
+    selectedIds: () => [],
   },
 )
 
@@ -29,7 +31,21 @@ const emit = defineEmits<{
   rowClick: [id: string]
   view: [id: string]
   delete: [id: string]
+  toggleRow: [id: string]
+  toggleAll: []
 }>()
+
+const allSelected = computed(
+  () => props.rows.length > 0 && props.rows.every((r) => props.selectedIds!.includes(r.id)),
+)
+const someSelected = computed(() => props.selectedIds!.length > 0 && !allSelected.value)
+
+const selectAllRef = ref<HTMLInputElement | null>(null)
+watchEffect(() => {
+  if (selectAllRef.value) {
+    selectAllRef.value.indeterminate = someSelected.value
+  }
+})
 
 const SKELETON_COUNT = 5
 
@@ -95,6 +111,16 @@ function formatValue(value: unknown, type: CollectionField['type']): string {
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
+            <th style="width: 40px" @click.stop>
+              <input
+                ref="selectAllRef"
+                type="checkbox"
+                class="form-check-input"
+                :checked="allSelected"
+                :disabled="showSkeleton || rows.length === 0"
+                @change="emit('toggleAll')"
+              />
+            </th>
             <th
               v-for="col in visibleColumns"
               :key="col.name"
@@ -112,6 +138,7 @@ function formatValue(value: unknown, type: CollectionField['type']): string {
           <!-- Skeleton rows for initial / empty loads -->
           <template v-if="showSkeleton">
             <tr v-for="n in SKELETON_COUNT" :key="n" aria-hidden="true">
+              <td><span class="placeholder-glow d-block"><span class="placeholder col-12" /></span></td>
               <td v-for="col in visibleColumns" :key="col.name">
                 <span class="placeholder-glow d-block">
                   <span class="placeholder" :class="n % 2 === 0 ? 'col-7' : 'col-10'" />
@@ -135,6 +162,14 @@ function formatValue(value: unknown, type: CollectionField['type']): string {
               @click="emit('rowClick', row.id)"
               @keydown.enter="emit('rowClick', row.id)"
             >
+              <td @click.stop @keydown.stop>
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  :checked="selectedIds!.includes(row.id)"
+                  @change="emit('toggleRow', row.id)"
+                />
+              </td>
               <td v-for="col in visibleColumns" :key="col.name">
                 <span v-if="col.type === 'id'" class="font-monospace small text-muted">
                   {{ String(row[col.name] ?? '—') }}
@@ -168,7 +203,7 @@ function formatValue(value: unknown, type: CollectionField['type']): string {
 
           <!-- Empty state -->
           <tr v-else>
-            <td :colspan="visibleColumns.length + 1" class="p-0">
+            <td :colspan="visibleColumns.length + 2" class="p-0">
               <EmptyState icon="bi-inbox" title="No records found" message="Try adjusting your search or filters." />
             </td>
           </tr>
