@@ -66,6 +66,50 @@ watch(showId, (v) => localStorage.setItem('moon_table_showId', String(v)))
 // Delete
 const deletingId = ref<string | null>(null)
 
+// Batch selection
+const selectedIds = ref<string[]>([])
+const allSelected = computed(
+  () => rows.value.length > 0 && rows.value.every((r) => selectedIds.value.includes(r.id)),
+)
+
+function handleToggleRow(id: string): void {
+  const idx = selectedIds.value.indexOf(id)
+  if (idx === -1) selectedIds.value = [...selectedIds.value, id]
+  else selectedIds.value = selectedIds.value.filter((x) => x !== id)
+}
+
+function handleToggleAll(): void {
+  if (allSelected.value) selectedIds.value = []
+  else selectedIds.value = rows.value.map((r) => r.id)
+}
+
+const batchDeleting = ref(false)
+
+async function handleBatchDelete(): Promise<void> {
+  if (selectedIds.value.length === 0) return
+  const count = selectedIds.value.length
+  const ok = await confirm(
+    `Delete ${count} selected record${count > 1 ? 's' : ''}? This cannot be undone.`,
+    { variant: 'danger', confirmLabel: 'Delete' },
+  )
+  if (!ok) return
+
+  batchDeleting.value = true
+  const ids = [...selectedIds.value]
+  try {
+    const res = await service.value!.deleteRecords(props.collection, ids)
+    toastStore.show(res.message, 'success')
+    selectedIds.value = []
+    await loadRecords('initial')
+  } catch (err) {
+    const msg = (err as { message?: string }).message ?? 'Batch delete failed'
+    toastStore.show(msg, 'error')
+    console.error('[RecordsView] batch delete error:', err)
+  } finally {
+    batchDeleting.value = false
+  }
+}
+
 // Build query params for the API call
 function buildParams(): Record<string, string> {
   const p: Record<string, string> = { limit: String(limit.value) }
@@ -96,6 +140,7 @@ async function loadRecords(type: typeof loadingType.value = 'initial'): Promise<
   loadingType.value = type
   loading.value = true
   loadError.value = null
+  selectedIds.value = []
   try {
     const res = await service.value.listRecords(props.collection, buildParams())
     rows.value = res.data
@@ -335,6 +380,16 @@ onMounted(async () => {
             />
             <label class="form-check-label small text-muted" for="show-id-toggle">Show ID</label>
           </div>
+          <button
+            v-if="selectedIds.length > 0"
+            class="btn btn-sm btn-danger"
+            :disabled="batchDeleting"
+            @click="handleBatchDelete"
+          >
+            <span v-if="batchDeleting" class="spinner-border spinner-border-sm me-1" role="status" />
+            <i v-else class="bi bi-trash me-1" />
+            Delete Selected ({{ selectedIds.length }})
+          </button>
           <button class="btn btn-sm btn-outline-secondary" :disabled="loading" @click="loadRecords('filter')">
             <i class="bi bi-arrow-clockwise" />
           </button>
@@ -395,10 +450,13 @@ onMounted(async () => {
           :sort-dir="sortDir"
           :show-id="showId"
           :deleting-id="deletingId"
+          :selected-ids="selectedIds"
           @sort="handleSort"
           @row-click="handleRowClick"
           @view="handleView"
           @delete="handleDelete"
+          @toggle-row="handleToggleRow"
+          @toggle-all="handleToggleAll"
         />
 
         <!-- Pagination -->
