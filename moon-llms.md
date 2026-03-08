@@ -1,32 +1,6 @@
 # Moon – Instructions and API Documentation for AI Coding Agents
 
-```textVersion:    1.99
-Service:    moon
-Base URL:   http://localhost:6006
-URL Prefix: N/A
-Github URL: https://github.com/devnodesin/moon
-```
-
-## Table of Contents
-
-- [Introduction](#introduction)
-- [Standard Response Pattern](#standard-response-pattern)
-  - [:list Endpoints](#list-endpoints)
-  - [:get Endpoints](#get-endpoints)
-  - [:create Endpoints](#create-endpoints)
-  - [:destroy Endpoints](#destroy-endpoints)
-  - [:update Endpoints](#update-endpoints)
-  - [:schema Endpoints](#schema-endpoints)
-- [Standard Error Response](#standard-error-response)
-- [Public Endpoints](#public-endpoints)
-- [Authentication](#authentication)
-- [Manage User (Admin Only)](#manage-user-admin-only)
-- [Manage API Keys (Admin Only)](#manage-api-keys-admin-only)
-- [Manage Collections](#manage-collections)
-- [Data Access](#data-access)
-  - [Query Options](#query-options)
-  - [Aggregation Operations](#aggregation-operations)
-- [Security](#security)
+Moon is an API-first, migration-less backend in Go. Manage database schemas and data via REST APIs—no migration files needed.
 
 ## Introduction
 
@@ -34,303 +8,93 @@ This document describes the standard response patterns, query options, and aggre
 
 ### Moon Terminology
 
-Moon stores data in the format: Collection, Field, and Record.
-
-In database terminology, these are Tables, Columns, and Rows, respectively.
-
-For example, consider the table `products` below.
-
-```md
-| id      | name           | price | in_stock |
-| ------- | -------------- | ----- | -------- |
-| 01H1... | Wireless Mouse | 29.99 | true     |
-| 01H2... | USB Keyboard   | 19.99 | false    |
-```
-
-- **Collection:** `products` (the table)
-- **Field:** `id`, `name`, `price`, `in_stock` (the columns)
-- **Record:** Each row, e.g., `{ "id": "01H1...", "name": "Wireless Mouse", "price": "29.99", "in_stock": true }`
+- **Collection** = database table
+- **Field** = database column
+- **Record** = database row
+- Moon has two collection classes:
+  - **System collections**: `users`, `apikeys`
+  - **Dynamic collections**: collections created through collection APIs
+- Identifier rules:
+  - Records, users, and API keys use server-generated ULID `id`
+  - Collections are identified by `name`
+- Canonical resource endpoints use AIP-136 custom actions:
+  - `/data/{resource}:query`
+  - `/data/{resource}:mutate`
+  - `/data/{resource}:schema`
 
 ### What Moon Does NOT Do
 
-Moon is intentionally minimal. It does **not** support:
-
-- **Transactions:** No multi-statement atomicity; each request is independent.
-- **Joins:** No SQL joins; model relationships in your application.
-- **Triggers/Hooks:** No database-level triggers or event hooks.
-- **Background Jobs:** No built-in job queue or async processing.
-- **Foreign Keys:** Relations must be managed manually.
-- **Migrations/Schema Versioning:** No built-in migration or schema versioning system.
-- **Backup/Restore:** No built-in backup or restore; handle externally.
-- **Fine-grained ACLs:** Only `user` and `admin` roles; no per-collection/field ACL.
-- **WebSocket/Realtime:** No realtime or WebSocket support.
-- **File/Binary Storage:** No file uploads or binary/blob storage.
-- **Scheduled Tasks:** No cron or scheduled task support.
-- **Encryption at Rest:** No built-in data encryption at rest.
-- **Admin UI:** API-only; no built-in web UI or dashboard.
-- **HTTP Methods:** Only supports `GET`, `POST`, and `OPTIONS` (no `PUT`, `PATCH`, or `DELETE`).
-- **Public endpoints:** `/health`, `/` (alias for `/health`), `/doc`, `/doc/llms.md`, `/doc/llms.txt`, `/doc/llms.json`. The root path `GET /` is only available when no URL prefix is configured.
-- No support for API versioning.
-- No WebSocket/Realtime
+- SQL joins
+- Database triggers or hooks
+- Foreign keys
+- Migration files or schema versioning
+- Built-in backup/restore
+- Background jobs or schedulers
+- Realtime/WebSocket transport
+- Built-in file/binary storage
+- Fine-grained ACL beyond the specified authorization model
+- Built-in admin UI/dashboard
+- Built-in encryption at rest
+- API versioning
 
 ### Design Constraints
 
-- Collection names: lowercase, snake_case.
-- Field names: unique per collection.
-- No joins; handle relations at the application layer.
+- Only `GET`, `POST`, and `OPTIONS` are supported; other methods return `405`.
+- Only `/` and `/health` are public; all other routes require authentication unless explicitly documented.
+- Endpoints use `:` action style (AIP-136), not ad-hoc route patterns.
+- Error responses always use a single shape: `{ "message": "..." }`.
+- Schema authority is runtime in-memory registry; schema changes happen through API operations.
+- Internal `moon_*` tables are implementation-private and never API-visible.
+- `users` and `apikeys` must exist and cannot be changed through collection schema mutation APIs.
+- SQLite is the default backend; PostgreSQL/MySQL must preserve the same external behavior.
 
 ### Rules: Do's
 
-- Moon is schema-on-demand.
-- Always check or create collections before inserting data.
-- Use API keys for server-side apps; JWT for user-facing auth.
-- Endpoints follow AIP-136 custom actions (colon separator).
-- Rate limits: JWT 100/min/user, API Key 1,000/min/key.
-- User roles: `user` (limited), `admin` (full).
-- Input validation: types and constraints enforced; always sanitize input.
-- **Always use HTTPS in production.** (All curl examples assume HTTPS for production use.)
-- Set explicit allowed origins for CORS.
+- Use canonical routes and documented actions only.
+- Send bearer credentials as `Authorization: Bearer <token>`.
+- Use the correct credential type:
+  - JWT for interactive user sessions
+  - API key for service access
+- Use JWT (not API key) for `/auth:me` endpoints.
+- For query APIs, follow defaults and limits (`page`, `per_page`, `sort`, `q`, `fields`, `filter`) and validate field names against schema.
+- For mutations, always send `data` as an array and follow `op` requirements:
+  - `create`: omit `id`
+  - `update` / `destroy`: include `id`
+- Treat response envelopes as authoritative (`message`, `data`, optional `meta`, optional `links`).
+- Treat `decimal` values as strings and `datetime` values as RFC3339 strings.
 
 ### Rules: Don'ts
 
-- Don’t use joins, transactions, triggers, or background jobs—handle these in your app.
-- Don’t assume foreign keys; manage relations manually.
+- Do not use unsupported HTTP methods.
+- Do not use undocumented or alias resource routes.
+- Do not attempt to access or mutate `moon_*` internal tables through API endpoints.
+- Do not attempt collection schema mutations on `users` or `apikeys`.
+- Do not send API keys to `/auth:me`.
+- Do not send unknown fields in `sort`, `fields`, or `filter`.
+- Do not include client-generated `id` on record create.
+- Do not assume batch mutation atomicity across multiple items.
+- Do not expect error payloads beyond `{ "message": "..." }` (no internal codes/extra metadata).
 
 ### Data Types
 
-Supported column data types:
+| Type       | JSON Representation | Notes                                                                         |
+| ---------- | ------------------- | ----------------------------------------------------------------------------- |
+| `id`       | string              | Read-only ULID generated by server                                            |
+| `string`   | string              | Arbitrary text                                                                |
+| `integer`  | number              | Signed integer                                                                |
+| `decimal`  | string              | Fixed-point decimal string (no scientific notation, max 10 fractional digits) |
+| `boolean`  | boolean             | `true` or `false`                                                             |
+| `datetime` | string              | RFC3339 timestamp                                                             |
+| `json`     | object or array     | Must be valid JSON object/array                                               |
 
-- **id**: Read-only ULID (128-bit, 26-character, URL-safe unique ID) generated by the server.
-- **string**: Text values of any length (maps to TEXT in SQL).
-- **integer**: 64-bit whole numbers.
-- **decimal**: For decimal values. API input/output uses strings (e.g., "199.99"), default 2 decimal places.
-- **boolean**: true/false values.
-- **datetime**: Date/time in RFC3339 format (e.g., 2023-01-31T13:45:00Z).
-- **json**: Arbitrary JSON object or array.
+## Health API
 
-**_Note:_** Aggregation functions (sum, avg, min, max) are supported on both `integer` and `decimal` field types.
+### Health Check
 
-**Default Values by Type:**
-
-- Default values are applied during collection creation if not explicitly provided.
-- Defaults are assigned only to nullable fields.
-- Non-nullable fields do not receive defaults and must always be included in API requests.
-
-| Type       | Default Value         | Notes                             |
-| ---------- | --------------------- | --------------------------------- |
-| `string`   | `""` (empty string)   | Applied only if field is nullable |
-| `integer`  | `0`                   | Applied only if field is nullable |
-| `decimal`  | `"0.00"`              | Applied only if field is nullable |
-| `boolean`  | `false`               | Applied only if field is nullable |
-| `datetime` | `null`                | Applied for nullable fields       |
-| `json`     | `"{}"` (empty object) | Applied only if field is nullable |
-
----
-
-## Standard Response Pattern
-
-### `:list` Endpoints
-
-All List endpoints `GET /{resource}:list` return paginated collections of resources. All list endpoints share a consistent request/response pattern described in this section.
-
-**Response Structure:**
-Every list endpoint returns a JSON object with two top-level keys: `data` and `meta` similar to below reponse.
-
-```json
-{
-  "data": [
-    {
-      "id": "01KHCZKMM0N808MKSHBNWF464F",
-      "title": "Wireless Mouse",
-      "price": "29.99"
-    }
-  ],
-  "meta": {
-    "count": 15,
-    "limit": 15,
-    "next": "01KHCZKMM0N808MKSHBNWF464F",
-    "prev": "01KHCZFXAFJPS9SKSFKNBMHTP5",
-    "total": 42
-  }
-}
-```
-
-- `data` - An array of resource objects. Each record always includes an `id` field (ULID), except collections which use `name` as the identifier.
-- `meta` - Pagination metadata for the current page.
-  - `count` (integer): Number of records returned in this response
-  - `limit` (integer): The page size limit that was applied. Default is 15; maximum allowed is 200.
-  - `next` (string | null): Cursor pointing to the last record on the current page. Pass to ?after to get the next page. null on the last page.
-  - `prev` (string | null): Cursor pointing to the record before the current page. Pass to ?after to return to the previous page. null on the first page.
-  - `total` (integer): Total number of records matching the current filters, regardless of pagination cursor.
-
-The `:list` endpoint supports the following query parameters: `limit`, `after`, `sort`, `filter`, `q` (full-text search), and `fields` (field selection).
-
-#### Pagination
-
-For pagination use parameter `?after={cursor}` to return records after the specified ULID cursor. Omit this parameter to start from the first page.
-
-This API uses cursor-based pagination. Each response includes `meta.next` and `meta.prev` cursors, both of which are used with the `?after` parameter.
-
-```sh
-# First page (no cursor needed)
-GET /products:list
-
-# Next page — use meta.next, meta.prev, or any valid record id from the previous response
-GET /products:list?after=01KHCZKMM0N808MKSHBNWF464F
-```
-
-**Notes:**
-
-- `meta.prev` is `null` on the first page and `meta.next` is `null` on the last page.
-- Records are always returned in chronological order (by ULID/creation time).
-- To page backwards: pass `?after={meta.prev}` from the current response. This returns the previous page of records (the record matching the cursor is excluded). Example: `GET /products:list?after=01KHCZFXAFJPS9SKSFKNBMHTP5`.
-- For `?after={cursor}`, the cursor must always be a record's id (ULID). It can be:
-  - A valid id of an existing record,
-  - The value of `meta.prev` from the current response,
-  - The value of `meta.next` from the current response.
-- When `?after={cursor}` is used, only records that follow the specified id (ULID) are returned; the record matching the cursor is excluded from the results.
-- Moon only supports the `?after={cursor}` parameter; there is no support for a `before` parameter. Use `?after={cursor}` for both forward and backward pagination, for example: `?after={meta.next}` or `?after={meta.prev}`.
-- If an invalid or non-existent cursor is provided, return an error response as specified in the [Standard Error Response](#standard-error-response)
-
-### `:get` Endpoints
-
-Get endpoints retrieve a single resource by its identifier `id` or `name`.
-
-- `id` (string): ULID of the resource (required for users, API keys, and records)
-- `name` (string): Name of the collection (required for collections)
-
-**Important Notes:**
-
-- **Single object**: The `data` field contains a single object (not an array).
-- **No meta field**: Get endpoints don't need pagination metadata.
-- **Consistent wrapper**: All `:get` endpoints use the `data` wrapper, matching `:list` endpoints.
-
-### `:create` Endpoints
-
-- **ID field**: The `id` field is system-generated and read-only. Do not include it in create requests.
-- **Array format**: Collection records must always be sent as an array in `data`, even for single records.
-- **Partial success**: If some records fail validation, successfully created records are returned in `data`.
-- **Failed records**: Failed records are excluded from the `data` array. Check `meta.failed` count to detect partial failures, refer[Data Access](#data-access) section for details.
-- **Status code**: Always returns `201 Created` if at least one record was created successfully.
-- **Consistent wrapper**: All `:create` endpoints use the `data` field for created resource(s).
-- **Message field**: Always includes a human-readable success message.
-- **API Key security**: The `key` field appears in `data` only once during creation.
-- **Error Response:** Follow [Standard Error Response](#standard-error-response) for any error handling
-
-### `:destroy` Endpoints
-
-**Parameters:**
-
-- `id` (string): ULID of the resource (required for users, apikeys)
-- `name` (string): Name of the collection (required for collections)
-- `data` (array): Array of record IDs to delete (required for records)
-
-**Important Notes:**
-
-- **Array format**: Collection records must be sent as an array in `data`, even for single deletions.
-- **Deleted IDs returned**: Response includes `data` array with IDs of successfully deleted records.
-- **Partial success**: If some records fail to delete, the successfully deleted count is shown in `meta`.
-- **Failed records**: Check `meta.failed` count to detect partial failures. Failed record IDs are excluded from the `data` array. refer[Data Access](#data-access) section for details.
-- **Status code**: Returns `200 OK` if at least one record was deleted successfully.
-- **Message field**: Always includes a human-readable success message.
-- **Error Response:** Follow [Standard Error Response](#standard-error-response) for any error handling
-
-### `:update` Endpoints
-
-**Parameters:**
-
-- `id` (string): ULID of the resource (required for users, apikeys)
-- Request Body (object): Fields to update OR `action` parameter for special operations
-- `action` (string): Special operation to perform (`reset_password`, `revoke_sessions`, `rotate`)
-- `name` (string): Collection name (required for collection operations)
-- `data` (array): Array with objects containing `id` plus fields to update (for records)
-
-**Important Notes:**
-
-- **Array format**: Collection records must be sent as an array in `data`, even for single updates.
-- **Partial updates**: Only fields provided are updated; other fields remain unchanged.
-- **Actions vs updates**: When `action` is specified, it takes precedence over field updates.
-- **Action-specific fields**: Some actions require additional fields (e.g., `new_password` for `reset_password`).
-- **Updated data returned**: Response includes the full updated resource(s) in `data`.
-- **Partial success**: For batch updates, successfully updated records are returned in `data`.
-- **Status code**: Returns `200 OK` if at least one record was updated successfully.
-- **Key rotation**: `rotate` action returns the new key in `data.key` field (shown only once).
-- **Warning field**: Optional field for security warnings (e.g., key rotation, password reset).
-- **Error Response:** Follow [Standard Error Response](#standard-error-response) for any error handling
-
-### `:schema` Endpoints
-
-Retrieve the schema definition for a collection, including all fields, their types, constraints, and defaults.
-
-`GET /{collection}:schema`
-
-**Field Properties:**
-
-- `name`: The field's name.
-- `type`: The data type (`string`, `integer`, `decimal`, `boolean`, `timestamp`, etc., as defined in the specification).
-- `nullable`: Indicates if the field can be omitted or set to `null` in API requests.
-- `readonly`: Indicates if the field is system-generated and cannot be modified (e.g., `id`).
-- `default`: The default value assigned when the field is not provided.
-- `unique`: Specifies whether the field must have unique values (optional).
-
-**Important Notes:**
-
-- **System fields**: The `id` and `created_at` fields are automatically included in every collection and are readonly.
-- **Total count**: Represents the total number of fields in the collection schema.
-- **Schema introspection**: Use this endpoint to dynamically discover collection structure
-- **Validation**: Schema information helps clients validate data before submission
-- **Error Response:** Follow [Standard Error Response](#standard-error-response) for any error handling
-
----
-
-## Standard Error Response
-
-The API uses a simple, consistent error handling approach and strictly follows standard HTTP semantics.
-
-- `200`: OK – Successful GET request |
-- `201`: Created – Successful POST request creating resource |
-- `400`: Invalid request (validation error, invalid parameter, malformed request)
-- `401`: Authentication required
-- `404`: Resource not found
-- `429`: Too Many Requests
-- `500`: Server error
-- Only the codes listed above are permitted; do not use any others.
-
-Note: `403` (Forbidden) is intentionally omitted in this specification to keep the error surface small. Authorization or permission failures should be handled via `401` per this document. If an implementation needs to distinguish "authenticated but not allowed" cases, add `403` and follow the same single-`message` JSON body pattern.
-
-- Errors are indicated by standard HTTP status codes (for machines).
-- Each error response includes only a single `message` field (for humans), intended for direct display to users.
-- No internal error codes or additional error metadata are used.
-- The HTTP status code is the only machine-readable error signal.
-- Clients are not expected to parse or branch on error types.
-
-When an error occurs, the API responds with the appropriate HTTP status code and a JSON body:
-
-```json
-{
-  "message": "A human-readable description of the error"
-}
-```
-
-See [Standard Error Response](#standard-error-response) for any error handling
-
-## Public Endpoints
-
-Health and documentation endpoints are accessible without authentication. All other endpoints require authentication.
-
-| Endpoint         | Method | Description                                                     |
-| ---------------- | ------ | --------------------------------------------------------------- |
-| `/`              | GET    | (alias for `/health`) |
-| `/health`        | GET    | Health Endpoint |
-| `/doc/`          | GET    | API Documentation (HTML)                                        |
-| `/doc/llms.md`   | GET    | API Documentation (Markdown)                                    |
-| `/doc/llms.txt`  | GET    | API Documentation (Plain Text, alias for `/doc/llms.md`)        |
-| `/doc/llms.json` | GET    | API Documentation (JSON)                                        |
-
-### Check Health
+Returns server health status. No authentication required.
 
 ```bash
-curl -s -X GET "http://localhost:6006/health" | jq .
+curl -s -X GET "http://localhost:6000/health" | jq .
 ```
 
 **Response (200 OK):**
@@ -338,18 +102,18 @@ curl -s -X GET "http://localhost:6006/health" | jq .
 ```json
 {
   "data": {
-    "moon": "1.99",
-    "timestamp": "2026-03-01T12:48:49Z"
+    "moon": "1.00",
+    "timestamp": "2026-03-08T16:38:31Z"
   }
 }
 ```
 
-### Get Root
+### Root Endpoint
 
-`/` is alias for `/health`
+`/` is an alias for `/health`.
 
 ```bash
-curl -s -X GET "http://localhost:6006/" | jq .
+curl -s -X GET "http://localhost:6000/" | jq .
 ```
 
 **Response (200 OK):**
@@ -357,55 +121,29 @@ curl -s -X GET "http://localhost:6006/" | jq .
 ```json
 {
   "data": {
-    "moon": "1.99",
-    "timestamp": "2026-03-01T12:48:49Z"
+    "moon": "1.00",
+    "timestamp": "2026-03-08T16:38:31Z"
   }
 }
 ```
 
 
-## Authentication
-
-Except for [Public Endpoints](#public-endpoints), all other endpoints require authentication. To access protected endpoints, include the `Authorization: Bearer <TOKEN>` header in your requests
-
-Supported authentication types:
-
-- **JWT tokens** (`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`) – for interactive users
-- **API keys** (`moon_live_<64_chars>`) – for service integrations
-- Both use the same `Authorization: Bearer` header format
-
-**JWT Token Example :** JWT tokens are used for interactive users and are obtained from `POST /auth:login`:
-
-**API Key Example :** API keys are used for service integrations and are obtained from `POST /apikeys:create`:
-
-| Endpoint        | Method | Description                                |
-| --------------- | ------ | ------------------------------------------ |
-| `/auth:login`   | POST   | Authenticate user, receive tokens          |
-| `/auth:logout`  | POST   | Invalidate current session's refresh token |
-| `/auth:refresh` | POST   | Exchange refresh token for new tokens      |
-| `/auth:me`      | GET    | Get current authenticated user info        |
-| `/auth:me`      | POST   | Update current user's profile/password     |
-
-### Important Notes
-
-- **Token expiration**: Access tokens expire in 15 minutes by default (configurable via `jwt.access_expiry`). Use refresh token to obtain new access token without re-authentication.
-- **Refresh token**: Single-use tokens. Each refresh returns a new access token AND a new refresh token. Store the new refresh token for subsequent refreshes.
-- **Password change**: Changing password invalidates all existing sessions. User must login again with new credentials.
-- **Authorization header**: Format is `Authorization: Bearer {access_token}`. Include this header in all authenticated requests.
-- **Token storage**: Store tokens securely. Never expose tokens in URLs or logs.
-- **Error Response:** Follow [Standard Error Response](#standard-error-response) for any error handling
+## Authentication API
 
 ### Login
 
 Authenticate user and retrieve access and refresh tokens.
 
 ```bash
-curl -s -X POST "http://localhost:6006/auth:login" \
+curl -s -X POST "http://localhost:6000/auth:session" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "username": "newuser",
-        "password": "UserPass123#"
+        "op": "login",
+        "data": {
+          "username": "moonuser",
+          "password": "UserPass123#"
+        }
       }
     ' | jq .
 ```
@@ -414,20 +152,25 @@ curl -s -X POST "http://localhost:6006/auth:login" \
 
 ```json
 {
-  "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDFLSkhDV05ESjNRTjJaM0NSM1k5SDM2QTYiLCJ1c2VybmFtZSI6Im5ld3VzZXIiLCJyb2xlIjoidXNlciIsImNhbl93cml0ZSI6dHJ1ZSwic3ViIjoiMDFLSkhDV05ESjNRTjJaM0NSM1k5SDM2QTYiLCJleHAiOjE3NzIyNjE1NTgsIm5iZiI6MTc3MjI1NzkyOCwiaWF0IjoxNzcyMjU3OTU4fQ.lZ8oFckKcKAKLkWAAQ-CibKrNCKN55cUrDr1zbxadAI",
-    "refresh_token": "SEb54NKdpecktQN0s2qjSziWlhdWM8r-Ts6TzQ-jOT4=",
-    "expires_at": "2026-02-28T06:52:38.69599201Z",
-    "token_type": "Bearer",
-    "user": {
-      "id": "01KJHCWNDJ3QN2Z3CR3Y9H36A6",
-      "username": "newuser",
-      "email": "newuser@example.com",
-      "role": "user",
-      "can_write": true
+  "message": "Login successful",
+  "data": [
+    {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjYW5fd3JpdGUiOmZhbHNlLCJleHAiOjE3NzI5OTE1MTQsImlhdCI6MTc3Mjk4NzkxNCwianRpIjoiMDFLSzc1MTZKWlZDUlpaSlIzU0ZWR0QwMzUiLCJyb2xlIjoidXNlciIsInN1YiI6IjAxS0s3NTE1RllFWE40U0I5RFZXRkVDNEJCIn0.F3Q0FypBDT6xcwlHPWwBdiC7CgSUNLCw2AJdOJNL0Co",
+      "refresh_token": "-8ktGghg2DnS2xc0sHchDqvlyMYZ-LFYx3JmcwpiIts",
+      "expires_at": "2026-03-08T17:38:34Z",
+      "token_type": "Bearer",
+      "user": {
+        "id": "01KK7515FYEXN4SB9DVWFEC4BB",
+        "username": "moonuser",
+        "email": "moonuser@example.com",
+        "role": "user",
+        "can_write": false,
+        "created_at": "2026-03-08T16:38:33Z",
+        "updated_at": "2026-03-08T16:38:33Z",
+        "last_login_at": "2026-03-08T16:38:34Z"
+      }
     }
-  },
-  "message": "Login successful"
+  ]
 }
 ```
 
@@ -436,7 +179,7 @@ curl -s -X POST "http://localhost:6006/auth:login" \
 Fetch details of the currently authenticated user.
 
 ```bash
-curl -s -X GET "http://localhost:6006/auth:me" \
+curl -s -X GET "http://localhost:6000/auth:me" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -444,27 +187,35 @@ curl -s -X GET "http://localhost:6006/auth:me" \
 
 ```json
 {
-  "data": {
-    "id": "01KJHCWNDJ3QN2Z3CR3Y9H36A6",
-    "username": "newuser",
-    "email": "newuser@example.com",
-    "role": "user",
-    "can_write": true
-  }
+  "message": "Current user retrieved successfully",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:33Z",
+      "email": "moonuser@example.com",
+      "id": "01KK7515FYEXN4SB9DVWFEC4BB",
+      "last_login_at": "2026-03-08T16:38:34Z",
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:34Z",
+      "username": "moonuser"
+    }
+  ]
 }
 ```
 
-### Update Current User (Change email)
+### Update Current User (Change Email)
 
-Change email for current user.
+Update email address for the current user.
 
 ```bash
-curl -s -X POST "http://localhost:6006/auth:me" \
+curl -s -X POST "http://localhost:6000/auth:me" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "email": "newemail@example.com"
+        "data": {
+          "email": "admin_updated@example.com"
+        }
       }
     ' | jq .
 ```
@@ -473,29 +224,36 @@ curl -s -X POST "http://localhost:6006/auth:me" \
 
 ```json
 {
-  "data": {
-    "id": "01KJHCWNDJ3QN2Z3CR3Y9H36A6",
-    "username": "newuser",
-    "email": "newemail@example.com",
-    "role": "user",
-    "can_write": true
-  },
-  "message": "User updated successfully"
+  "message": "Current user updated successfully",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:33Z",
+      "email": "admin_updated@example.com",
+      "id": "01KK7515FYEXN4SB9DVWFEC4BB",
+      "last_login_at": "2026-03-08T16:38:34Z",
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:35Z",
+      "username": "moonuser"
+    }
+  ]
 }
 ```
 
 ### Update Current User (Change Password)
 
-Change password for current user.
+Change password for the current user. Should require old_password and new password, and invalidate session on success.
 
 ```bash
-curl -s -X POST "http://localhost:6006/auth:me" \
+curl -s -X POST "http://localhost:6000/auth:me" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "old_password": "UserPass123#",
-        "password": "NewSecurePass456"
+        "data": {
+          "old_password": "UserPass123#",
+          "password": "UserPass456#"
+        }
       }
     ' | jq .
 ```
@@ -504,27 +262,35 @@ curl -s -X POST "http://localhost:6006/auth:me" \
 
 ```json
 {
-  "data": {
-    "id": "01KJHCWNDJ3QN2Z3CR3Y9H36A6",
-    "username": "newuser",
-    "email": "newemail@example.com",
-    "role": "user",
-    "can_write": true
-  },
-  "message": "Password updated successfully. Please login again."
+  "message": "Password updated successfully. Sign in again.",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:33Z",
+      "email": "admin_updated@example.com",
+      "id": "01KK7515FYEXN4SB9DVWFEC4BB",
+      "last_login_at": "2026-03-08T16:38:34Z",
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:36Z",
+      "username": "moonuser"
+    }
+  ]
 }
 ```
 
 ### Refresh Token
 
-Generate new access token using refresh token.
+Generate a new access token using the refresh token.
 
 ```bash
-curl -s -X POST "http://localhost:6006/auth:refresh" \
+curl -s -X POST "http://localhost:6000/auth:session" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "refresh_token": "$REFRESH_TOKEN"
+        "op": "refresh",
+        "data": {
+          "refresh_token": "$REFRESH_TOKEN"
+        }
       }
     ' | jq .
 ```
@@ -533,34 +299,42 @@ curl -s -X POST "http://localhost:6006/auth:refresh" \
 
 ```json
 {
-  "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDFLSkhDV05ESjNRTjJaM0NSM1k5SDM2QTYiLCJ1c2VybmFtZSI6Im5ld3VzZXIiLCJyb2xlIjoidXNlciIsImNhbl93cml0ZSI6dHJ1ZSwic3ViIjoiMDFLSkhDV05ESjNRTjJaM0NSM1k5SDM2QTYiLCJleHAiOjE3NzIyNjE1NjAsIm5iZiI6MTc3MjI1NzkzMCwiaWF0IjoxNzcyMjU3OTYwfQ.b3miIPvXZGt-7-58mayTA3Zy79q53S1MOnx0beT59mg",
-    "refresh_token": "aDSM1M5z61WgwHfEHcgTZxqhMgjC0PbrCtg1iaKU7bw=",
-    "expires_at": "2026-02-28T06:52:40.914567576Z",
-    "token_type": "Bearer",
-    "user": {
-      "id": "01KJHCWNDJ3QN2Z3CR3Y9H36A6",
-      "username": "newuser",
-      "email": "newemail@example.com",
-      "role": "user",
-      "can_write": true
+  "message": "Token refreshed successfully",
+  "data": [
+    {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjYW5fd3JpdGUiOmZhbHNlLCJleHAiOjE3NzI5OTE1MTcsImlhdCI6MTc3Mjk4NzkxNywianRpIjoiMDFLSzc1MTlLN05DVFk1N1lXUkEwWjBKOVEiLCJyb2xlIjoidXNlciIsInN1YiI6IjAxS0s3NTE1RllFWE40U0I5RFZXRkVDNEJCIn0.ru2B7SMAvLWw-hQsf9NWz1mg80-avAJxzzyOvtPg3X8",
+      "refresh_token": "HbgoTmbahI5NX9oRrX9V5sUtZGYdJcmVPpR8SRtKWNA",
+      "expires_at": "2026-03-08T17:38:37Z",
+      "token_type": "Bearer",
+      "user": {
+        "id": "01KK7515FYEXN4SB9DVWFEC4BB",
+        "username": "moonuser",
+        "email": "admin_updated@example.com",
+        "role": "user",
+        "can_write": false,
+        "created_at": "2026-03-08T16:38:33Z",
+        "updated_at": "2026-03-08T16:38:37Z",
+        "last_login_at": "2026-03-08T16:38:37Z"
+      }
     }
-  },
-  "message": "Token refreshed successfully"
+  ]
 }
 ```
 
 ### Logout
 
-Invalidate current session and refresh token.
+Invalidate the current session and revoke the refresh token.
 
 ```bash
-curl -s -X POST "http://localhost:6006/auth:logout" \
+curl -s -X POST "http://localhost:6000/auth:session" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "refresh_token": "$REFRESH_TOKEN"
+        "op": "logout",
+        "data": {
+          "refresh_token": "$REFRESH_TOKEN"
+        }
       }
     ' | jq .
 ```
@@ -574,38 +348,28 @@ curl -s -X POST "http://localhost:6006/auth:logout" \
 ```
 
 
----
+## User Managment API
 
-## Manage User (Admin Only)
+### Create User
 
-| Endpoint         | Method | Description                             |
-| ---------------- | ------ | --------------------------------------- |
-| `/users:list`    | GET    | List all users                          |
-| `/users:get`     | GET    | Get specific user by ID                 |
-| `/users:create`  | POST   | Create new user                         |
-| `/users:update`  | POST   | Update user properties or admin actions |
-| `/users:destroy` | POST   | Delete user account                     |
-
-**Query Parameters:**
-
-- `limit` (int): Maximum users per page (default: 15, max: 100)
-- `after` (string): Cursor (ULID) for forward pagination
-- `role` (string): Filter by role: `admin` or `user`
-
-### Create New User
+Create a new user account.
 
 ```bash
-curl -s -X POST "http://localhost:6006/users:create" \
+curl -s -X POST "http://localhost:6000/data/users:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "data": {
-          "username": "moonuser",
-          "email": "moonuser@example.com",
-          "password": "UserPass123#",
-          "role": "user"
-        }
+        "op": "create",
+        "data": [
+          {
+            "username": "moonuser",
+            "email": "moonuser@example.com",
+            "password": "UserPass123#",
+            "role": "user",
+            "can_write": false
+          }
+        ]
       }
     ' | jq .
 ```
@@ -614,23 +378,31 @@ curl -s -X POST "http://localhost:6006/users:create" \
 
 ```json
 {
-  "data": {
-    "id": "01KJMQ3JK54PVC7S41QGNYPNKP",
-    "username": "moonuser",
-    "email": "moonuser@example.com",
-    "role": "user",
-    "can_write": true,
-    "created_at": "2026-03-01T12:48:52Z",
-    "updated_at": "2026-03-01T12:48:52Z"
-  },
-  "message": "User created successfully"
+  "message": "Resource created successfully",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:42Z",
+      "email": "moonuser@example.com",
+      "id": "01KK751DR3JH9VH80B17H114FA",
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:42Z",
+      "username": "moonuser"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
 ### List All Users
 
+Retrieve all users.
+
 ```bash
-curl -s -X GET "http://localhost:6006/users:list" \
+curl -s -X GET "http://localhost:6000/data/users:query" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -638,59 +410,51 @@ curl -s -X GET "http://localhost:6006/users:list" \
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
-      "id": "01KJHQ9H3T8V9D7ZT8M0EXYNDS",
-      "username": "admin",
+      "can_write": true,
+      "created_at": "2026-03-08T12:33:26Z",
       "email": "admin@example.com",
+      "id": "01KK6Q0AKZ52X0V10S7QG9MEVV",
+      "last_login_at": "2026-03-08T16:38:41Z",
       "role": "admin",
-      "can_write": true,
-      "created_at": "2026-02-28T08:54:24Z",
-      "updated_at": "2026-03-01T12:48:51Z",
-      "last_login_at": "2026-03-01T12:48:51Z"
+      "updated_at": "2026-03-08T16:38:41Z",
+      "username": "admin"
     },
     {
-      "id": "01KJJKBK89SAKJ4NV49NJV769K",
-      "username": "Wow",
-      "email": "W@wow.com",
-      "role": "user",
-      "can_write": true,
-      "created_at": "2026-02-28T17:04:52Z",
-      "updated_at": "2026-02-28T17:04:52Z"
-    },
-    {
-      "id": "01KJMG4GYD01KNTBYA7ANQ4DK2",
-      "username": "newuser",
-      "email": "newemail@example.com",
-      "role": "user",
-      "can_write": true,
-      "created_at": "2026-03-01T10:47:03Z",
-      "updated_at": "2026-03-01T10:47:10Z",
-      "last_login_at": "2026-03-01T10:47:10Z"
-    },
-    {
-      "id": "01KJMQ3JK54PVC7S41QGNYPNKP",
-      "username": "moonuser",
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:42Z",
       "email": "moonuser@example.com",
+      "id": "01KK751DR3JH9VH80B17H114FA",
+      "last_login_at": null,
       "role": "user",
-      "can_write": true,
-      "created_at": "2026-03-01T12:48:52Z",
-      "updated_at": "2026-03-01T12:48:52Z"
+      "updated_at": "2026-03-08T16:38:42Z",
+      "username": "moonuser"
     }
   ],
   "meta": {
-    "count": 4,
-    "limit": 15,
+    "count": 2,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 2,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/users:query?page=1&per_page=15",
+    "last": "/data/users:query?page=1&per_page=15",
     "next": null,
     "prev": null
   }
 }
 ```
 
-### Get Specific User by ID
+### Get User by ID
+
+Retrieve a specific user by their ULID.
 
 ```bash
-curl -s -X GET "http://localhost:6006/users:get?id=01KJMQ3JK54PVC7S41QGNYPNKP" \
+curl -s -X GET "http://localhost:6000/data/users:query?id=01KK751DR3JH9VH80B17H114FA" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -698,28 +462,39 @@ curl -s -X GET "http://localhost:6006/users:get?id=01KJMQ3JK54PVC7S41QGNYPNKP" \
 
 ```json
 {
-  "data": {
-    "id": "01KJMQ3JK54PVC7S41QGNYPNKP",
-    "username": "moonuser",
-    "email": "moonuser@example.com",
-    "role": "user",
-    "can_write": true,
-    "created_at": "2026-03-01T12:48:52Z",
-    "updated_at": "2026-03-01T12:48:52Z"
-  }
+  "message": "Resource retrieved successfully",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:42Z",
+      "email": "moonuser@example.com",
+      "id": "01KK751DR3JH9VH80B17H114FA",
+      "last_login_at": null,
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:42Z",
+      "username": "moonuser"
+    }
+  ]
 }
 ```
 
 ### Update User
 
+Update an existing user's fields: email, role and can_write permissions.
+
 ```bash
-curl -s -X POST "http://localhost:6006/users:update?id=01KJMQ3JK54PVC7S41QGNYPNKP" \
+curl -s -X POST "http://localhost:6000/data/users:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "email": "updateduser@example.com",
-        "role": "admin"
+        "op": "update",
+        "data": [
+          {
+            "id": "01KK751DR3JH9VH80B17H114FA",
+            "email": "moonuser_updated@example.com"
+          }
+        ]
       }
     ' | jq .
 ```
@@ -728,29 +503,42 @@ curl -s -X POST "http://localhost:6006/users:update?id=01KJMQ3JK54PVC7S41QGNYPNK
 
 ```json
 {
-  "data": {
-    "id": "01KJMQ3JK54PVC7S41QGNYPNKP",
-    "username": "moonuser",
-    "email": "updateduser@example.com",
-    "role": "admin",
-    "can_write": true,
-    "created_at": "2026-03-01T12:48:52Z",
-    "updated_at": "2026-03-01T12:48:53Z"
-  },
-  "message": "User updated successfully"
+  "message": "Resource updated successfully",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:42Z",
+      "email": "moonuser_updated@example.com",
+      "id": "01KK751DR3JH9VH80B17H114FA",
+      "last_login_at": null,
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:44Z",
+      "username": "moonuser"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
-### Reset User Password
+### Delete User
+
+Delete a user account.
 
 ```bash
-curl -s -X POST "http://localhost:6006/users:update?id=01KJMQ3JK54PVC7S41QGNYPNKP" \
+curl -s -X POST "http://localhost:6000/data/users:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "action": "reset_password",
-        "new_password": "NewSecurePassword123#"
+        "op": "destroy",
+        "data": [
+          {
+            "id": "01KK751DR3JH9VH80B17H114FA"
+          }
+        ]
       }
     ' | jq .
 ```
@@ -759,255 +547,35 @@ curl -s -X POST "http://localhost:6006/users:update?id=01KJMQ3JK54PVC7S41QGNYPNK
 
 ```json
 {
-  "data": {
-    "id": "01KJMQ3JK54PVC7S41QGNYPNKP",
-    "username": "moonuser",
-    "email": "updateduser@example.com",
-    "role": "admin",
-    "can_write": true,
-    "created_at": "2026-03-01T12:48:52Z",
-    "updated_at": "2026-03-01T12:48:54Z"
-  },
-  "message": "Password reset successfully"
-}
-```
-
-### Revoke User Sessions
-
-```bash
-curl -s -X POST "http://localhost:6006/users:update?id=01KJMQ3JK54PVC7S41QGNYPNKP" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '
-      {
-        "action": "revoke_sessions"
-      }
-    ' | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": {
-    "id": "01KJMQ3JK54PVC7S41QGNYPNKP",
-    "username": "moonuser",
-    "email": "updateduser@example.com",
-    "role": "admin",
-    "can_write": true,
-    "created_at": "2026-03-01T12:48:52Z",
-    "updated_at": "2026-03-01T12:48:54Z"
-  },
-  "message": "All sessions revoked successfully"
-}
-```
-
-### List Users with Role Filter (admin)
-
-```bash
-curl -s -X GET "http://localhost:6006/users:list?role=admin" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": [
-    {
-      "id": "01KJHQ9H3T8V9D7ZT8M0EXYNDS",
-      "username": "admin",
-      "email": "admin@example.com",
-      "role": "admin",
-      "can_write": true,
-      "created_at": "2026-02-28T08:54:24Z",
-      "updated_at": "2026-03-01T12:48:51Z",
-      "last_login_at": "2026-03-01T12:48:51Z"
-    },
-    {
-      "id": "01KJMQ3JK54PVC7S41QGNYPNKP",
-      "username": "moonuser",
-      "email": "updateduser@example.com",
-      "role": "admin",
-      "can_write": true,
-      "created_at": "2026-03-01T12:48:52Z",
-      "updated_at": "2026-03-01T12:48:54Z"
-    }
-  ],
+  "message": "Resource destroyed successfully",
   "meta": {
-    "count": 2,
-    "limit": 15,
-    "next": null,
-    "prev": null
+    "failed": 0,
+    "success": 1
   }
 }
 ```
 
-### List All Users
 
-```bash
-curl -s -X GET "http://localhost:6006/users:list" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": [
-    {
-      "id": "01KJHQ9H3T8V9D7ZT8M0EXYNDS",
-      "username": "admin",
-      "email": "admin@example.com",
-      "role": "admin",
-      "can_write": true,
-      "created_at": "2026-02-28T08:54:24Z",
-      "updated_at": "2026-03-01T12:48:51Z",
-      "last_login_at": "2026-03-01T12:48:51Z"
-    },
-    {
-      "id": "01KJJKBK89SAKJ4NV49NJV769K",
-      "username": "Wow",
-      "email": "W@wow.com",
-      "role": "user",
-      "can_write": true,
-      "created_at": "2026-02-28T17:04:52Z",
-      "updated_at": "2026-02-28T17:04:52Z"
-    },
-    {
-      "id": "01KJMG4GYD01KNTBYA7ANQ4DK2",
-      "username": "newuser",
-      "email": "newemail@example.com",
-      "role": "user",
-      "can_write": true,
-      "created_at": "2026-03-01T10:47:03Z",
-      "updated_at": "2026-03-01T10:47:10Z",
-      "last_login_at": "2026-03-01T10:47:10Z"
-    },
-    {
-      "id": "01KJMQ3JK54PVC7S41QGNYPNKP",
-      "username": "moonuser",
-      "email": "updateduser@example.com",
-      "role": "admin",
-      "can_write": true,
-      "created_at": "2026-03-01T12:48:52Z",
-      "updated_at": "2026-03-01T12:48:54Z"
-    }
-  ],
-  "meta": {
-    "count": 4,
-    "limit": 15,
-    "next": null,
-    "prev": null
-  }
-}
-```
-
-### List Users with After ID Pagination
-
-```bash
-curl -s -X GET "http://localhost:6006/users:list?limit=1" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": [
-    {
-      "id": "01KJHQ9H3T8V9D7ZT8M0EXYNDS",
-      "username": "admin",
-      "email": "admin@example.com",
-      "role": "admin",
-      "can_write": true,
-      "created_at": "2026-02-28T08:54:24Z",
-      "updated_at": "2026-03-01T12:48:51Z",
-      "last_login_at": "2026-03-01T12:48:51Z"
-    }
-  ],
-  "meta": {
-    "count": 1,
-    "limit": 1,
-    "next": "01KJHQ9H3T8V9D7ZT8M0EXYNDS",
-    "prev": null
-  }
-}
-```
-
-### List Users with After ID Pagination
-
-```bash
-curl -s -X GET "http://localhost:6006/users:list?after=01KJHQ9H3T8V9D7ZT8M0EXYNDS&limit=1" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": [
-    {
-      "id": "01KJJKBK89SAKJ4NV49NJV769K",
-      "username": "Wow",
-      "email": "W@wow.com",
-      "role": "user",
-      "can_write": true,
-      "created_at": "2026-02-28T17:04:52Z",
-      "updated_at": "2026-02-28T17:04:52Z"
-    }
-  ],
-  "meta": {
-    "count": 1,
-    "limit": 1,
-    "next": "01KJJKBK89SAKJ4NV49NJV769K",
-    "prev": null
-  }
-}
-```
-
-### Delete User Account
-
-```bash
-curl -s -X POST "http://localhost:6006/users:destroy?id=01KJMQ3JK54PVC7S41QGNYPNKP" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "message": "User deleted successfully"
-}
-```
-
-
-All error handling must follow [Standard Error Response](#standard-error-response)
-
-## Manage API Keys (Admin Only)
-
-| Endpoint           | Method | Description                           |
-| ------------------ | ------ | ------------------------------------- |
-| `/apikeys:list`    | GET    | List all API keys                     |
-| `/apikeys:get`     | GET    | Get specific API key                  |
-| `/apikeys:create`  | POST   | Create new API key                    |
-| `/apikeys:update`  | POST   | Update API key metadata or rotate key |
-| `/apikeys:destroy` | POST   | Delete API key                        |
+## APIKey Mangement API
 
 ### Create API Key
 
+Create a new API key.
+
 ```bash
-curl -s -X POST "http://localhost:6006/apikeys:create" \
+curl -s -X POST "http://localhost:6000/data/apikeys:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "data": {
-          "name": "Integration Service",
-          "description": "Key for integration",
-          "role": "user",
-          "can_write": false
-        }
+        "op": "create",
+        "data": [
+          {
+            "name": "Integration Service",
+            "role": "user",
+            "can_write": false
+          }
+        ]
       }
     ' | jq .
 ```
@@ -1016,24 +584,31 @@ curl -s -X POST "http://localhost:6006/apikeys:create" \
 
 ```json
 {
-  "data": {
-    "can_write": false,
-    "created_at": "2026-03-01T12:48:57Z",
-    "description": "Key for integration",
-    "id": "01KJMQ3PZX9543A1YX340S108D",
-    "key": "moon_live_irpswNXjQMNDRsoJYW1eKVG0szqKPhPksCV4XZ1o9UBDIDGUI1sGBxVRUkh5Ec40",
-    "name": "Integration Service",
-    "role": "user"
-  },
-  "message": "API key created successfully",
-  "warning": "Store this key securely. It will not be shown again."
+  "message": "Resource created successfully",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:47Z",
+      "id": "01KK751JJD1GR629JX7RF2Q1N2",
+      "key": "moon_live_6PL5p63vTbGTF9fss4DUj10vusx0oS0R4a01l4P8qeLhmEa9WF20OhbtKhaBatV9",
+      "name": "Integration Service",
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:47Z"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
 ### List API Keys
 
+Retrieve all API keys.
+
 ```bash
-curl -s -X GET "http://localhost:6006/apikeys:list" \
+curl -s -X GET "http://localhost:6000/data/apikeys:query" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -1041,53 +616,40 @@ curl -s -X GET "http://localhost:6006/apikeys:list" \
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
-      "id": "01KJHQA9D1EWJMGX785STJWSYH",
-      "name": "Another Service",
-      "description": "Another key for testing",
-      "role": "user",
       "can_write": false,
-      "created_at": "2026-02-28T08:54:49Z"
-    },
-    {
-      "id": "01KJJK5862YTHS837B69ZWZV2G",
-      "name": "Testing",
-      "description": "Testing",
-      "role": "user",
-      "can_write": false,
-      "created_at": "2026-02-28T17:01:24Z"
-    },
-    {
-      "id": "01KJKZXAZCAQATV75PH96AGDF9",
-      "name": "Wow Key",
-      "description": "Wwwok",
-      "role": "admin",
-      "can_write": false,
-      "created_at": "2026-03-01T06:03:31Z"
-    },
-    {
-      "id": "01KJMQ3PZX9543A1YX340S108D",
+      "created_at": "2026-03-08T16:38:47Z",
+      "id": "01KK751JJD1GR629JX7RF2Q1N2",
+      "last_used_at": null,
       "name": "Integration Service",
-      "description": "Key for integration",
       "role": "user",
-      "can_write": false,
-      "created_at": "2026-03-01T12:48:57Z"
+      "updated_at": "2026-03-08T16:38:47Z"
     }
   ],
   "meta": {
-    "count": 4,
-    "limit": 15,
+    "count": 1,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/apikeys:query?page=1&per_page=15",
+    "last": "/data/apikeys:query?page=1&per_page=15",
     "next": null,
     "prev": null
   }
 }
 ```
 
-### Get API Key
+### Get API Key by ID
+
+Retrieve a specific API key by its ULID.
 
 ```bash
-curl -s -X GET "http://localhost:6006/apikeys:get?id=01KJMQ3PZX9543A1YX340S108D" \
+curl -s -X GET "http://localhost:6000/data/apikeys:query?id=01KK751JJD1GR629JX7RF2Q1N2" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -1095,32 +657,38 @@ curl -s -X GET "http://localhost:6006/apikeys:get?id=01KJMQ3PZX9543A1YX340S108D"
 
 ```json
 {
-  "data": {
-    "id": "01KJMQ3PZX9543A1YX340S108D",
-    "name": "Integration Service",
-    "description": "Key for integration",
-    "role": "user",
-    "can_write": false,
-    "created_at": "2026-03-01T12:48:57Z"
-  }
+  "message": "Resource retrieved successfully",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:47Z",
+      "id": "01KK751JJD1GR629JX7RF2Q1N2",
+      "last_used_at": null,
+      "name": "Integration Service",
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:47Z"
+    }
+  ]
 }
 ```
 
 ### Update API Key Metadata
 
-***Note:*** Update metadata fields (name, description, can_write) without changing the API key itself. The key remains valid. To generate a new key, use the rotation action.
+Update API key metadata (name, description) without changing the key itself.
 
 ```bash
-curl -s -X POST "http://localhost:6006/apikeys:update?id=01KJMQ3PZX9543A1YX340S108D" \
+curl -s -X POST "http://localhost:6000/data/apikeys:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "data": {
-          "name": "Updated Service Name",
-          "description": "Updated description",
-          "can_write": true
-        }
+        "op": "update",
+        "data": [
+          {
+            "id": "01KK751JJD1GR629JX7RF2Q1N2",
+            "name": "Updated Integration Service"
+          }
+        ]
       }
     ' | jq .
 ```
@@ -1129,31 +697,42 @@ curl -s -X POST "http://localhost:6006/apikeys:update?id=01KJMQ3PZX9543A1YX340S1
 
 ```json
 {
-  "data": {
-    "id": "01KJMQ3PZX9543A1YX340S108D",
-    "name": "Updated Service Name",
-    "description": "Updated description",
-    "role": "user",
-    "can_write": true,
-    "created_at": "2026-03-01T12:48:57Z"
-  },
-  "message": "API key updated successfully"
+  "message": "Resource updated successfully",
+  "data": [
+    {
+      "can_write": false,
+      "created_at": "2026-03-08T16:38:47Z",
+      "id": "01KK751JJD1GR629JX7RF2Q1N2",
+      "last_used_at": null,
+      "name": "Updated Integration Service",
+      "role": "user",
+      "updated_at": "2026-03-08T16:38:48Z"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
 ### Rotate API Key
 
-Use `rotate` to securely generate a new API key and invalidate the old one in a single step, minimizing overlap between valid keys.
+Generate a new key value and invalidate the old one in a single step.
 
 ```bash
-curl -s -X POST "http://localhost:6006/apikeys:update?id=01KJMQ3PZX9543A1YX340S108D" \
+curl -s -X POST "http://localhost:6000/data/apikeys:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "data": {
-          "action": "rotate"
-        }
+        "op": "action",
+        "action": "rotate",
+        "data": [
+          {
+            "id": "01KK751JJD1GR629JX7RF2Q1N2"
+          }
+        ]
       }
     ' | jq .
 ```
@@ -1162,92 +741,97 @@ curl -s -X POST "http://localhost:6006/apikeys:update?id=01KJMQ3PZX9543A1YX340S1
 
 ```json
 {
-  "data": {
-    "id": "01KJMQ3PZX9543A1YX340S108D",
-    "key": "moon_live_I7T1uNRduazIASRIIucsgctuktM2Rk1J9O0E3ezfAaxREEgMaQBoxqJzoAY1A6Gk",
-    "name": "Updated Service Name"
-  },
-  "message": "API key rotated successfully",
-  "warning": "Store this key securely. The old key is now invalid."
+  "message": "Action completed successfully",
+  "data": [
+    {
+      "can_write": false,
+      "id": "01KK751JJD1GR629JX7RF2Q1N2",
+      "key": "moon_live_55XwTPU7On334v2DAXhlnlSrjKq9BPUhTASgomEB79ULKqFPxG1ZX2ZsBGAJXt23",
+      "name": "Updated Integration Service",
+      "role": "user"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
 ### Delete API Key
 
+Permanently delete an API key.
+
 ```bash
-curl -s -X POST "http://localhost:6006/apikeys:destroy?id=01KJMQ3PZX9543A1YX340S108D" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
+curl -s -X POST "http://localhost:6000/data/apikeys:mutate" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '
+      {
+        "op": "destroy",
+        "data": [
+          {
+            "id": "01KK751JJD1GR629JX7RF2Q1N2"
+          }
+        ]
+      }
+    ' | jq .
 ```
 
 **Response (200 OK):**
 
 ```json
 {
-  "message": "API key deleted successfully"
+  "message": "Resource destroyed successfully",
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
 
-All error handling must follow [Standard Error Response](#standard-error-response)
+## Collection Managment API
 
-## Manage Collections
+### Create Collection
 
-These endpoints manage database tables (collections) and their schemas.
-
-| Endpoint               | Method | Description                                  |
-| ---------------------- | ------ | -------------------------------------------- |
-| `/collections:list`    | GET    | List all collections                         |
-| `/collections:get`     | GET    | Get collection schema (requires `?name=...`) |
-| `/collections:create`  | POST   | Create a new collection                      |
-| `/collections:update`  | POST   | Update collection schema                     |
-| `/collections:destroy` | POST   | Delete a collection                          |
-
-Update collection support following schema modification operations:
-
-- `add_columns` - Add new columns
-- `rename_columns` - Rename existing columns
-- `modify_columns` - Change column types or attributes
-- `remove_columns` - Remove existing columns
-
-### Collections Create
+Create a new collection named `products` with typed columns.
 
 ```bash
-curl -s -X POST "http://localhost:6006/collections:create" \
+curl -s -X POST "http://localhost:6000/collections:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "data": {
-          "name": "products",
-          "columns": [
-            {
-              "name": "title",
-              "type": "string",
-              "nullable": false,
-              "unique": true
-            },
-            {
-              "name": "price",
-              "type": "integer",
-              "nullable": false
-            },
-            {
-              "name": "description",
-              "type": "string",
-              "nullable": true
-            },
-            {
-              "name": "review",
-              "type": "integer",
-              "nullable": true
-            },
-            {
-              "name": "category",
-              "type": "string",
-              "nullable": true
-            }
-          ]
-        }
+        "op": "create",
+        "data": [
+          {
+            "name": "products",
+            "columns": [
+              {
+                "name": "title",
+                "type": "string",
+                "nullable": false,
+                "unique": true
+              },
+              {
+                "name": "price",
+                "type": "integer",
+                "nullable": false
+              },
+              {
+                "name": "description",
+                "type": "string",
+                "nullable": true
+              },
+              {
+                "name": "category",
+                "type": "string",
+                "nullable": true
+              }
+            ]
+          }
+        ]
       }
     ' | jq .
 ```
@@ -1256,52 +840,51 @@ curl -s -X POST "http://localhost:6006/collections:create" \
 
 ```json
 {
-  "data": {
-    "name": "products",
-    "columns": [
-      {
-        "name": "title",
-        "type": "string",
-        "nullable": false,
-        "unique": true
-      },
-      {
-        "name": "price",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      },
-      {
-        "name": "description",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "review",
-        "type": "integer",
-        "nullable": true,
-        "unique": false,
-        "default": "0"
-      },
-      {
-        "name": "category",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      }
-    ]
-  },
-  "message": "Collection 'products' created successfully"
+  "message": "Collection created successfully",
+  "data": [
+    {
+      "columns": [
+        {
+          "name": "title",
+          "nullable": false,
+          "type": "string",
+          "unique": true
+        },
+        {
+          "name": "price",
+          "nullable": false,
+          "type": "integer",
+          "unique": false
+        },
+        {
+          "name": "description",
+          "nullable": true,
+          "type": "string",
+          "unique": false
+        },
+        {
+          "name": "category",
+          "nullable": true,
+          "type": "string",
+          "unique": false
+        }
+      ],
+      "name": "products"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
-### Collections List
+### List Collections
+
+Retrieve all user-defined collections.
 
 ```bash
-curl -s -X GET "http://localhost:6006/collections:list" \
+curl -s -X GET "http://localhost:6000/collections:query" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -1309,25 +892,43 @@ curl -s -X GET "http://localhost:6006/collections:list" \
 
 ```json
 {
+  "message": "Collections retrieved successfully",
   "data": [
     {
-      "name": "products",
-      "records": 0
+      "count": 0,
+      "name": "apikeys"
+    },
+    {
+      "count": 0,
+      "name": "products"
+    },
+    {
+      "count": 1,
+      "name": "users"
     }
   ],
   "meta": {
-    "count": 1,
-    "limit": 1,
+    "count": 3,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 3,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/collections:query?page=1&per_page=15",
+    "last": "/collections:query?page=1&per_page=15",
     "next": null,
     "prev": null
   }
 }
 ```
 
-### Collections Get
+### Get Collection
+
+Retrieve metadata for a specific collection.
 
 ```bash
-curl -s -X GET "http://localhost:6006/collections:get?name=products" \
+curl -s -X GET "http://localhost:6000/collections:query?name=products" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -1335,65 +936,114 @@ curl -s -X GET "http://localhost:6006/collections:get?name=products" \
 
 ```json
 {
-  "data": {
-    "name": "products",
-    "columns": [
+  "message": "Collection retrieved successfully",
+  "data": [
+    {
+      "count": 0,
+      "name": "products"
+    }
+  ]
+}
+```
+
+### Update Collection — Add Column
+
+Add a new `stock` column to the `products` collection.
+
+```bash
+curl -s -X POST "http://localhost:6000/collections:mutate" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '
       {
-        "name": "title",
-        "type": "string",
-        "nullable": false,
-        "unique": true
-      },
-      {
-        "name": "price",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      },
-      {
-        "name": "description",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "review",
-        "type": "integer",
-        "nullable": true,
-        "unique": false,
-        "default": "0"
-      },
-      {
-        "name": "category",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
+        "op": "update",
+        "data": [
+          {
+            "name": "products",
+            "add_columns": [
+              {
+                "name": "stock",
+                "type": "integer",
+                "nullable": true
+              }
+            ]
+          }
+        ]
       }
-    ]
+    ' | jq .
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Collection updated successfully",
+  "data": [
+    {
+      "columns": [
+        {
+          "name": "title",
+          "nullable": false,
+          "type": "string",
+          "unique": true
+        },
+        {
+          "name": "price",
+          "nullable": false,
+          "type": "integer",
+          "unique": false
+        },
+        {
+          "name": "description",
+          "nullable": true,
+          "type": "string",
+          "unique": false
+        },
+        {
+          "name": "category",
+          "nullable": true,
+          "type": "string",
+          "unique": false
+        },
+        {
+          "name": "stock",
+          "nullable": true,
+          "type": "integer",
+          "unique": false
+        }
+      ],
+      "name": "products"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
   }
 }
 ```
 
-### Collections Update - Add Columns
+### Update Collection — Rename Column
+
+Rename `description` to `details`.
 
 ```bash
-curl -s -X POST "http://localhost:6006/collections:update" \
+curl -s -X POST "http://localhost:6000/collections:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "data": {
-          "name": "products",
-          "add_columns": [
-            {
-              "name": "stock",
-              "type": "integer",
-              "nullable": false
-            }
-          ]
-        }
+        "op": "update",
+        "data": [
+          {
+            "name": "products",
+            "rename_columns": [
+              {
+                "old_name": "description",
+                "new_name": "details"
+              }
+            ]
+          }
+        ]
       }
     ' | jq .
 ```
@@ -1402,71 +1052,70 @@ curl -s -X POST "http://localhost:6006/collections:update" \
 
 ```json
 {
-  "data": {
-    "name": "products",
-    "columns": [
-      {
-        "name": "title",
-        "type": "string",
-        "nullable": false,
-        "unique": true
-      },
-      {
-        "name": "price",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      },
-      {
-        "name": "description",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "review",
-        "type": "integer",
-        "nullable": true,
-        "unique": false,
-        "default": "0"
-      },
-      {
-        "name": "category",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "stock",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      }
-    ]
-  },
-  "message": "Collection 'products' updated successfully"
+  "message": "Collection updated successfully",
+  "data": [
+    {
+      "columns": [
+        {
+          "name": "title",
+          "nullable": false,
+          "type": "string",
+          "unique": true
+        },
+        {
+          "name": "price",
+          "nullable": false,
+          "type": "integer",
+          "unique": false
+        },
+        {
+          "name": "details",
+          "nullable": true,
+          "type": "string",
+          "unique": false
+        },
+        {
+          "name": "category",
+          "nullable": true,
+          "type": "string",
+          "unique": false
+        },
+        {
+          "name": "stock",
+          "nullable": true,
+          "type": "integer",
+          "unique": false
+        }
+      ],
+      "name": "products"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
-### Collections Update - Rename Columns
+### Update Collection — Remove Column
+
+Remove the `category` column.
 
 ```bash
-curl -s -X POST "http://localhost:6006/collections:update" \
+curl -s -X POST "http://localhost:6000/collections:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "data": {
-          "name": "products",
-          "rename_columns": [
-            {
-              "old_name": "description",
-              "new_name": "details"
-            }
-          ]
-        }
+        "op": "update",
+        "data": [
+          {
+            "name": "products",
+            "remove_columns": [
+              "category"
+            ]
+          }
+        ]
       }
     ' | jq .
 ```
@@ -1475,72 +1124,61 @@ curl -s -X POST "http://localhost:6006/collections:update" \
 
 ```json
 {
-  "data": {
-    "name": "products",
-    "columns": [
-      {
-        "name": "title",
-        "type": "string",
-        "nullable": false,
-        "unique": true
-      },
-      {
-        "name": "price",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      },
-      {
-        "name": "details",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "review",
-        "type": "integer",
-        "nullable": true,
-        "unique": false,
-        "default": "0"
-      },
-      {
-        "name": "category",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "stock",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      }
-    ]
-  },
-  "message": "Collection 'products' updated successfully"
+  "message": "Collection updated successfully",
+  "data": [
+    {
+      "columns": [
+        {
+          "name": "title",
+          "nullable": false,
+          "type": "string",
+          "unique": true
+        },
+        {
+          "name": "price",
+          "nullable": false,
+          "type": "integer",
+          "unique": false
+        },
+        {
+          "name": "details",
+          "nullable": true,
+          "type": "string",
+          "unique": false
+        },
+        {
+          "name": "stock",
+          "nullable": true,
+          "type": "integer",
+          "unique": false
+        }
+      ],
+      "name": "products"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
-### Collections Update - Modify Columns
+### Delete Collection
+
+Permanently delete the `products` collection and all its data.
 
 ```bash
-curl -s -X POST "http://localhost:6006/collections:update" \
+curl -s -X POST "http://localhost:6000/collections:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
-        "data": {
-          "name": "products",
-          "modify_columns": [
-            {
-              "name": "category",
-              "type": "integer",
-              "nullable": true
-            }
-          ]
-        }
+        "op": "destroy",
+        "data": [
+          {
+            "name": "products"
+          }
+        ]
       }
     ' | jq .
 ```
@@ -1549,238 +1187,28 @@ curl -s -X POST "http://localhost:6006/collections:update" \
 
 ```json
 {
-  "data": {
-    "name": "products",
-    "columns": [
-      {
-        "name": "title",
-        "type": "string",
-        "nullable": false,
-        "unique": true
-      },
-      {
-        "name": "price",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      },
-      {
-        "name": "details",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "review",
-        "type": "integer",
-        "nullable": true,
-        "unique": false,
-        "default": "0"
-      },
-      {
-        "name": "category",
-        "type": "integer",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "stock",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      }
-    ]
-  },
-  "message": "Collection 'products' updated successfully"
-}
-```
-
-### Collections Update - Remove Columns
-
-```bash
-curl -s -X POST "http://localhost:6006/collections:update" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '
-      {
-        "data": {
-          "name": "products",
-          "remove_columns": [
-            "category"
-          ]
-        }
-      }
-    ' | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": {
-    "name": "products",
-    "columns": [
-      {
-        "name": "title",
-        "type": "string",
-        "nullable": false,
-        "unique": true
-      },
-      {
-        "name": "price",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      },
-      {
-        "name": "details",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "review",
-        "type": "integer",
-        "nullable": true,
-        "unique": false,
-        "default": "0"
-      },
-      {
-        "name": "stock",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      }
-    ]
-  },
-  "message": "Collection 'products' updated successfully"
-}
-```
-
-### Collections Update - Combine Operations
-
-```bash
-curl -s -X POST "http://localhost:6006/collections:update" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '
-      {
-        "data": {
-          "name": "products",
-          "add_columns": [
-            {
-              "name": "brand",
-              "type": "string",
-              "nullable": false
-            }
-          ],
-          "rename_columns": [
-            {
-              "old_name": "stock",
-              "new_name": "quantity"
-            }
-          ],
-          "modify_columns": [
-            {
-              "name": "price",
-              "type": "integer",
-              "nullable": false
-            }
-          ]
-        }
-      }
-    ' | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": {
-    "name": "products",
-    "columns": [
-      {
-        "name": "title",
-        "type": "string",
-        "nullable": false,
-        "unique": true
-      },
-      {
-        "name": "price",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      },
-      {
-        "name": "details",
-        "type": "string",
-        "nullable": true,
-        "unique": false,
-        "default": "''"
-      },
-      {
-        "name": "review",
-        "type": "integer",
-        "nullable": true,
-        "unique": false,
-        "default": "0"
-      },
-      {
-        "name": "quantity",
-        "type": "integer",
-        "nullable": false,
-        "unique": false
-      },
-      {
-        "name": "brand",
-        "type": "string",
-        "nullable": false,
-        "unique": false
-      }
-    ]
-  },
-  "message": "Collection 'products' updated successfully"
-}
-```
-
-### Collections Destroy
-
-```bash
-curl -s -X POST "http://localhost:6006/collections:destroy?name=products" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "message": "Collection 'products' deleted successfully"
+  "message": "Collection destroyed successfully",
+  "data": [
+    {
+      "name": "products"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
 }
 ```
 
 
-All error handling must follow [Standard Error Response](#standard-error-response)
-
-## Data Access
-
-These endpoints manage records within a specific collection. Replace `{collection}` with your collection name (e.g., `products`).
-
-| Endpoint                | Method | Description                              |
-| ----------------------- | ------ | ---------------------------------------- |
-| `/{collection}:list`    | GET    | List all records                         |
-| `/{collection}:schema`  | GET    | Get collection schema (read-only)        |
-| `/{collection}:get`     | GET    | Get a single record (requires `?id=...`) |
-| `/{collection}:create`  | POST   | Create a new record                      |
-| `/{collection}:update`  | POST   | Update an existing record                |
-| `/{collection}:destroy` | POST   | Delete a record                          |
+## Data Access API
 
 ### Get Schema
 
+Retrieve the field schema for the `products` collection.
+
 ```bash
-curl -s -X GET "http://localhost:6006/products:schema" \
+curl -s -X GET "http://localhost:6000/data/products:schema" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -1788,61 +1216,74 @@ curl -s -X GET "http://localhost:6006/products:schema" \
 
 ```json
 {
-  "data": {
-    "collection": "products",
-    "fields": [
-      {
-        "name": "id",
-        "type": "string",
-        "nullable": false,
-        "readonly": true
-      },
-      {
-        "name": "title",
-        "type": "string",
-        "nullable": false
-      },
-      {
-        "name": "price",
-        "type": "decimal",
-        "nullable": false
-      },
-      {
-        "name": "details",
-        "type": "string",
-        "nullable": true,
-        "default": "''"
-      },
-      {
-        "name": "quantity",
-        "type": "integer",
-        "nullable": true,
-        "default": "0"
-      },
-      {
-        "name": "brand",
-        "type": "string",
-        "nullable": true,
-        "default": "''"
-      }
-    ],
-    "total": 6
-  }
+  "message": "Schema retrieved successfully",
+  "data": [
+    {
+      "name": "products",
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": true,
+          "unique": false,
+          "readonly": true
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "nullable": false,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "price",
+          "type": "integer",
+          "nullable": false,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "details",
+          "type": "string",
+          "nullable": true,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "nullable": true,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "brand",
+          "type": "string",
+          "nullable": true,
+          "unique": false,
+          "readonly": false
+        }
+      ]
+    }
+  ]
 }
 ```
 
-### Create Record (Single)
+### Create Record
+
+Create a single record in the `products` collection.
 
 ```bash
-curl -s -X POST "http://localhost:6006/products:create" \
+curl -s -X POST "http://localhost:6000/data/products:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
+        "op": "create",
         "data": [
           {
             "title": "Wireless Mouse",
-            "price": "29.99",
+            "price": 29,
             "details": "Ergonomic wireless mouse",
             "quantity": 10,
             "brand": "Wow"
@@ -1856,29 +1297,30 @@ curl -s -X POST "http://localhost:6006/products:create" \
 
 ```json
 {
+  "message": "Resource created successfully",
   "data": [
     {
       "brand": "Wow",
       "details": "Ergonomic wireless mouse",
-      "id": "01KJMQ3XZF5H1P2DDNGWGVXB5T",
-      "price": "29.99",
+      "id": "01KK751WWJZA1F1YWA28ERN448",
+      "price": 29,
       "quantity": 10,
       "title": "Wireless Mouse"
     }
   ],
-  "message": "1 record(s) created successfully",
   "meta": {
     "failed": 0,
-    "succeeded": 1,
-    "total": 1
+    "success": 1
   }
 }
 ```
 
-### Get All Records
+### List Records
+
+Retrieve all records from the `products` collection.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list" \
+curl -s -X GET "http://localhost:6000/data/products:query" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -1886,30 +1328,39 @@ curl -s -X GET "http://localhost:6006/products:list" \
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
       "brand": "Wow",
       "details": "Ergonomic wireless mouse",
-      "id": "01KJMQ3XZF5H1P2DDNGWGVXB5T",
-      "price": "29.99",
+      "id": "01KK751WWJZA1F1YWA28ERN448",
+      "price": 29,
       "quantity": 10,
       "title": "Wireless Mouse"
     }
   ],
   "meta": {
     "count": 1,
-    "limit": 15,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/products:query?page=1&per_page=15",
+    "last": "/data/products:query?page=1&per_page=15",
     "next": null,
-    "prev": null,
-    "total": 1
+    "prev": null
   }
 }
 ```
 
-### Get Single Record
+### Get Record by ID
+
+Retrieve a single record by its ULID.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:get?id=01KJMQ3XZF5H1P2DDNGWGVXB5T" \
+curl -s -X GET "http://localhost:6000/data/products:query?id=01KK751WWJZA1F1YWA28ERN448" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -1917,29 +1368,35 @@ curl -s -X GET "http://localhost:6006/products:get?id=01KJMQ3XZF5H1P2DDNGWGVXB5T
 
 ```json
 {
-  "data": {
-    "brand": "Wow",
-    "details": "Ergonomic wireless mouse",
-    "id": "01KJMQ3XZF5H1P2DDNGWGVXB5T",
-    "price": "29.99",
-    "quantity": 10,
-    "title": "Wireless Mouse"
-  }
+  "message": "Resource retrieved successfully",
+  "data": [
+    {
+      "brand": "Wow",
+      "details": "Ergonomic wireless mouse",
+      "id": "01KK751WWJZA1F1YWA28ERN448",
+      "price": 29,
+      "quantity": 10,
+      "title": "Wireless Mouse"
+    }
+  ]
 }
 ```
 
-### Update Existing Record (Single)
+### Update Record
+
+Update fields of an existing record.
 
 ```bash
-curl -s -X POST "http://localhost:6006/products:update" \
+curl -s -X POST "http://localhost:6000/data/products:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
+        "op": "update",
         "data": [
           {
-            "id": "01KJMQ3XZF5H1P2DDNGWGVXB5T",
-            "price": "6000.00"
+            "id": "01KK751WWJZA1F1YWA28ERN448",
+            "price": 6000
           }
         ]
       }
@@ -1950,31 +1407,39 @@ curl -s -X POST "http://localhost:6006/products:update" \
 
 ```json
 {
+  "message": "Resource updated successfully",
   "data": [
     {
-      "id": "01KJMQ3XZF5H1P2DDNGWGVXB5T",
-      "price": "6000.00"
+      "brand": "Wow",
+      "details": "Ergonomic wireless mouse",
+      "id": "01KK751WWJZA1F1YWA28ERN448",
+      "price": 6000,
+      "quantity": 10,
+      "title": "Wireless Mouse"
     }
   ],
-  "message": "1 record(s) updated successfully",
   "meta": {
     "failed": 0,
-    "succeeded": 1,
-    "total": 1
+    "success": 1
   }
 }
 ```
 
 ### Delete Record
 
+Delete a record by its ULID.
+
 ```bash
-curl -s -X POST "http://localhost:6006/products:destroy" \
+curl -s -X POST "http://localhost:6000/data/products:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
+        "op": "destroy",
         "data": [
-          "01KJMQ3XZF5H1P2DDNGWGVXB5T"
+          {
+            "id": "01KK751WWJZA1F1YWA28ERN448"
+          }
         ]
       }
     ' | jq .
@@ -1984,14 +1449,10 @@ curl -s -X POST "http://localhost:6006/products:destroy" \
 
 ```json
 {
-  "data": [
-    "01KJMQ3XZF5H1P2DDNGWGVXB5T"
-  ],
-  "message": "1 record(s) deleted successfully",
+  "message": "Resource destroyed successfully",
   "meta": {
     "failed": 0,
-    "succeeded": 1,
-    "total": 1
+    "success": 1
   }
 }
 ```
@@ -1999,12 +1460,15 @@ curl -s -X POST "http://localhost:6006/products:destroy" \
 
 ### Create Records (Batch)
 
+Create multiple records in a single request.
+
 ```bash
-curl -s -X POST "http://localhost:6006/products:create" \
+curl -s -X POST "http://localhost:6000/data/products:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
+        "op": "create",
         "data": [
           {
             "title": "Product 1",
@@ -2043,68 +1507,70 @@ curl -s -X POST "http://localhost:6006/products:create" \
 
 ```json
 {
+  "message": "Resource created successfully",
   "data": [
     {
-      "id": "01KJMQ40VQK0XXHWYDD0E8QZEP",
+      "id": "01KK7522G6DX66VDCTZ5JYTQJH",
       "quantity": 5,
       "title": "Product 1"
     },
     {
-      "id": "01KJMQ40WQX4JHRDTHMXZZVMM1",
+      "id": "01KK7522G6CAC4V9BS0Z26WXG3",
       "quantity": 10,
       "title": "Product 2"
     },
     {
-      "id": "01KJMQ40WW1GFHBXN5C41ZWR1C",
+      "id": "01KK7522G662T7P7EAKP8409J4",
       "quantity": 20,
       "title": "Product 3"
     },
     {
-      "id": "01KJMQ40X2ZFZYM7JRXJ9FVVDC",
+      "id": "01KK7522G7WKQ9CCCGK2Z19JBM",
       "quantity": 55,
       "title": "Product 4"
     },
     {
-      "id": "01KJMQ40X78J1ZYNVR02KPYGFN",
+      "id": "01KK7522G76KDCYQFF7QBPFZCS",
       "quantity": 56,
       "title": "Product 5"
     },
     {
-      "id": "01KJMQ40XCKBFYPJDWYY523EM7",
+      "id": "01KK7522G7KHAEGAV2Q1DG85T0",
       "quantity": 5,
       "title": "Product 6"
     },
     {
-      "id": "01KJMQ40XJAXJQT11WCNDWFMMG",
+      "id": "01KK7522G7F8KSFE27C24WN8QX",
       "quantity": 12,
       "title": "Product 7"
     }
   ],
-  "message": "7 record(s) created successfully",
   "meta": {
     "failed": 0,
-    "succeeded": 7,
-    "total": 7
+    "success": 7
   }
 }
 ```
 
 ### Update Records (Batch)
 
+Update multiple records in a single request using numbered ULID placeholders.
+
 ```bash
-curl -s -X POST "http://localhost:6006/products:update" \
+curl -s -X POST "http://localhost:6000/data/products:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
+        "op": "update",
         "data": [
           {
-            "id": "01KJMQ40VQK0XXHWYDD0E8QZEP",
+            "id": "01KK7522G6DX66VDCTZ5JYTQJH",
             "quantity": 1200,
             "title": "Updated Product 1"
           },
           {
-            "id": "01KJMQ40WQX4JHRDTHMXZZVMM1",
+            "id": "01KK7522G6CAC4V9BS0Z26WXG3",
             "title": "Updated Product 2"
           }
         ]
@@ -2116,41 +1582,56 @@ curl -s -X POST "http://localhost:6006/products:update" \
 
 ```json
 {
+  "message": "Resource updated successfully",
   "data": [
     {
-      "id": "01KJMQ40VQK0XXHWYDD0E8QZEP",
+      "id": "01KK7522G6DX66VDCTZ5JYTQJH",
       "quantity": 1200,
       "title": "Updated Product 1"
     },
     {
-      "id": "01KJMQ40WQX4JHRDTHMXZZVMM1",
+      "id": "01KK7522G6CAC4V9BS0Z26WXG3",
+      "quantity": 10,
       "title": "Updated Product 2"
     }
   ],
-  "message": "2 record(s) updated successfully",
   "meta": {
     "failed": 0,
-    "succeeded": 2,
-    "total": 2
+    "success": 2
   }
 }
 ```
 
 ### Destroy Records (Batch)
 
+Delete multiple records in a single request.
+
 ```bash
-curl -s -X POST "http://localhost:6006/products:destroy" \
+curl -s -X POST "http://localhost:6000/data/products:mutate" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d '
       {
+        "op": "destroy",
         "data": [
-          "01KJMQ40VQK0XXHWYDD0E8QZEP",
-          "01KJMQ40WQX4JHRDTHMXZZVMM1",
-          "01KJMQ40WW1GFHBXN5C41ZWR1C",
-          "01KJMQ40X2ZFZYM7JRXJ9FVVDC",
-          "01KJMQ40X78J1ZYNVR02KPYGFN",
-          "01KJMQ40XCKBFYPJDWYY523EM7"
+          {
+            "id": "01KK7522G6DX66VDCTZ5JYTQJH"
+          },
+          {
+            "id": "01KK7522G6CAC4V9BS0Z26WXG3"
+          },
+          {
+            "id": "01KK7522G662T7P7EAKP8409J4"
+          },
+          {
+            "id": "01KK7522G7WKQ9CCCGK2Z19JBM"
+          },
+          {
+            "id": "01KK7522G76KDCYQFF7QBPFZCS"
+          },
+          {
+            "id": "01KK7522G7KHAEGAV2Q1DG85T0"
+          }
         ]
       }
     ' | jq .
@@ -2160,19 +1641,10 @@ curl -s -X POST "http://localhost:6006/products:destroy" \
 
 ```json
 {
-  "data": [
-    "01KJMQ40VQK0XXHWYDD0E8QZEP",
-    "01KJMQ40WQX4JHRDTHMXZZVMM1",
-    "01KJMQ40WW1GFHBXN5C41ZWR1C",
-    "01KJMQ40X2ZFZYM7JRXJ9FVVDC",
-    "01KJMQ40X78J1ZYNVR02KPYGFN",
-    "01KJMQ40XCKBFYPJDWYY523EM7"
-  ],
-  "message": "6 record(s) deleted successfully",
+  "message": "Resource destroyed successfully",
   "meta": {
     "failed": 0,
-    "succeeded": 6,
-    "total": 6
+    "success": 6
   }
 }
 ```
@@ -2180,10 +1652,10 @@ curl -s -X POST "http://localhost:6006/products:destroy" \
 
 ### First Page
 
-First page of results (no cursor). `meta.next` is captured as `$NEXT_CURSOR` and `meta.prev` as `$PREV_CURSOR` for subsequent requests.
+Retrieve the first page (3 records per page). The response includes `meta` with pagination info and `links` for navigation.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list?limit=3" \
+curl -s -X GET "http://localhost:6000/data/products:query?per_page=3&page=1" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -2191,39 +1663,46 @@ curl -s -X GET "http://localhost:6006/products:list?limit=3" \
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
-      "id": "01KJMQ43YWAVFE4Q6VVK85DHHJ",
+      "id": "01KK7526EFZC27XMZ4SCPTXSYC",
       "quantity": 1,
       "title": "Product 1"
     },
     {
-      "id": "01KJMQ43Z5Y9FVGHS8DEP2BWPA",
+      "id": "01KK7526EF3YBYTEJGSFFAHM0R",
       "quantity": 2,
       "title": "Product 2"
     },
     {
-      "id": "01KJMQ43ZA44WQ99QYMAE2P00W",
+      "id": "01KK7526EFBADT0GRNNESV62ZS",
       "quantity": 3,
       "title": "Product 3"
     }
   ],
   "meta": {
     "count": 3,
-    "limit": 3,
-    "next": "01KJMQ43ZA44WQ99QYMAE2P00W",
-    "prev": null,
-    "total": 7
+    "current_page": 1,
+    "per_page": 3,
+    "total": 7,
+    "total_pages": 3
+  },
+  "links": {
+    "first": "/data/products:query?page=1&per_page=3",
+    "last": "/data/products:query?page=3&per_page=3",
+    "next": "/data/products:query?page=2&per_page=3",
+    "prev": null
   }
 }
 ```
 
-### Next Page (Forward)
+### Second Page
 
-Navigate forward using `$NEXT_CURSOR` (from `meta.next` of the previous response). Cursors are updated after each list response.
+Retrieve the second page.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list?after=01KJMQ43ZA44WQ99QYMAE2P00W&limit=3" \
+curl -s -X GET "http://localhost:6000/data/products:query?per_page=3&page=2" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -2231,39 +1710,46 @@ curl -s -X GET "http://localhost:6006/products:list?after=01KJMQ43ZA44WQ99QYMAE2
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
-      "id": "01KJMQ43ZG3EE7D3PZ3Y2RH256",
+      "id": "01KK7526EFXT7H8GF3N6VYAVRJ",
       "quantity": 4,
       "title": "Product 4"
     },
     {
-      "id": "01KJMQ43ZNEGYP1HHW60KNNGWE",
+      "id": "01KK7526EFGS3AWQWNXQW0XHB7",
       "quantity": 5,
       "title": "Product 5"
     },
     {
-      "id": "01KJMQ43ZVSN9MVW8GJ1WACN5N",
+      "id": "01KK7526EFBKVNSY730FYJ2819",
       "quantity": 6,
       "title": "Product 6"
     }
   ],
   "meta": {
     "count": 3,
-    "limit": 3,
-    "next": "01KJMQ43ZVSN9MVW8GJ1WACN5N",
-    "prev": null,
-    "total": 7
+    "current_page": 2,
+    "per_page": 3,
+    "total": 7,
+    "total_pages": 3
+  },
+  "links": {
+    "first": "/data/products:query?page=1&per_page=3",
+    "last": "/data/products:query?page=3&per_page=3",
+    "next": "/data/products:query?page=3&per_page=3",
+    "prev": "/data/products:query?page=1&per_page=3"
   }
 }
 ```
 
-### Last Page (Forward)
+### Last Page
 
-Navigate to the last page using the updated `$NEXT_CURSOR`. On the last page `meta.next` is `null`; `$PREV_CURSOR` is available for backward navigation.
+Retrieve the last (third) page. Only one record is returned.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list?after=01KJMQ43ZVSN9MVW8GJ1WACN5N&limit=3" \
+curl -s -X GET "http://localhost:6000/data/products:query?per_page=3&page=3" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -2271,87 +1757,37 @@ curl -s -X GET "http://localhost:6006/products:list?after=01KJMQ43ZVSN9MVW8GJ1WA
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
-      "id": "01KJMQ4400CG26XG30KHTPP4AK",
+      "id": "01KK7526EGE8YCY2JNX656AZHG",
       "quantity": 7,
       "title": "Product 7"
     }
   ],
   "meta": {
     "count": 1,
-    "limit": 3,
+    "current_page": 3,
+    "per_page": 3,
+    "total": 7,
+    "total_pages": 3
+  },
+  "links": {
+    "first": "/data/products:query?page=1&per_page=3",
+    "last": "/data/products:query?page=3&per_page=3",
     "next": null,
-    "prev": "01KJMQ43ZA44WQ99QYMAE2P00W",
-    "total": 7
+    "prev": "/data/products:query?page=2&per_page=3"
   }
 }
 ```
 
-### Previous Page (Backward)
-
-Navigate backward using `$PREV_CURSOR` (from `meta.prev` of the last page), returning to the previous page of results.
-
-```bash
-curl -s -X GET "http://localhost:6006/products:list?after=01KJMQ43ZA44WQ99QYMAE2P00W&limit=3" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": [
-    {
-      "id": "01KJMQ43ZG3EE7D3PZ3Y2RH256",
-      "quantity": 4,
-      "title": "Product 4"
-    },
-    {
-      "id": "01KJMQ43ZNEGYP1HHW60KNNGWE",
-      "quantity": 5,
-      "title": "Product 5"
-    },
-    {
-      "id": "01KJMQ43ZVSN9MVW8GJ1WACN5N",
-      "quantity": 6,
-      "title": "Product 6"
-    }
-  ],
-  "meta": {
-    "count": 3,
-    "limit": 3,
-    "next": "01KJMQ43ZVSN9MVW8GJ1WACN5N",
-    "prev": null,
-    "total": 7
-  }
-}
-```
-
-
-All error handling must follow [Standard Error Response](#standard-error-response)
-
-### Query Options
-
-Query parameters for filtering, sorting, searching, field selection, and pagination when listing records. Using these options allows you to retrieve specific subsets of data based on your criteria.
-
-| Query Options             | Description                                                |
-| ------------------------- | ---------------------------------------------------------- |
-| `?column[operator]=value` | Filter records by column values using comparison operators |
-| `?sort={fields}`          | Sort by one or more fields (prefix `-` for descending)     |
-| `?q={term}`               | Full-text search across all text columns                   |
-| `?fields={field1,field2}` | Select specific fields to return (id always included)      |
-| `?limit={number}`         | Limit number of records returned (default: 15, max: 200)   |
-| `?after={cursor}`         | Get records after the specified cursor                     |
 
 ### Filtering
 
-Filter results by column value using the syntax `?{column_name}[operator]=value`. You can combine multiple filters in a single request.
-
-Supported filter operators: `eq` (equal to), `ne` (not equal to), `gt` (greater than), `lt` (less than), `gte` (greater than or equal to), `lte` (less than or equal to), `like` (pattern match, `%` is wildcard, e.g. `brand[like]=Wo%`), `in` (matches any value in a comma-separated list, e.g. `brand[in]=Wow,Orange`)
+Filter results using `?{field}[op]=value`. Supported operators: `eq`, `ne`, `gt`, `lt`, `gte`, `lte`, `like`, `in`.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list?quantity[gt]=5&brand[eq]=Wow" \
+curl -s -X GET "http://localhost:6000/data/products:query?quantity[gt]=5&brand[eq]=Wow" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -2359,42 +1795,55 @@ curl -s -X GET "http://localhost:6006/products:list?quantity[gt]=5&brand[eq]=Wow
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
       "brand": "Wow",
       "details": "Ergonomic wireless mouse",
-      "id": "01KJMQ46SPZXRYZ1WV87NP292N",
-      "price": "29.99",
+      "id": "01KK752CNP8SQ6HJFMDVF7GXEN",
+      "price": 29,
       "quantity": 10,
       "title": "Wireless Mouse"
     },
     {
       "brand": "Wow",
       "details": "Full HD monitor",
-      "id": "01KJMQ47BYZE57GEWTE6C91MZ6",
-      "price": "199.99",
+      "id": "01KK752CNPB98YQ8RJQPSSFQM3",
+      "price": 199,
       "quantity": 20,
       "title": "Monitor 21 inch"
+    },
+    {
+      "brand": "Wow",
+      "details": "Adjustable laptop stand",
+      "id": "01KK752CNQ27A4QC6XK3CTVPTR",
+      "price": 49,
+      "quantity": 8,
+      "title": "Laptop Stand"
     }
   ],
   "meta": {
-    "count": 2,
-    "limit": 15,
+    "count": 3,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 3,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/products:query?brand%5Beq%5D=Wow&page=1&per_page=15&quantity%5Bgt%5D=5",
+    "last": "/data/products:query?brand%5Beq%5D=Wow&page=1&per_page=15&quantity%5Bgt%5D=5",
     "next": null,
-    "prev": null,
-    "total": 2
+    "prev": null
   }
 }
 ```
 
 ### Sorting
 
-Use `?sort={field1,-field2,...}` to sort by one or more fields. Prefix a field name with `-` for descending order. Separate multiple fields with commas.
-
-Sort by `field` (ascending) or `-field` (descending). Below sorts by `quantity` descending, then by `title` ascending.
+Use `?sort={field1,-field2}` to sort. Prefix with `-` for descending. Multiple fields are comma-separated.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list?sort=-quantity,title" \
+curl -s -X GET "http://localhost:6000/data/products:query?sort=-quantity,title" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -2402,50 +1851,71 @@ curl -s -X GET "http://localhost:6006/products:list?sort=-quantity,title" \
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
       "brand": "Orange",
       "details": "Gaming keyboard",
-      "id": "01KJMQ473FZH1HD427M2BMWEKN",
-      "price": "19.99",
+      "id": "01KK752CNP351655QEGHA94QBS",
+      "price": 19,
       "quantity": 55,
       "title": "USB Keyboard"
     },
     {
       "brand": "Wow",
       "details": "Full HD monitor",
-      "id": "01KJMQ47BYZE57GEWTE6C91MZ6",
-      "price": "199.99",
+      "id": "01KK752CNPB98YQ8RJQPSSFQM3",
+      "price": 199,
       "quantity": 20,
       "title": "Monitor 21 inch"
     },
     {
       "brand": "Wow",
       "details": "Ergonomic wireless mouse",
-      "id": "01KJMQ46SPZXRYZ1WV87NP292N",
-      "price": "29.99",
+      "id": "01KK752CNP8SQ6HJFMDVF7GXEN",
+      "price": 29,
       "quantity": 10,
       "title": "Wireless Mouse"
+    },
+    {
+      "brand": "Wow",
+      "details": "Adjustable laptop stand",
+      "id": "01KK752CNQ27A4QC6XK3CTVPTR",
+      "price": 49,
+      "quantity": 8,
+      "title": "Laptop Stand"
+    },
+    {
+      "brand": "Orange",
+      "details": "1080p webcam",
+      "id": "01KK752CNQ154PYDD5QF0SWQYP",
+      "price": 79,
+      "quantity": 3,
+      "title": "Webcam HD"
     }
   ],
   "meta": {
-    "count": 3,
-    "limit": 15,
+    "count": 5,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 5,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/products:query?page=1&per_page=15&sort=-quantity%2Ctitle",
+    "last": "/data/products:query?page=1&per_page=15&sort=-quantity%2Ctitle",
     "next": null,
-    "prev": null,
-    "total": 3
+    "prev": null
   }
 }
 ```
 
 ### Full-Text Search
 
-**Query Option:** `?q={search_term}` (across all text columns)
-
-Searches across all string/text fields in the collection.
+Use `?q={term}` to search across all string fields.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list?q=mouse" \
+curl -s -X GET "http://localhost:6000/data/products:query?q=mouse" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -2453,34 +1923,39 @@ curl -s -X GET "http://localhost:6006/products:list?q=mouse" \
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
       "brand": "Wow",
       "details": "Ergonomic wireless mouse",
-      "id": "01KJMQ46SPZXRYZ1WV87NP292N",
-      "price": "29.99",
+      "id": "01KK752CNP8SQ6HJFMDVF7GXEN",
+      "price": 29,
       "quantity": 10,
       "title": "Wireless Mouse"
     }
   ],
   "meta": {
     "count": 1,
-    "limit": 15,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/products:query?page=1&per_page=15&q=mouse",
+    "last": "/data/products:query?page=1&per_page=15&q=mouse",
     "next": null,
-    "prev": null,
-    "total": 1
+    "prev": null
   }
 }
 ```
 
 ### Field Selection
 
-**Query Option:** `?fields={field1,field2}`
-
-Returns only the specified fields (plus `id` which is always included).
+Use `?fields={field1,field2}` to return only the specified columns (`id` is always included).
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list?fields=quantity,title" \
+curl -s -X GET "http://localhost:6000/data/products:query?fields=quantity,title" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -2488,84 +1963,56 @@ curl -s -X GET "http://localhost:6006/products:list?fields=quantity,title" \
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
-      "id": "01KJMQ46SPZXRYZ1WV87NP292N",
+      "id": "01KK752CNP8SQ6HJFMDVF7GXEN",
       "quantity": 10,
       "title": "Wireless Mouse"
     },
     {
-      "id": "01KJMQ473FZH1HD427M2BMWEKN",
+      "id": "01KK752CNP351655QEGHA94QBS",
       "quantity": 55,
       "title": "USB Keyboard"
     },
     {
-      "id": "01KJMQ47BYZE57GEWTE6C91MZ6",
+      "id": "01KK752CNPB98YQ8RJQPSSFQM3",
       "quantity": 20,
       "title": "Monitor 21 inch"
-    }
-  ],
-  "meta": {
-    "count": 3,
-    "limit": 15,
-    "next": null,
-    "prev": null,
-    "total": 3
-  }
-}
-```
-
-### Limit
-
-**Query Option:** `?limit={limit}`
-
-Use the query option `?limit={number}` to set the number of records returned per page. The default is 15; the maximum is 200.
-
-```bash
-curl -s -X GET "http://localhost:6006/products:list?limit=2" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": [
-    {
-      "brand": "Wow",
-      "details": "Ergonomic wireless mouse",
-      "id": "01KJMQ46SPZXRYZ1WV87NP292N",
-      "price": "29.99",
-      "quantity": 10,
-      "title": "Wireless Mouse"
     },
     {
-      "brand": "Orange",
-      "details": "Gaming keyboard",
-      "id": "01KJMQ473FZH1HD427M2BMWEKN",
-      "price": "19.99",
-      "quantity": 55,
-      "title": "USB Keyboard"
+      "id": "01KK752CNQ27A4QC6XK3CTVPTR",
+      "quantity": 8,
+      "title": "Laptop Stand"
+    },
+    {
+      "id": "01KK752CNQ154PYDD5QF0SWQYP",
+      "quantity": 3,
+      "title": "Webcam HD"
     }
   ],
   "meta": {
-    "count": 2,
-    "limit": 2,
-    "next": "01KJMQ473FZH1HD427M2BMWEKN",
-    "prev": null,
-    "total": 3
+    "count": 5,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 5,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/products:query?fields=quantity%2Ctitle&page=1&per_page=15",
+    "last": "/data/products:query?fields=quantity%2Ctitle&page=1&per_page=15",
+    "next": null,
+    "prev": null
   }
 }
 ```
 
 ### Pagination
 
-**Query Option:** `?after={cursor}`
-
-Response includes `next_cursor` when more results are available. (If `next_cursor` is present, use its value from the response to fetch subsequent pages.)
+Use `?per_page={n}&page={p}` to paginate. Default `per_page` is 15; maximum is 200.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:list?after=01KJMQ473FZH1HD427M2BMWEKN&limit=3" \
+curl -s -X GET "http://localhost:6000/data/products:query?per_page=2&page=1" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -2573,287 +2020,200 @@ curl -s -X GET "http://localhost:6006/products:list?after=01KJMQ473FZH1HD427M2BM
 
 ```json
 {
+  "message": "Resources retrieved successfully",
   "data": [
     {
       "brand": "Wow",
-      "details": "Full HD monitor",
-      "id": "01KJMQ47BYZE57GEWTE6C91MZ6",
-      "price": "199.99",
+      "details": "Ergonomic wireless mouse",
+      "id": "01KK752CNP8SQ6HJFMDVF7GXEN",
+      "price": 29,
+      "quantity": 10,
+      "title": "Wireless Mouse"
+    },
+    {
+      "brand": "Orange",
+      "details": "Gaming keyboard",
+      "id": "01KK752CNP351655QEGHA94QBS",
+      "price": 19,
+      "quantity": 55,
+      "title": "USB Keyboard"
+    }
+  ],
+  "meta": {
+    "count": 2,
+    "current_page": 1,
+    "per_page": 2,
+    "total": 5,
+    "total_pages": 3
+  },
+  "links": {
+    "first": "/data/products:query?page=1&per_page=2",
+    "last": "/data/products:query?page=3&per_page=2",
+    "next": "/data/products:query?page=2&per_page=2",
+    "prev": null
+  }
+}
+```
+
+### Combined Query Options
+
+Combine filtering, sorting, field selection, and pagination in one request.
+
+```bash
+curl -s -X GET "http://localhost:6000/data/products:query?brand[eq]=Wow&sort=-price&fields=title,price,quantity&per_page=10&page=1" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Resources retrieved successfully",
+  "data": [
+    {
+      "id": "01KK752CNPB98YQ8RJQPSSFQM3",
+      "price": 199,
       "quantity": 20,
       "title": "Monitor 21 inch"
     },
     {
-      "brand": "SuperBrand",
-      "details": "Mechanical keyboard",
-      "id": "01KJMQ490T2SNMP317YKDDEEJS",
-      "price": "49.99",
-      "quantity": 5,
-      "title": "Product 1"
+      "id": "01KK752CNQ27A4QC6XK3CTVPTR",
+      "price": 49,
+      "quantity": 8,
+      "title": "Laptop Stand"
     },
     {
-      "brand": "SuperBrand",
-      "details": "24-inch FHD monitor",
-      "id": "01KJMQ4910F13Y86V9EFA6QKXX",
-      "price": "199.99",
-      "quantity": 2,
-      "title": "Product 2"
+      "id": "01KK752CNP8SQ6HJFMDVF7GXEN",
+      "price": 29,
+      "quantity": 10,
+      "title": "Wireless Mouse"
     }
   ],
   "meta": {
     "count": 3,
-    "limit": 3,
-    "next": "01KJMQ4910F13Y86V9EFA6QKXX",
-    "prev": null,
-    "total": 8
+    "current_page": 1,
+    "per_page": 10,
+    "total": 3,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/products:query?brand%5Beq%5D=Wow&fields=title%2Cprice%2Cquantity&page=1&per_page=10&sort=-price",
+    "last": "/data/products:query?brand%5Beq%5D=Wow&fields=title%2Cprice%2Cquantity&page=1&per_page=10&sort=-price",
+    "next": null,
+    "prev": null
   }
 }
 ```
 
 
-All error handling must follow [Standard Error Response](#standard-error-response)
+## Standard Error Response
 
-#### Combined Examples
+### HTTP 400: Missing Required Fields
 
-All query parameters can be combined in a single request.
-
-```sh
-# Filter by price range, sort descending, limit results
-GET /products:list?quantity[gte]=10&price[lt]=100&sort=-price&limit=5
-
-# Full-text search with a brand filter, returning only select fields
-GET /products:list?q=laptop&brand[eq]=Wow&fields=title,price,quantity
-
-# Multi-filter with pagination
-GET /products:list?price[gte]=100&quantity[gt]=0&sort=-price&limit=10&after=01KHCZKMM0N808MKSHBNWF464F
-```
-
-### Aggregation Operations
-
-Moon provides dedicated aggregation endpoints that perform calculations directly on the server. This enables fast, efficient analytics—such as counting records, summing numeric fields, computing averages, and finding minimum or maximum values—without transferring unnecessary data.
-
-Server-side aggregation endpoints for analytics. Replace `{collection}` with your collection name.
-
-| Endpoint              | Method | Description                                   |
-| --------------------- | ------ | --------------------------------------------- |
-| `/{collection}:count` | GET    | Count records                                 |
-| `/{collection}:sum`   | GET    | Sum numeric field (requires `?field=...`)     |
-| `/{collection}:avg`   | GET    | Average numeric field (requires `?field=...`) |
-| `/{collection}:min`   | GET    | Minimum value (requires `?field=...`)         |
-| `/{collection}:max`   | GET    | Maximum value (requires `?field=...`)         |
-
-All error handling must follow [Standard Error Response](#standard-error-response)
-
-### Count Records
+**Error:** `400 Bad Request` — Returned when required fields are missing or the request is malformed.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:count" \
+curl -s -X POST "http://localhost:6000/auth:session" \
+    -H "Content-Type: application/json" \
+    -d '
+      {
+        "op": "login",
+        "data": {
+          "username": "",
+          "password": ""
+        }
+      }
+    ' | jq .
+```
+
+**Response (400 Bad Request):**
+
+```json
+{
+  "message": "Missing required field: data.username"
+}
+```
+
+### HTTP 401: Authentication Required
+
+**Error:** `401 Unauthorized` — Returned when no Authorization header is provided on a protected endpoint.
+
+```bash
+curl -s -X GET "http://localhost:6000/auth:me" | jq .
+```
+
+**Response (401 Unauthorized):**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+### HTTP 401: Invalid Token
+
+**Error:** `401 Unauthorized` — Returned when the provided token is invalid or expired.
+
+```bash
+curl -s -X GET "http://localhost:6000/data/users:query" \
+    -H "Authorization: Bearer invalid_token_value" | jq .
+```
+
+**Response (401 Unauthorized):**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+### HTTP 404: Resource Not Found
+
+**Error:** `404 Not Found` — Returned when the requested resource does not exist.
+
+```bash
+curl -s -X GET "http://localhost:6000/data/users:query?id=01ZZZZZZZZZZZZZZZZZZZZZZZ0" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
-**Response (200 OK):**
+**Response (404 Not Found):**
 
 ```json
 {
-  "data": {
-    "value": 3
-  }
+  "message": "Resource not found"
 }
 ```
 
-### Sum Numeric Field
+### HTTP 404: Collection Not Found
+
+**Error:** `404 Not Found` — Returned when the requested collection does not exist.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:sum?field=quantity" \
+curl -s -X GET "http://localhost:6000/collections:query?name=nonexistentcollection" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
-**Response (200 OK):**
+**Response (404 Not Found):**
 
 ```json
 {
-  "data": {
-    "value": 85
-  }
+  "message": "Collection 'nonexistentcollection' not found"
 }
 ```
 
-### Average Numeric Field
+### HTTP 405: Method Not Allowed
+
+**Error:** `405 Method Not Allowed` — Returned when an unsupported HTTP method is used.
 
 ```bash
-curl -s -X GET "http://localhost:6006/products:avg?field=quantity" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
+curl -s -X DELETE "http://localhost:6000/health" | jq .
 ```
 
-**Response (200 OK):**
+**Response (405 Method Not Allowed):**
 
 ```json
 {
-  "data": {
-    "value": 28.333333333333332
-  }
+  "message": "Method not allowed"
 }
 ```
 
-### Minimum Value
-
-```bash
-curl -s -X GET "http://localhost:6006/products:min?field=quantity" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": {
-    "value": 10
-  }
-}
-```
-
-### Maximum Value
-
-```bash
-curl -s -X GET "http://localhost:6006/products:max?field=quantity" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "data": {
-    "value": 55
-  }
-}
-```
-
-
-**Note:**
-
-- Replace `{collection}` with your collection name.
-- Aggregation can be combined with filters (e.g., `?quantity[gt]=10`) to perform calculations on specific subsets of data.
-- Aggregation functions (`sum`, `avg`, `min`, `max`) are supported only on `integer` and `decimal` field types.
-- Combine aggregation with query filters for calculations on specific subsets:
-  - `/products:count?quantity[gt]=10`
-  - `/products:sum?field=quantity&brand[eq]=Wow`
-  - `/products:max?field=quantity`
-
-## Security
-
-### Request Correlation (`X-Request-ID`)
-
-Moon supports request correlation using the `X-Request-ID` header.
-
-**Lifecycle:**
-
-1. **Client sends (optional):** Clients may include `X-Request-ID` in the request.
-2. **Server resolves ID:**
-  - If `X-Request-ID` is provided, Moon uses that value.
-  - If not provided, Moon generates a request ID.
-3. **Server returns ID:** Moon sets `X-Request-ID` on the response so clients can correlate request/response pairs.
-4. **Logs include ID:** The same value is written to logs as `request_id` for tracing and debugging.
-
-**Operational Notes:**
-
-- Use `X-Request-ID` when reporting errors to support teams.
-- For failed requests (4xx/5xx), use the response `X-Request-ID` to locate related server logs.
-- In browser clients, this header can be read when CORS exposes `X-Request-ID`.
-
-### Rate Limiting
-
-Each response includes these headers to help you track your usage:
-
-- `X-RateLimit-Limit`: Maximum requests allowed per time window
-- `X-RateLimit-Remaining`: Requests left in the current window
-- `X-RateLimit-Reset`: Unix timestamp when your quota resets
-
-**Example Response Headers:**
-
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1706875200
-```
-
-**If You Exceed the Limit (429 Too Many Requests):**
-
-When you go over your limit (100/min/user for JWT, 1000/min/key for API Key), you’ll get:
-
-```json
-{
-  "message": "rate limit exceeded"
-}
-```
-
-**Response Headers:**
-
-```text
-HTTP/1.1 429 Too Many Requests
-Content-Type: application/json
-Retry-After: 60
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 0
-X-RateLimit-Reset: 1706875260
-```
-
-Wait until the time in `X-RateLimit-Reset` or use the `Retry-After` value (in seconds) before making more requests.
-
----
-
-### CORS Configuration
-
-Moon supports Cross-Origin Resource Sharing (CORS) for browser clients with flexible, pattern-based configuration.
-
-**Public Endpoints (No Auth):**
-
-Refer [Public Endpoints](#public-endpoints)
-
-**Default CORS Headers:**
-
-```text
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: GET, POST, OPTIONS
-Access-Control-Allow-Headers: Authorization, Content-Type
-Access-Control-Max-Age: 3600
-```
-
-- CORS can be set per endpoint or pattern in config.
-- Admins can register CORS-enabled endpoints and restrict origins.
-- Public endpoints can bypass authentication.
-- See `SPEC.md` for full config details.
-
-**OPTIONS Preflight Example:**
-
-```bash
-curl -X OPTIONS "http://localhost:6006/collections:list" \
-  -H "Origin: http://localhost:3000" \
-  -H "Access-Control-Request-Method: GET"
-```
-
-**Sample Response:**
-
-```json
-{
-  "allowed_methods": ["GET", "POST", "OPTIONS"],
-  "allowed_headers": ["Authorization", "Content-Type"],
-  "max_age": 3600
-}
-```
-
-**Sample Response Headers:**
-
-```text
-Access-Control-Allow-Origin: http://localhost:3000
-Access-Control-Allow-Methods: GET, POST, OPTIONS
-Access-Control-Allow-Headers: Authorization, Content-Type
-Access-Control-Max-Age: 3600
-```
-
-- **TIP:** In production server set a specific allowed origin (not `*`).
-
----
-
-**[Moon](https://github.com/devnodesin/moon)** made by [Devnodes.in](https://devnodes.in)
-
----
