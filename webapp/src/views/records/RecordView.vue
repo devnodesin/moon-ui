@@ -81,7 +81,7 @@ async function loadRecord(state: 'load' | 'refresh' = 'load'): Promise<void> {
     // New API: data is an array, take first element
     originalData.value = res.data[0]
     // Reset draft to server values
-    draftData.value = { ...res.data }
+    draftData.value = { ...res.data[0] }
     dirtyFields.value = new Set()
     validationErrors.value = {}
   } catch (err) {

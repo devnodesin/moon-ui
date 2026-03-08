@@ -64,7 +64,7 @@ async function loadUsers(type: typeof loadingType.value = 'initial'): Promise<vo
   loadError.value = null
   try {
     const res = await service.value.listUsers(buildParams())
-    rows.value = res.data
+    rows.value = res.data ?? []
     meta.value = res.meta
     currentPage.value = res.meta.current_page
     totalPages.value = res.meta.total_pages

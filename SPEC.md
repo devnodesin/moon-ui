@@ -186,20 +186,21 @@ webapp/
 
 ```
 Login Page
-  → POST /auth:login
+  → POST /auth:session { op: "login", data: { username, password } }
+  → Response: { data: [{ access_token, refresh_token, expires_at, token_type, user }] }
   → Store access_token + refresh_token + user in localStorage
   → Redirect to Dashboard
 
 API Request
   → Attach Authorization: Bearer <access_token>
   → On 401: attempt token refresh (if refresh_token exists)
-    → POST /auth:refresh with refresh_token
+    → POST /auth:session { op: "refresh", data: { refresh_token } }
     → Store new access_token + refresh_token
     → Retry original request
     → On refresh failure: clear tokens, redirect to Login
 
 Logout
-  → POST /auth:logout with refresh_token
+  → POST /auth:session { op: "logout", data: { refresh_token } }
   → Clear all tokens from localStorage
   → Redirect to Login
 
@@ -230,7 +231,7 @@ All tokens and session data are stored in `localStorage` under the active connec
 
 - The HTTP client checks token expiry before each request.
 - If the access token is within 60 seconds of expiry, proactively refresh before the request.
-- If refresh fails (401 from `/auth:refresh`): clear all tokens and redirect to Login.
+- If refresh fails (401 from `/auth:session`): clear all tokens and redirect to Login.
 - Concurrent requests during refresh must queue and wait for the refresh to complete.
 
 ### Session Timeout
@@ -431,9 +432,9 @@ Wraps any async operation: sets `loading`, catches errors, extracts `message` fr
 
 #### `usePagination`
 
-Manages cursor-based pagination state:
-- `after` cursor, `limit`, `hasPrev`, `hasNext`
-- `goNext(nextCursor)`, `goPrev(prevCursor)`, `reset()`
+Manages page-based pagination state:
+- `page`, `perPage`, `totalPages`, `hasPrev`, `hasNext`
+- `goNext()`, `goPrev()`, `reset()`, `setMeta({ current_page, total_pages })`
 
 #### `useImportExport`
 
@@ -477,18 +478,17 @@ Provides a reusable confirmation modal pattern:
 
 - Paginated list table: username, email, role, can_write, last login, actions.
 - Search by username/email (`?q=`).
-- Actions per row: Edit, Reset Password, Revoke Sessions, Delete (with confirm).
+- Actions per row: Edit, Reset Password, Delete (with confirm).
 - Create/Edit form: username, email, role, can_write, password (create only).
-- Admin action "Reset Password": shows form with new_password field.
-- Admin action "Revoke Sessions": confirm modal → call `action: revoke_sessions`.
+- Admin action "Reset Password": shows form with new_password field → calls `/data/users:mutate` with `op: "update"`.
 
 ### API Keys (`/apikeys`, admin only)
 
-- Paginated list table: name, description, role, can_write, created date, actions.
-- Create form: name, description, role, can_write.
+- Paginated list table: name, role, can_write, created date, last used, actions.
+- Create form: name, role, can_write.
 - On create: display the key value once in a modal with a "Copy" button and security warning. Never show again.
 - Rotate key: confirm modal → show new key once in modal.
-- Edit: name, description, can_write (key itself is not editable).
+- Edit: name, can_write (key itself is not editable; role is not editable after creation).
 - Delete: confirm modal.
 
 ### Collections (`/collections`)
@@ -496,9 +496,8 @@ Provides a reusable confirmation modal pattern:
 - Paginated list table: name, record count, actions.
 - Actions per row: View Records (navigates to `/collections/:name/records`), Edit Schema (opens schema modal), Delete (confirm then delete).
 - **Create Collection modal** (inline in CollectionsView): collection name input + dynamic column builder (add/remove columns with name, type, nullable, unique). Triggered by "Add Collection" header button.
-- **Schema modal** (inline in CollectionsView): shows current columns table (name, type, nullable, unique, default). "Edit Schema" button enters edit mode: mark existing columns for removal, add new columns, then save. Uses `/collections:update` with `add_columns` and/or `remove_columns` payloads.
+- **Schema modal** (inline in CollectionsView): shows current columns table (name, type, nullable, unique, default). "Edit Schema" button enters edit mode: mark existing columns for removal, add new columns, then save. Uses `/collections:mutate` with `op: "update"` and `add_columns` and/or `remove_columns` payloads.
 - All notifications use Bootstrap toasts with API error messages.
-- `ApiListMeta.total` is optional (collections list does not include it). `Pagination` component handles missing total gracefully.
 
 ### Collection Schema (`/collections/:name/schema`)
 
@@ -508,13 +507,13 @@ Provides a reusable confirmation modal pattern:
   - Rename columns: old name → new name.
   - Modify columns: change type or nullable.
   - Remove columns: select column → confirm → remove.
-- All schema operations are sent to `/collections:update`.
+- All schema operations are sent to `/collections:mutate` with `op: "update"`.
 
 ### Records (`/collections/:name/records`)
 
 - Full-featured data table for the collection's records.
 - Features:
-  - Paginated list (cursor-based).
+  - Paginated list (page-based with `page` and `per_page` params).
   - Column visibility toggle.
   - Sort by any field (click column header).
   - Filter by any field (filter bar with operator selection).
@@ -584,7 +583,7 @@ Show a **global progress bar** (Bootstrap `progress` component at the top of the
 
 ## Data Tables & Pagination
 
-All list views use the shared `DataTable` component with cursor-based pagination.
+All list views use the shared `DataTable` component with page-based pagination.
 
 ### DataTable Features
 
@@ -597,10 +596,11 @@ All list views use the shared `DataTable` component with cursor-based pagination
 
 ### Pagination
 
-- Previous / Next buttons using `meta.prev` and `meta.next` cursors.
-- Show current page info: "Showing N of M total".
-- Page size selector: 15, 30, 50, 100 (maps to `?limit=`).
+- Previous / Next buttons using page-based navigation (`page` and `per_page` params).
+- Show current page info: "Showing X–Y of N total" and "Page M of N".
+- Page size selector: 15, 30, 50, 100 (maps to `?per_page=`).
 - Reset to first page when filters or sort change.
+- `ApiListMeta` contains `current_page`, `per_page`, `total`, `total_pages`, and `count`.
 
 ---
 
@@ -618,7 +618,7 @@ All list views use the shared `DataTable` component with cursor-based pagination
 - **CSV**: parse file, validate headers against collection schema, batch-create records.
 - **JSON**: parse file (expect array of objects), validate keys, batch-create records.
 - Show a preview table (first 10 rows) before confirming import.
-- After import: show a result toast with succeeded/failed counts (using `meta.succeeded` and `meta.failed` from the API).
+- After import: show a result toast with succeeded/failed counts (using `meta.success` and `meta.failed` from the API).
 - Validate all fields client-side before sending. Show inline errors in the preview.
 
 ---

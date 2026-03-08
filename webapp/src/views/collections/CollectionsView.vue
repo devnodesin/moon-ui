@@ -64,7 +64,7 @@ async function loadCollections(type: typeof loadingType.value = 'initial'): Prom
   loadError.value = null
   try {
     const res = await service.value.listCollections(buildParams())
-    rows.value = res.data
+    rows.value = res.data ?? []
     meta.value = res.meta
     currentPage.value = res.meta.current_page
     totalPages.value = res.meta.total_pages
