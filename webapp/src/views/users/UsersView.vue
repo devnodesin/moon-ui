@@ -28,12 +28,12 @@ const loading = ref(false)
 const loadingType = ref<'initial' | 'page' | 'filter'>('initial')
 const loadError = ref<string | null>(null)
 
-// Pagination — ?after= for both next and prev
-const limit = ref(15)
-const afterCursor = ref<string | null>(null)
-const prevCursor = ref<string | null>(null)
-const hasNext = ref(false)
-const hasPrev = ref(false)
+// Pagination — page-based
+const perPage = ref(15)
+const currentPage = ref(1)
+const totalPages = ref(0)
+const hasNext = computed(() => currentPage.value < totalPages.value)
+const hasPrev = computed(() => currentPage.value > 1)
 
 // Search
 const searchQuery = ref('')
@@ -52,8 +52,7 @@ const resetPwdError = ref<string | null>(null)
 const SKELETON_COUNT = 5
 
 function buildParams(): Record<string, string> {
-  const p: Record<string, string> = { limit: String(limit.value) }
-  if (afterCursor.value) p['after'] = afterCursor.value
+  const p: Record<string, string> = { per_page: String(perPage.value), page: String(currentPage.value) }
   if (activeSearch.value) p['q'] = activeSearch.value
   return p
 }
@@ -67,9 +66,8 @@ async function loadUsers(type: typeof loadingType.value = 'initial'): Promise<vo
     const res = await service.value.listUsers(buildParams())
     rows.value = res.data
     meta.value = res.meta
-    hasNext.value = !!res.meta.next
-    hasPrev.value = !!res.meta.prev
-    prevCursor.value = res.meta.prev
+    currentPage.value = res.meta.current_page
+    totalPages.value = res.meta.total_pages
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to load users'
     loadError.value = msg
@@ -82,34 +80,27 @@ async function loadUsers(type: typeof loadingType.value = 'initial'): Promise<vo
 
 function handleSearch(): void {
   activeSearch.value = searchQuery.value
-  resetPagination()
+  currentPage.value = 1
   loadUsers('filter')
 }
 
-function resetPagination(): void {
-  afterCursor.value = null
-  prevCursor.value = null
-  hasNext.value = false
-  hasPrev.value = false
-}
-
 function goNext(): void {
-  if (meta.value?.next) {
-    afterCursor.value = meta.value.next
+  if (hasNext.value) {
+    currentPage.value++
     loadUsers('page')
   }
 }
 
 function goPrev(): void {
-  if (prevCursor.value) {
-    afterCursor.value = prevCursor.value
+  if (hasPrev.value) {
+    currentPage.value--
     loadUsers('page')
   }
 }
 
-function handleLimitChange(newLimit: number): void {
-  limit.value = newLimit
-  resetPagination()
+function handlePerPageChange(newPerPage: number): void {
+  perPage.value = newPerPage
+  currentPage.value = 1
   loadUsers('page')
 }
 
@@ -148,25 +139,6 @@ async function deleteUser(user: MoonUser): Promise<void> {
   }
 }
 
-async function revokeSessionsUser(user: MoonUser): Promise<void> {
-  const ok = await confirm(
-    `Revoke all active sessions for "${user.username}"? They will be logged out immediately.`,
-    { variant: 'warning', confirmLabel: 'Revoke Sessions' },
-  )
-  if (!ok) return
-  actionUserId.value = user.id
-  try {
-    const res = await service.value!.revokeSessions(user.id)
-    toastStore.show(res.message, 'success')
-  } catch (err) {
-    const msg = (err as { message?: string }).message ?? 'Failed to revoke sessions'
-    toastStore.show(msg, 'error')
-    console.error('[UsersView] revoke sessions error:', err)
-  } finally {
-    actionUserId.value = null
-  }
-}
-
 // Reset password modal
 function openResetPassword(user: MoonUser): void {
   resetPwdUserId.value = user.id
@@ -190,7 +162,9 @@ async function submitResetPassword(): Promise<void> {
   resetPwdLoading.value = true
   resetPwdError.value = null
   try {
-    const res = await service.value!.resetPassword(resetPwdUserId.value!, newPassword.value)
+    const res = await service.value!.updateUser(resetPwdUserId.value!, {
+      password: newPassword.value,
+    })
     toastStore.show(res.message, 'success')
     closeResetPassword()
   } catch (err) {
@@ -267,7 +241,7 @@ onMounted(() => loadUsers('initial'))
                   <th>Role</th>
                   <th>Can Write</th>
                   <th>Last Login</th>
-                  <th style="width: 180px">Actions</th>
+                  <th style="width: 140px">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -324,25 +298,17 @@ onMounted(() => loadUsers('initial'))
                           <i class="bi bi-key" />
                         </button>
                         <button
-                          class="btn btn-sm btn-outline-secondary"
-                          title="Revoke Sessions"
+                          class="btn btn-sm btn-outline-danger"
+                          title="Delete"
                           :disabled="actionUserId === user.id"
-                          @click="revokeSessionsUser(user)"
+                          @click="deleteUser(user)"
                         >
                           <span
                             v-if="actionUserId === user.id"
                             class="spinner-border spinner-border-sm"
                             role="status"
                           />
-                          <i v-else class="bi bi-shield-x" />
-                        </button>
-                        <button
-                          class="btn btn-sm btn-outline-danger"
-                          title="Delete"
-                          :disabled="actionUserId === user.id"
-                          @click="deleteUser(user)"
-                        >
-                          <i class="bi bi-trash" />
+                          <i v-else class="bi bi-trash" />
                         </button>
                       </div>
                     </td>
@@ -364,12 +330,12 @@ onMounted(() => loadUsers('initial'))
         <div class="card-footer bg-transparent border-top-0">
           <Pagination
             :meta="meta"
-            :limit="limit"
+            :per-page="perPage"
             :has-prev="hasPrev"
             :has-next="hasNext"
             @prev="goPrev"
             @next="goNext"
-            @limit-change="handleLimitChange"
+            @per-page-change="handlePerPageChange"
           />
         </div>
       </div>
@@ -395,7 +361,6 @@ onMounted(() => loadUsers('initial'))
             <div class="modal-body">
               <p class="text-muted mb-3">
                 Resetting password for <strong>{{ resetPwdUser?.username }}</strong>.
-                Their active sessions will remain valid.
               </p>
               <div class="alert alert-danger py-2" v-if="resetPwdError">
                 {{ resetPwdError }}
@@ -427,4 +392,3 @@ onMounted(() => loadUsers('initial'))
     </Teleport>
   </AppLayout>
 </template>
-

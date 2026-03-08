@@ -2,52 +2,46 @@ import { ref, computed } from 'vue'
 import type { Ref } from 'vue'
 
 export interface UsePaginationReturn {
-  after: Ref<string | null>
-  limit: Ref<number>
+  page: Ref<number>
+  perPage: Ref<number>
   hasPrev: Ref<boolean>
   hasNext: Ref<boolean>
-  prevCursor: Ref<string | null>
-  goNext: (cursor: string | null) => void
+  totalPages: Ref<number>
+  goNext: () => void
   goPrev: () => void
   reset: () => void
-  setNext: (cursor: string | null) => void
-  setPrev: (cursor: string | null) => void
+  setMeta: (meta: { current_page: number; total_pages: number }) => void
 }
 
-export function usePagination(defaultLimit = 15): UsePaginationReturn {
-  const after = ref<string | null>(null)
-  const limit = ref(defaultLimit)
-  const history = ref<(string | null)[]>([])
-  const nextCursor = ref<string | null>(null)
-  const prevCursor = ref<string | null>(null)
+export function usePagination(defaultPerPage = 15): UsePaginationReturn {
+  const page = ref(1)
+  const perPage = ref(defaultPerPage)
+  const totalPages = ref(0)
 
-  const hasPrev = computed(() => history.value.length > 0)
-  const hasNext = computed(() => !!nextCursor.value)
+  const hasPrev = computed(() => page.value > 1)
+  const hasNext = computed(() => page.value < totalPages.value)
 
-  function goNext(cursor: string | null): void {
-    history.value = [...history.value, after.value]
-    after.value = cursor
+  function goNext(): void {
+    if (page.value < totalPages.value) {
+      page.value++
+    }
   }
 
   function goPrev(): void {
-    after.value = history.value[history.value.length - 1] ?? null
-    history.value = history.value.slice(0, -1)
+    if (page.value > 1) {
+      page.value--
+    }
   }
 
   function reset(): void {
-    after.value = null
-    history.value = []
-    nextCursor.value = null
-    prevCursor.value = null
+    page.value = 1
+    totalPages.value = 0
   }
 
-  function setNext(cursor: string | null): void {
-    nextCursor.value = cursor
+  function setMeta(meta: { current_page: number; total_pages: number }): void {
+    page.value = meta.current_page
+    totalPages.value = meta.total_pages
   }
 
-  function setPrev(cursor: string | null): void {
-    prevCursor.value = cursor
-  }
-
-  return { after, limit, hasPrev, hasNext, prevCursor, goNext, goPrev, reset, setNext, setPrev }
+  return { page, perPage, hasPrev, hasNext, totalPages, goNext, goPrev, reset, setMeta }
 }

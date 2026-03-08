@@ -28,12 +28,12 @@ const loading = ref(false)
 const loadingType = ref<'initial' | 'page'>('initial')
 const loadError = ref<string | null>(null)
 
-// Pagination — ?after= for both next and prev
-const limit = ref(15)
-const afterCursor = ref<string | null>(null)
-const prevCursor = ref<string | null>(null)
-const hasNext = ref(false)
-const hasPrev = ref(false)
+// Pagination — page-based
+const perPage = ref(15)
+const currentPage = ref(1)
+const totalPages = ref(0)
+const hasNext = computed(() => currentPage.value < totalPages.value)
+const hasPrev = computed(() => currentPage.value > 1)
 
 // Row action loading
 const actionKeyId = ref<string | null>(null)
@@ -41,14 +41,11 @@ const actionKeyId = ref<string | null>(null)
 // API Key display modal — shown once after create or rotate
 const revealedKey = ref<string | null>(null)
 const revealedKeyName = ref('')
-const revealedKeyWarning = ref<string | undefined>(undefined)
 
 const SKELETON_COUNT = 5
 
 function buildParams(): Record<string, string> {
-  const p: Record<string, string> = { limit: String(limit.value) }
-  if (afterCursor.value) p['after'] = afterCursor.value
-  return p
+  return { per_page: String(perPage.value), page: String(currentPage.value) }
 }
 
 async function loadApiKeys(type: typeof loadingType.value = 'initial'): Promise<void> {
@@ -60,9 +57,8 @@ async function loadApiKeys(type: typeof loadingType.value = 'initial'): Promise<
     const res = await service.value.listApiKeys(buildParams())
     rows.value = res.data
     meta.value = res.meta
-    hasNext.value = !!res.meta.next
-    hasPrev.value = !!res.meta.prev
-    prevCursor.value = res.meta.prev
+    currentPage.value = res.meta.current_page
+    totalPages.value = res.meta.total_pages
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to load API keys'
     loadError.value = msg
@@ -73,30 +69,23 @@ async function loadApiKeys(type: typeof loadingType.value = 'initial'): Promise<
   }
 }
 
-function resetPagination(): void {
-  afterCursor.value = null
-  prevCursor.value = null
-  hasNext.value = false
-  hasPrev.value = false
-}
-
 function goNext(): void {
-  if (meta.value?.next) {
-    afterCursor.value = meta.value.next
+  if (hasNext.value) {
+    currentPage.value++
     loadApiKeys('page')
   }
 }
 
 function goPrev(): void {
-  if (prevCursor.value) {
-    afterCursor.value = prevCursor.value
+  if (hasPrev.value) {
+    currentPage.value--
     loadApiKeys('page')
   }
 }
 
-function handleLimitChange(newLimit: number): void {
-  limit.value = newLimit
-  resetPagination()
+function handlePerPageChange(newPerPage: number): void {
+  perPage.value = newPerPage
+  currentPage.value = 1
   loadApiKeys('page')
 }
 
@@ -109,16 +98,14 @@ function formatDate(dt: string): string {
 }
 
 // Show the revealed key modal
-function showKeyModal(key: string, name: string, warning?: string): void {
+function showKeyModal(key: string, name: string): void {
   revealedKey.value = key
   revealedKeyName.value = name
-  revealedKeyWarning.value = warning
 }
 
 function closeKeyModal(): void {
   revealedKey.value = null
   revealedKeyName.value = ''
-  revealedKeyWarning.value = undefined
 }
 
 // --- Row actions ---
@@ -137,7 +124,9 @@ async function rotateKey(key: ApiKey): Promise<void> {
   try {
     const res = await service.value!.rotateApiKey(key.id)
     toastStore.show(res.message, 'success')
-    if (res.data?.key) showKeyModal(res.data.key, key.name, res.warning)
+    // data[0].key is the new key value
+    const newKey = res.data?.[0]?.key
+    if (newKey) showKeyModal(newKey, key.name)
     await loadApiKeys('initial')
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to rotate key'
@@ -215,11 +204,11 @@ onMounted(() => loadApiKeys('initial'))
               <thead class="table-light">
                 <tr>
                   <th>Name</th>
-                  <th>Description</th>
                   <th>Role</th>
                   <th>Can Write</th>
                   <th>Created</th>
-                  <th style="width: 140px">Actions</th>
+                  <th>Last Used</th>
+                  <th style="width: 120px">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -241,7 +230,6 @@ onMounted(() => loadApiKeys('initial'))
                 <template v-else-if="rows.length > 0">
                   <tr v-for="key in rows" :key="key.id">
                     <td class="fw-semibold">{{ key.name }}</td>
-                    <td class="text-muted">{{ key.description || '—' }}</td>
                     <td>
                       <span
                         class="badge"
@@ -255,6 +243,7 @@ onMounted(() => loadApiKeys('initial'))
                       />
                     </td>
                     <td class="text-muted small">{{ formatDate(key.created_at) }}</td>
+                    <td class="text-muted small">{{ key.last_used_at ? formatDate(key.last_used_at) : 'Never' }}</td>
                     <td>
                       <div class="d-flex gap-1">
                         <button
@@ -306,12 +295,12 @@ onMounted(() => loadApiKeys('initial'))
         <div class="card-footer bg-transparent border-top-0">
           <Pagination
             :meta="meta"
-            :limit="limit"
+            :per-page="perPage"
             :has-prev="hasPrev"
             :has-next="hasNext"
             @prev="goPrev"
             @next="goNext"
-            @limit-change="handleLimitChange"
+            @per-page-change="handlePerPageChange"
           />
         </div>
       </div>
@@ -323,9 +312,7 @@ onMounted(() => loadApiKeys('initial'))
       :api-key="revealedKey"
       :key-name="revealedKeyName"
       title="API Key Rotated"
-      :warning="revealedKeyWarning"
       @close="closeKeyModal"
     />
   </AppLayout>
 </template>
-

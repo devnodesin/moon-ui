@@ -29,25 +29,32 @@ export function createCollectionsService(baseUrl: string, connId: string) {
     async listCollections(
       params: Record<string, string> = {},
     ): Promise<ApiListResponse<CollectionSummary>> {
-      return http.get<ApiListResponse<CollectionSummary>>('/collections:list', params)
+      return http.get<ApiListResponse<CollectionSummary>>('/collections:query', params)
     },
 
     async getCollection(name: string): Promise<ApiGetResponse<CollectionDetail>> {
-      return http.get<ApiGetResponse<CollectionDetail>>('/collections:get', { name })
+      return http.get<ApiGetResponse<CollectionDetail>>('/collections:query', { name })
     },
 
     async createCollection(payload: CollectionCreatePayload): Promise<CollectionActionResponse> {
-      return http.post<CollectionActionResponse>('/collections:create', { data: payload })
+      return http.post<CollectionActionResponse>('/collections:mutate', {
+        op: 'create',
+        data: [payload],
+      })
     },
 
     async updateCollection(payload: CollectionUpdatePayload): Promise<CollectionActionResponse> {
-      return http.post<CollectionActionResponse>('/collections:update', { data: payload })
+      return http.post<CollectionActionResponse>('/collections:mutate', {
+        op: 'update',
+        data: [payload],
+      })
     },
 
     async deleteCollection(name: string): Promise<CollectionDestroyResponse> {
-      return http.post<CollectionDestroyResponse>(
-        `/collections:destroy?name=${encodeURIComponent(name)}`,
-      )
+      return http.post<CollectionDestroyResponse>('/collections:mutate', {
+        op: 'destroy',
+        data: [{ name }],
+      })
     },
   }
 }

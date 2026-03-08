@@ -35,10 +35,10 @@ async function doRefresh(baseUrl: string, connId: string): Promise<string> {
   const refreshToken = getRefreshToken(connId)
   if (!refreshToken) throw { message: 'No refresh token', status: 401 } as ApiError
 
-  const res = await fetch(`${baseUrl}/auth:refresh`, {
+  const res = await fetch(`${baseUrl}/auth:session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken }),
+    body: JSON.stringify({ op: 'refresh', data: { refresh_token: refreshToken } }),
   })
 
   if (!res.ok) {
@@ -48,7 +48,8 @@ async function doRefresh(baseUrl: string, connId: string): Promise<string> {
   }
 
   const data = await res.json()
-  const tokens = data.data
+  // New API: data is an array, take first element
+  const tokens = Array.isArray(data.data) ? data.data[0] : data.data
   storeTokens(connId, tokens.access_token, tokens.refresh_token, tokens.expires_at)
   return tokens.access_token
 }

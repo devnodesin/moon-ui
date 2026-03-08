@@ -62,7 +62,8 @@ async function loadSchema(): Promise<void> {
   if (!service.value) return
   try {
     const res = await service.value.getSchema(props.collection)
-    schema.value = res.data
+    // New API: data is an array, take first element
+    schema.value = res.data[0]
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to load schema'
     schemaError.value = msg
@@ -77,7 +78,8 @@ async function loadRecord(state: 'load' | 'refresh' = 'load'): Promise<void> {
   loadError.value = null
   try {
     const res = await service.value.getRecord(props.collection, props.id)
-    originalData.value = res.data
+    // New API: data is an array, take first element
+    originalData.value = res.data[0]
     // Reset draft to server values
     draftData.value = { ...res.data }
     dirtyFields.value = new Set()

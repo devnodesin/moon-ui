@@ -1,16 +1,14 @@
 import { createHttpClient } from './http'
-import type { ApiListResponse, ApiKey } from '@/types/api'
+import type { ApiListResponse, ApiGetResponse, ApiMutateResponse, ApiDestroyResponse, ApiKey } from '@/types/api'
 
 export interface CreateApiKeyPayload {
   name: string
-  description: string
   role: 'admin' | 'user'
   can_write: boolean
 }
 
 export interface UpdateApiKeyPayload {
   name?: string
-  description?: string
   can_write?: boolean
 }
 
@@ -19,50 +17,49 @@ export interface ApiKeyWithSecret extends ApiKey {
   key: string
 }
 
-export interface ApiKeyCreateResponse {
-  data: ApiKeyWithSecret
-  message: string
-  warning?: string
-}
-
-export interface ApiKeyRotateResponse {
-  data: ApiKeyWithSecret
-  message: string
-  warning?: string
-}
-
-export interface ApiKeyActionResponse {
-  message: string
-}
-
 export function createApiKeysService(baseUrl: string, connId: string) {
   const http = createHttpClient(baseUrl, connId)
 
   return {
     async listApiKeys(params: Record<string, string> = {}): Promise<ApiListResponse<ApiKey>> {
-      return http.get<ApiListResponse<ApiKey>>('/apikeys:list', params)
+      return http.get<ApiListResponse<ApiKey>>('/data/apikeys:query', params)
     },
 
-    // Body wrapped in { data: {...} } per moon-llms.md
-    async createApiKey(payload: CreateApiKeyPayload): Promise<ApiKeyCreateResponse> {
-      return http.post<ApiKeyCreateResponse>('/apikeys:create', { data: payload })
+    async getApiKey(id: string): Promise<ApiGetResponse<ApiKey>> {
+      return http.get<ApiGetResponse<ApiKey>>('/data/apikeys:query', { id })
     },
 
-    // Body wrapped in { data: {...} } per moon-llms.md
-    async updateApiKey(id: string, payload: UpdateApiKeyPayload): Promise<ApiKeyActionResponse> {
-      return http.post<ApiKeyActionResponse>(`/apikeys:update?id=${id}`, { data: payload })
-    },
-
-    // Rotate returns new key value (shown once only)
-    async rotateApiKey(id: string): Promise<ApiKeyRotateResponse> {
-      return http.post<ApiKeyRotateResponse>(`/apikeys:update?id=${id}`, {
-        data: { action: 'rotate' },
+    async createApiKey(payload: CreateApiKeyPayload): Promise<ApiMutateResponse<ApiKeyWithSecret>> {
+      return http.post<ApiMutateResponse<ApiKeyWithSecret>>('/data/apikeys:mutate', {
+        op: 'create',
+        data: [payload],
       })
     },
 
-    // No body per moon-llms.md
-    async deleteApiKey(id: string): Promise<ApiKeyActionResponse> {
-      return http.post<ApiKeyActionResponse>(`/apikeys:destroy?id=${id}`)
+    async updateApiKey(
+      id: string,
+      payload: UpdateApiKeyPayload,
+    ): Promise<ApiMutateResponse<ApiKey>> {
+      return http.post<ApiMutateResponse<ApiKey>>('/data/apikeys:mutate', {
+        op: 'update',
+        data: [{ id, ...payload }],
+      })
+    },
+
+    // Rotate returns new key value (shown once only)
+    async rotateApiKey(id: string): Promise<ApiMutateResponse<ApiKeyWithSecret>> {
+      return http.post<ApiMutateResponse<ApiKeyWithSecret>>('/data/apikeys:mutate', {
+        op: 'action',
+        action: 'rotate',
+        data: [{ id }],
+      })
+    },
+
+    async deleteApiKey(id: string): Promise<ApiDestroyResponse> {
+      return http.post<ApiDestroyResponse>('/data/apikeys:mutate', {
+        op: 'destroy',
+        data: [{ id }],
+      })
     },
   }
 }

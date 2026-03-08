@@ -44,19 +44,17 @@ const loadingType = ref<'initial' | 'page'>('initial')
 const loadError = ref<string | null>(null)
 
 // Pagination
-const limit = ref(15)
-const afterCursor = ref<string | null>(null)
-const prevCursor = ref<string | null>(null)
-const hasNext = ref(false)
-const hasPrev = ref(false)
+const perPage = ref(15)
+const currentPage = ref(1)
+const totalPages = ref(0)
+const hasNext = computed(() => currentPage.value < totalPages.value)
+const hasPrev = computed(() => currentPage.value > 1)
 
 // Row action tracking
 const actionName = ref<string | null>(null)
 
 function buildParams(): Record<string, string> {
-  const p: Record<string, string> = { limit: String(limit.value) }
-  if (afterCursor.value) p['after'] = afterCursor.value
-  return p
+  return { per_page: String(perPage.value), page: String(currentPage.value) }
 }
 
 async function loadCollections(type: typeof loadingType.value = 'initial'): Promise<void> {
@@ -68,9 +66,8 @@ async function loadCollections(type: typeof loadingType.value = 'initial'): Prom
     const res = await service.value.listCollections(buildParams())
     rows.value = res.data
     meta.value = res.meta
-    hasNext.value = !!res.meta.next
-    hasPrev.value = !!res.meta.prev
-    prevCursor.value = res.meta.prev
+    currentPage.value = res.meta.current_page
+    totalPages.value = res.meta.total_pages
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to load collections'
     loadError.value = msg
@@ -81,30 +78,23 @@ async function loadCollections(type: typeof loadingType.value = 'initial'): Prom
   }
 }
 
-function resetPagination(): void {
-  afterCursor.value = null
-  prevCursor.value = null
-  hasNext.value = false
-  hasPrev.value = false
-}
-
 function goNext(): void {
-  if (meta.value?.next) {
-    afterCursor.value = meta.value.next
+  if (hasNext.value) {
+    currentPage.value++
     loadCollections('page')
   }
 }
 
 function goPrev(): void {
-  if (prevCursor.value) {
-    afterCursor.value = prevCursor.value
+  if (hasPrev.value) {
+    currentPage.value--
     loadCollections('page')
   }
 }
 
-function handleLimitChange(newLimit: number): void {
-  limit.value = newLimit
-  resetPagination()
+function handlePerPageChange(newPerPage: number): void {
+  perPage.value = newPerPage
+  currentPage.value = 1
   loadCollections('page')
 }
 
@@ -115,7 +105,7 @@ function viewRecords(name: string): void {
 
 async function deleteCollection(col: CollectionSummary): Promise<void> {
   const ok = await confirm(
-    `Delete collection "${col.name}" and all its ${col.records} record(s)? This cannot be undone.`,
+    `Delete collection "${col.name}" and all its ${col.count} record(s)? This cannot be undone.`,
     { variant: 'danger', confirmLabel: 'Delete Collection' },
   )
   if (!ok) return
@@ -221,7 +211,8 @@ async function openSchemaModal(name: string): Promise<void> {
   schemaLoading.value = true
   try {
     const res = await service.value!.getCollection(name)
-    schemaData.value = res.data
+    // New API: data is an array, take first element
+    schemaData.value = res.data[0]
   } catch (err) {
     schemaError.value = (err as { message?: string }).message ?? 'Failed to load schema'
     console.error('[CollectionsView] schema load error:', err)
@@ -280,7 +271,8 @@ async function saveSchema(): Promise<void> {
     if (hasRemoved) payload.remove_columns = schemaRemovedNames.value
     const res = await service.value!.updateCollection(payload)
     toastStore.show(res.message, 'success')
-    schemaData.value = res.data
+    // New API: data is an array, take first element
+    schemaData.value = res.data[0]
     schemaEditMode.value = false
     schemaAddedCols.value = []
     schemaRemovedNames.value = []
@@ -378,7 +370,7 @@ onMounted(() => loadCollections('initial'))
                     <td class="fw-semibold">{{ col.name }}</td>
                     <td>
                       <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-secondary">{{ col.records }}</span>
+                        <span class="badge bg-secondary">{{ col.count }}</span>
                         <button
                           class="btn btn-sm btn-outline-primary"
                           :disabled="actionName === col.name"
@@ -435,12 +427,12 @@ onMounted(() => loadCollections('initial'))
         <div class="card-footer bg-transparent border-top-0">
           <Pagination
             :meta="meta"
-            :limit="limit"
+            :per-page="perPage"
             :has-prev="hasPrev"
             :has-next="hasNext"
             @prev="goPrev"
             @next="goNext"
-            @limit-change="handleLimitChange"
+            @per-page-change="handlePerPageChange"
           />
         </div>
       </div>
