@@ -14,7 +14,7 @@ For testing, use the following server details. Do not hard-code these values;
 
 - URL: https://moon.devnodes.in/
 - Username: `admin`
-- Password: `moonadmin12#`
+- Password: `MoonAdmin12#`
 
 ## Mandatory Rules
 
