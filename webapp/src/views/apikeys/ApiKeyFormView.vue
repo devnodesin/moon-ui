@@ -6,7 +6,6 @@ import ApiKeyModal from '@/components/ui/ApiKeyModal.vue'
 import { useConnectionsStore } from '@/stores/connections'
 import { useToastStore } from '@/stores/toast'
 import { createApiKeysService } from '@/services/apikeys'
-import type { ApiKey } from '@/types/api'
 
 const props = defineProps<{ id?: string }>()
 const isEditMode = computed(() => !!props.id)
@@ -22,7 +21,6 @@ const service = computed(() =>
 
 // Form fields
 const name = ref('')
-const description = ref('')
 const role = ref<'admin' | 'user'>('user')
 const canWrite = ref(false)
 
@@ -41,13 +39,11 @@ async function loadApiKey(): Promise<void> {
   loading.value = true
   loadError.value = null
   try {
-    const res = await service.value.listApiKeys()
-    // Fetch individual key to pre-fill form (list doesn't include key secret)
-    const all = res.data
-    const found = all.find((k: ApiKey) => k.id === props.id)
+    // Use getApiKey to fetch individual key
+    const res = await service.value.getApiKey(props.id)
+    const found = res.data[0]
     if (found) {
       name.value = found.name
-      description.value = found.description
       role.value = found.role
       canWrite.value = found.can_write
     } else {
@@ -77,10 +73,9 @@ async function save(): Promise<void> {
   saving.value = true
   try {
     if (isEditMode.value) {
-      // Edit: name, description, can_write only (role not editable per SPEC)
+      // Edit: name and can_write only (role not editable per SPEC)
       const res = await service.value!.updateApiKey(props.id!, {
         name: name.value.trim(),
-        description: description.value.trim(),
         can_write: canWrite.value,
       })
       toastStore.show(res.message, 'success')
@@ -88,14 +83,14 @@ async function save(): Promise<void> {
     } else {
       const res = await service.value!.createApiKey({
         name: name.value.trim(),
-        description: description.value.trim(),
         role: role.value,
         can_write: canWrite.value,
       })
       toastStore.show(res.message, 'success')
       // Show key modal — key is only returned once at creation
-      if (res.data.key) {
-        revealedKey.value = res.data.key
+      const newKey = res.data?.[0]?.key
+      if (newKey) {
+        revealedKey.value = newKey
       } else {
         router.push({ name: 'apikeys' })
       }
@@ -140,7 +135,6 @@ onMounted(() => {
         </nav>
       </div>
 
-
       <!-- Load error -->
       <div v-if="loadError" class="alert alert-danger">
         <i class="bi bi-exclamation-triangle me-2" />{{ loadError }}
@@ -149,9 +143,9 @@ onMounted(() => {
 
       <div v-else class="card border-0 shadow-sm" style="max-width: 540px">
         <div class="card-body">
-          <!-- Skeleton -->
+          <!-- Skeleton while loading -->
           <template v-if="loading">
-            <div v-for="n in 4" :key="n" class="mb-3 placeholder-glow">
+            <div v-for="n in 3" :key="n" class="mb-3 placeholder-glow">
               <span class="placeholder col-3 mb-1 d-block" />
               <span class="placeholder col-12 d-block" style="height: 38px" />
             </div>
@@ -159,7 +153,9 @@ onMounted(() => {
 
           <template v-else>
             <!-- Form-level error -->
-            <div v-if="formError" class="alert alert-danger py-2 mb-3">{{ formError }}</div>
+            <div v-if="formError" class="alert alert-danger py-2 mb-3">
+              {{ formError }}
+            </div>
 
             <!-- Name -->
             <div class="mb-3">
@@ -177,44 +173,37 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Description -->
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Description</label>
-              <textarea
-                v-model="description"
-                class="form-control"
-                rows="2"
-                placeholder="Optional description"
-                :disabled="saving"
-              />
-            </div>
-
-            <!-- Role (create only — per SPEC, not editable after creation) -->
-            <div class="mb-3">
+            <!-- Role (create only) -->
+            <div v-if="!isEditMode" class="mb-3">
               <label class="form-label fw-semibold">Role</label>
-              <select v-model="role" class="form-select" :disabled="saving || isEditMode">
+              <select v-model="role" class="form-select" :disabled="saving">
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
               </select>
-              <div v-if="isEditMode" class="form-text">Role cannot be changed after creation.</div>
             </div>
 
             <!-- Can Write -->
             <div class="mb-4">
               <div class="form-check form-switch">
                 <input
-                  id="api-can-write"
+                  id="can-write"
                   v-model="canWrite"
                   type="checkbox"
                   class="form-check-input"
                   role="switch"
                   :disabled="saving"
                 />
-                <label class="form-check-label" for="api-can-write">
+                <label class="form-check-label" for="can-write">
                   Can Write
                   <span class="text-muted small ms-1">(allows write access to collections)</span>
                 </label>
               </div>
+            </div>
+
+            <!-- Info note on create -->
+            <div v-if="!isEditMode" class="alert alert-info py-2 mb-3 small">
+              <i class="bi bi-info-circle me-1" />
+              The API key value will be shown <strong>once</strong> after creation. Store it securely.
             </div>
 
             <!-- Actions -->
@@ -233,7 +222,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- API Key Display Modal — shown once after creation -->
+    <!-- API Key Display Modal (shown once after create) -->
     <ApiKeyModal
       v-if="revealedKey"
       :api-key="revealedKey"

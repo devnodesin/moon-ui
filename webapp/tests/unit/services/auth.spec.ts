@@ -21,13 +21,37 @@ describe('authLogin', () => {
         can_write: true,
       },
     }
+    // New API: data is an array
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ data: mockTokens }),
+      json: async () => ({ data: [mockTokens] }),
     } as Response)
 
     const result = await authLogin('https://test.com', { username: 'admin', password: 'pass' })
     expect(result.access_token).toBe('abc')
+  })
+
+  it('sends op: login in request body', async () => {
+    const mockTokens = {
+      access_token: 'abc',
+      refresh_token: 'def',
+      expires_at: '2099-01-01T00:00:00Z',
+      token_type: 'Bearer',
+      user: { id: '1', username: 'admin', email: 'admin@example.com', role: 'admin', can_write: true },
+    }
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: [mockTokens] }),
+    } as Response)
+
+    await authLogin('https://test.com', { username: 'admin', password: 'pass' })
+    const call = vi.mocked(fetch).mock.calls[0]
+    const url = call[0] as string
+    const body = JSON.parse(call[1]?.body as string)
+    expect(url).toContain('/auth:session')
+    expect(body.op).toBe('login')
+    expect(body.data.username).toBe('admin')
+    expect(body.data.password).toBe('pass')
   })
 
   it('throws ApiError on failure', async () => {

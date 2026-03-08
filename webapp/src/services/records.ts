@@ -20,33 +20,42 @@ export function createRecordsService(baseUrl: string, connId: string) {
       collection: string,
       params: Record<string, string> = {},
     ): Promise<ApiListResponse<MoonRecord>> {
-      return http.get<ApiListResponse<MoonRecord>>(`/${collection}:list`, params)
+      return http.get<ApiListResponse<MoonRecord>>(`/data/${collection}:query`, params)
     },
 
     async getRecord(collection: string, id: string): Promise<ApiGetResponse<MoonRecord>> {
-      return http.get<ApiGetResponse<MoonRecord>>(`/${collection}:get`, { id })
+      return http.get<ApiGetResponse<MoonRecord>>(`/data/${collection}:query`, { id })
     },
 
     async getSchema(collection: string): Promise<ApiGetResponse<CollectionSchema>> {
-      return http.get<ApiGetResponse<CollectionSchema>>(`/${collection}:schema`)
+      return http.get<ApiGetResponse<CollectionSchema>>(`/data/${collection}:schema`)
     },
 
     async updateRecord(
       collection: string,
       patch: MoonRecord,
     ): Promise<ApiMutateResponse<MoonRecord>> {
-      return http.post<ApiMutateResponse<MoonRecord>>(`/${collection}:update`, { data: [patch] })
+      return http.post<ApiMutateResponse<MoonRecord>>(`/data/${collection}:mutate`, {
+        op: 'update',
+        data: [patch],
+      })
     },
 
     async createRecord(
       collection: string,
       data: Omit<MoonRecord, 'id'>,
     ): Promise<ApiMutateResponse<MoonRecord>> {
-      return http.post<ApiMutateResponse<MoonRecord>>(`/${collection}:create`, { data: [data] })
+      return http.post<ApiMutateResponse<MoonRecord>>(`/data/${collection}:mutate`, {
+        op: 'create',
+        data: [data],
+      })
     },
 
     async deleteRecords(collection: string, ids: string[]): Promise<ApiDestroyResponse> {
-      return http.post<ApiDestroyResponse>(`/${collection}:destroy`, { data: ids })
+      return http.post<ApiDestroyResponse>(`/data/${collection}:mutate`, {
+        op: 'destroy',
+        data: ids.map((id) => ({ id })),
+      })
     },
   }
 }

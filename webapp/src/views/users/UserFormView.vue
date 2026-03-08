@@ -41,7 +41,8 @@ async function loadUser(): Promise<void> {
   loadError.value = null
   try {
     const res = await service.value.getUser(props.id)
-    const u: MoonUser = res.data
+    // New API: data is an array, take first element
+    const u: MoonUser = res.data[0]
     username.value = u.username
     email.value = u.email
     role.value = u.role
