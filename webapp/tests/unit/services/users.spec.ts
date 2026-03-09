@@ -38,7 +38,6 @@ describe('createUsersService', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
     vi.stubGlobal('crypto', { randomUUID: () => 'test-uuid' })
-    // Suppress progress events
     vi.stubGlobal('window', { dispatchEvent: vi.fn() })
     localStorage.clear()
     service = createUsersService(BASE_URL, CONN_ID)
@@ -48,7 +47,8 @@ describe('createUsersService', () => {
     it('returns paginated user list', async () => {
       mockOk({
         data: [mockUser],
-        meta: { count: 1, limit: 15, next: null, prev: null, total: 1 },
+        meta: { count: 1, current_page: 1, per_page: 15, total: 1, total_pages: 1 },
+        links: { first: null, last: null, next: null, prev: null },
       })
       const res = await service.listUsers()
       expect(res.data).toHaveLength(1)
@@ -56,18 +56,19 @@ describe('createUsersService', () => {
       expect(res.meta.total).toBe(1)
     })
 
-    it('passes ?q= search param', async () => {
-      mockOk({ data: [], meta: { count: 0, limit: 15, next: null, prev: null, total: 0 } })
-      await service.listUsers({ q: 'admin', limit: '15' })
+    it('hits /data/users:query endpoint', async () => {
+      mockOk({ data: [], meta: { count: 0, current_page: 1, per_page: 15, total: 0, total_pages: 0 }, links: {} })
+      await service.listUsers({ q: 'admin', per_page: '15' })
       const url = vi.mocked(fetch).mock.calls[0][0] as string
+      expect(url).toContain('/data/users:query')
       expect(url).toContain('q=admin')
     })
 
-    it('passes ?after= for cursor pagination', async () => {
-      mockOk({ data: [], meta: { count: 0, limit: 15, next: null, prev: null, total: 0 } })
-      await service.listUsers({ after: 'cursor123' })
+    it('passes page pagination params', async () => {
+      mockOk({ data: [], meta: { count: 0, current_page: 2, per_page: 15, total: 0, total_pages: 0 }, links: {} })
+      await service.listUsers({ page: '2', per_page: '15' })
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('after=cursor123')
+      expect(url).toContain('page=2')
     })
 
     it('throws on API error', async () => {
@@ -77,16 +78,17 @@ describe('createUsersService', () => {
   })
 
   describe('getUser', () => {
-    it('returns a single user', async () => {
-      mockOk({ data: mockUser })
+    it('returns user list with single user', async () => {
+      mockOk({ data: [mockUser] })
       const res = await service.getUser('01KJ001')
-      expect(res.data.id).toBe('01KJ001')
+      expect(res.data[0].id).toBe('01KJ001')
     })
 
-    it('passes id as query param', async () => {
-      mockOk({ data: mockUser })
+    it('hits /data/users:query with id param', async () => {
+      mockOk({ data: [mockUser] })
       await service.getUser('01KJ001')
       const url = vi.mocked(fetch).mock.calls[0][0] as string
+      expect(url).toContain('/data/users:query')
       expect(url).toContain('id=01KJ001')
     })
 
@@ -100,8 +102,12 @@ describe('createUsersService', () => {
   })
 
   describe('createUser', () => {
-    it('creates a user and returns created user data', async () => {
-      mockOk({ data: mockUser, message: 'User created successfully' })
+    it('creates a user and returns response', async () => {
+      mockOk({
+        data: [mockUser],
+        message: 'Resource created successfully',
+        meta: { success: 1, failed: 0 },
+      })
       const res = await service.createUser({
         username: 'moonuser',
         email: 'moon@example.com',
@@ -109,21 +115,23 @@ describe('createUsersService', () => {
         role: 'user',
         can_write: true,
       })
-      expect(res.data.id).toBe('01KJ001')
-      expect(res.message).toBe('User created successfully')
+      expect(res.data[0].id).toBe('01KJ001')
+      expect(res.message).toBe('Resource created successfully')
     })
 
-    it('wraps payload in { data: {...} }', async () => {
-      mockOk({ data: mockUser, message: 'User created successfully' })
+    it('sends op:create with data array to /data/users:mutate', async () => {
+      mockOk({ data: [mockUser], message: 'Resource created successfully', meta: { success: 1, failed: 0 } })
       await service.createUser({
         username: 'u',
         email: 'u@e.com',
         password: 'p',
         role: 'user',
       })
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body).toHaveProperty('data')
-      expect(body.data.username).toBe('u')
+      expect(url).toContain('/data/users:mutate')
+      expect(body.op).toBe('create')
+      expect(body.data[0].username).toBe('u')
     })
 
     it('throws on validation failure', async () => {
@@ -135,21 +143,22 @@ describe('createUsersService', () => {
   })
 
   describe('updateUser', () => {
-    it('sends direct fields (not wrapped)', async () => {
-      mockOk({ message: '1 record(s) updated successfully' })
+    it('sends op:update with data array to /data/users:mutate', async () => {
+      mockOk({ data: [mockUser], message: 'Resource updated successfully', meta: { success: 1, failed: 0 } })
       await service.updateUser('01KJ001', { email: 'new@example.com', role: 'admin' })
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      // Must NOT be wrapped in { data: {...} }
-      expect(body).not.toHaveProperty('data')
-      expect(body.email).toBe('new@example.com')
-      expect(body.role).toBe('admin')
+      expect(url).toContain('/data/users:mutate')
+      expect(body.op).toBe('update')
+      expect(body.data[0].id).toBe('01KJ001')
+      expect(body.data[0].email).toBe('new@example.com')
     })
 
-    it('sends ?id= in URL', async () => {
-      mockOk({ message: 'updated' })
-      await service.updateUser('01KJ001', { email: 'x@y.com' })
-      const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('id=01KJ001')
+    it('can send password in update payload', async () => {
+      mockOk({ data: [mockUser], message: 'Resource updated successfully', meta: { success: 1, failed: 0 } })
+      await service.updateUser('01KJ001', { password: 'NewPass123#' })
+      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
+      expect(body.data[0].password).toBe('NewPass123#')
     })
   })
 
@@ -167,31 +176,16 @@ describe('createUsersService', () => {
     })
   })
 
-  describe('revokeSessions', () => {
-    it('sends revoke_sessions action', async () => {
-      mockOk({ message: 'Sessions revoked' })
-      const res = await service.revokeSessions('01KJ001')
-      expect(res.message).toBe('Sessions revoked')
-      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body.action).toBe('revoke_sessions')
-    })
-  })
-
   describe('deleteUser', () => {
-    it('sends DELETE request to correct endpoint', async () => {
-      mockOk({ message: '1 record(s) deleted successfully' })
+    it('sends op:destroy to /data/users:mutate', async () => {
+      mockOk({ message: 'Resource destroyed successfully', meta: { success: 1, failed: 0 } })
       const res = await service.deleteUser('01KJ001')
-      expect(res.message).toContain('deleted')
+      expect(res.message).toContain('destroyed')
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('/users:destroy')
-      expect(url).toContain('id=01KJ001')
-    })
-
-    it('sends no body', async () => {
-      mockOk({ message: 'deleted' })
-      await service.deleteUser('01KJ001')
-      const body = vi.mocked(fetch).mock.calls[0][1]?.body
-      expect(body).toBeUndefined()
+      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
+      expect(url).toContain('/data/users:mutate')
+      expect(body.op).toBe('destroy')
+      expect(body.data[0].id).toBe('01KJ001')
     })
 
     it('throws on failure', async () => {

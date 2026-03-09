@@ -7,10 +7,11 @@ const CONN_ID = 'test-conn'
 const mockApiKey = {
   id: '01KJ100',
   name: 'Integration Service',
-  description: 'Key for integration',
   role: 'user' as const,
   can_write: false,
   created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+  last_used_at: null,
 }
 
 const mockApiKeyWithSecret = { ...mockApiKey, key: 'moon_live_abc123' }
@@ -48,7 +49,8 @@ describe('createApiKeysService', () => {
     it('returns paginated list of API keys', async () => {
       mockOk({
         data: [mockApiKey],
-        meta: { count: 1, limit: 15, next: null, prev: null, total: 1 },
+        meta: { count: 1, current_page: 1, per_page: 15, total: 1, total_pages: 1 },
+        links: { first: null, last: null, next: null, prev: null },
       })
       const res = await service.listApiKeys()
       expect(res.data).toHaveLength(1)
@@ -57,11 +59,11 @@ describe('createApiKeysService', () => {
       expect(res.data[0]).not.toHaveProperty('key')
     })
 
-    it('passes ?after= for cursor pagination', async () => {
-      mockOk({ data: [], meta: { count: 0, limit: 15, next: null, prev: null, total: 0 } })
-      await service.listApiKeys({ after: 'cur123' })
+    it('hits /data/apikeys:query endpoint', async () => {
+      mockOk({ data: [], meta: { count: 0, current_page: 1, per_page: 15, total: 0, total_pages: 0 }, links: {} })
+      await service.listApiKeys()
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('after=cur123')
+      expect(url).toContain('/data/apikeys:query')
     })
 
     it('throws on API error', async () => {
@@ -71,59 +73,53 @@ describe('createApiKeysService', () => {
   })
 
   describe('createApiKey', () => {
-    it('returns the new key (shown once only)', async () => {
+    it('returns the new key in data array (shown once only)', async () => {
       mockOk({
-        data: mockApiKeyWithSecret,
-        message: 'API key created successfully',
-        warning: 'Store this key securely. It will not be shown again.',
+        data: [mockApiKeyWithSecret],
+        message: 'Resource created successfully',
+        meta: { success: 1, failed: 0 },
       })
       const res = await service.createApiKey({
         name: 'Integration Service',
-        description: 'Key for integration',
         role: 'user',
         can_write: false,
       })
-      expect(res.data.key).toBe('moon_live_abc123')
-      expect(res.message).toBe('API key created successfully')
-      expect(res.warning).toBeTruthy()
+      expect(res.data[0].key).toBe('moon_live_abc123')
+      expect(res.message).toBe('Resource created successfully')
     })
 
-    it('wraps payload in { data: {...} }', async () => {
-      mockOk({ data: mockApiKeyWithSecret, message: 'created' })
+    it('sends op:create with data array to /data/apikeys:mutate', async () => {
+      mockOk({ data: [mockApiKeyWithSecret], message: 'Resource created successfully', meta: { success: 1, failed: 0 } })
       await service.createApiKey({
         name: 'Test',
-        description: '',
         role: 'user',
         can_write: false,
       })
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body).toHaveProperty('data')
-      expect(body.data.name).toBe('Test')
+      expect(url).toContain('/data/apikeys:mutate')
+      expect(body.op).toBe('create')
+      expect(body.data[0].name).toBe('Test')
     })
 
     it('throws on failure', async () => {
       mockFail(400, 'Name already taken')
       await expect(
-        service.createApiKey({ name: 'dup', description: '', role: 'user', can_write: false }),
+        service.createApiKey({ name: 'dup', role: 'user', can_write: false }),
       ).rejects.toMatchObject({ message: 'Name already taken' })
     })
   })
 
   describe('updateApiKey', () => {
-    it('wraps payload in { data: {...} }', async () => {
-      mockOk({ message: 'updated' })
+    it('sends op:update with data array to /data/apikeys:mutate', async () => {
+      mockOk({ data: [mockApiKey], message: 'Resource updated successfully', meta: { success: 1, failed: 0 } })
       await service.updateApiKey('01KJ100', { name: 'New Name', can_write: true })
-      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body).toHaveProperty('data')
-      expect(body.data.name).toBe('New Name')
-      expect(body.data.can_write).toBe(true)
-    })
-
-    it('sends ?id= in URL', async () => {
-      mockOk({ message: 'updated' })
-      await service.updateApiKey('01KJ100', { name: 'X' })
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('id=01KJ100')
+      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
+      expect(url).toContain('/data/apikeys:mutate')
+      expect(body.op).toBe('update')
+      expect(body.data[0].id).toBe('01KJ100')
+      expect(body.data[0].name).toBe('New Name')
     })
   })
 
@@ -131,36 +127,35 @@ describe('createApiKeysService', () => {
     it('returns new key in data array', async () => {
       mockOk({
         data: [{ ...mockApiKey, key: 'moon_live_newkey456' }],
-        message: '1 record(s) updated successfully',
-        meta: { total: 1, succeeded: 1, failed: 0 },
+        message: 'Action completed successfully',
+        meta: { success: 1, failed: 0 },
       })
       const res = await service.rotateApiKey('01KJ100')
       expect(res.data[0].key).toBe('moon_live_newkey456')
     })
 
-    it('sends { data: { action: "rotate" } }', async () => {
-      mockOk({ data: [mockApiKeyWithSecret], message: 'rotated', meta: {} })
+    it('sends op:action with action:rotate to /data/apikeys:mutate', async () => {
+      mockOk({ data: [mockApiKeyWithSecret], message: 'Action completed successfully', meta: { success: 1, failed: 0 } })
       await service.rotateApiKey('01KJ100')
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body.data.action).toBe('rotate')
+      expect(url).toContain('/data/apikeys:mutate')
+      expect(body.op).toBe('action')
+      expect(body.action).toBe('rotate')
+      expect(body.data[0].id).toBe('01KJ100')
     })
   })
 
   describe('deleteApiKey', () => {
-    it('calls correct endpoint with ?id=', async () => {
-      mockOk({ message: '1 record(s) deleted successfully' })
+    it('sends op:destroy to /data/apikeys:mutate', async () => {
+      mockOk({ message: 'Resource destroyed successfully', meta: { success: 1, failed: 0 } })
       const res = await service.deleteApiKey('01KJ100')
-      expect(res.message).toContain('deleted')
+      expect(res.message).toContain('destroyed')
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('/apikeys:destroy')
-      expect(url).toContain('id=01KJ100')
-    })
-
-    it('sends no body', async () => {
-      mockOk({ message: 'deleted' })
-      await service.deleteApiKey('01KJ100')
-      const body = vi.mocked(fetch).mock.calls[0][1]?.body
-      expect(body).toBeUndefined()
+      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
+      expect(url).toContain('/data/apikeys:mutate')
+      expect(body.op).toBe('destroy')
+      expect(body.data[0].id).toBe('01KJ100')
     })
 
     it('throws on failure', async () => {

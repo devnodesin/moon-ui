@@ -6,37 +6,43 @@ export interface ApiError {
 
 export interface ApiListMeta {
   count: number
-  limit: number
+  current_page: number
+  per_page: number
+  total: number
+  total_pages: number
+}
+
+export interface ApiListLinks {
+  first: string | null
+  last: string | null
   next: string | null
   prev: string | null
-  total?: number
 }
 
 export interface ApiListResponse<T> {
   data: T[]
   meta: ApiListMeta
+  links: ApiListLinks
 }
 
 export interface ApiGetResponse<T> {
-  data: T
+  data: T[]
+  message?: string
 }
 
 export interface ApiMutateResponse<T> {
   data: T[]
   message: string
   meta: {
-    total: number
-    succeeded: number
+    success: number
     failed: number
   }
 }
 
 export interface ApiDestroyResponse {
-  data: string[]
   message: string
   meta: {
-    total: number
-    succeeded: number
+    success: number
     failed: number
   }
 }
@@ -47,6 +53,9 @@ export interface AuthUser {
   email: string
   role: 'admin' | 'user'
   can_write: boolean
+  created_at?: string
+  updated_at?: string
+  last_login_at?: string | null
 }
 
 export interface AuthTokens {
@@ -73,10 +82,11 @@ export interface HealthData {
 
 export interface CollectionSummary {
   name: string
-  records: number
+  count: number
+  system: boolean
 }
 
-// Column definition used in the collections management API (/collections:create, :get, :update)
+// Column definition used in the collections management API
 export interface CollectionColumn {
   name: string
   type: 'string' | 'integer' | 'decimal' | 'boolean' | 'datetime' | 'json'
@@ -85,21 +95,24 @@ export interface CollectionColumn {
   default?: string
 }
 
-// Full collection definition returned by /collections:get
+// Full collection definition returned by /collections:mutate (create/update)
 export interface CollectionDetail {
   name: string
   columns: CollectionColumn[]
 }
 
-// Response from /collections:create and /collections:update
+// Response from /collections:mutate (create/update)
 export interface CollectionActionResponse {
-  data: CollectionDetail
+  data: CollectionDetail[]
   message: string
+  meta?: { success: number; failed: number }
 }
 
-// Response from /collections:destroy
+// Response from /collections:mutate (destroy)
 export interface CollectionDestroyResponse {
   message: string
+  data?: { name: string }[]
+  meta?: { success: number; failed: number }
 }
 
 export interface CollectionField {
@@ -112,9 +125,8 @@ export interface CollectionField {
 }
 
 export interface CollectionSchema {
-  collection: string
+  name: string
   fields: CollectionField[]
-  total: number
 }
 
 export interface MoonUser {
@@ -125,15 +137,16 @@ export interface MoonUser {
   can_write: boolean
   created_at: string
   updated_at: string
-  last_login_at?: string
+  last_login_at?: string | null
 }
 
 export interface ApiKey {
   id: string
   key?: string
   name: string
-  description: string
   role: 'admin' | 'user'
   can_write: boolean
   created_at: string
+  updated_at?: string
+  last_used_at?: string | null
 }

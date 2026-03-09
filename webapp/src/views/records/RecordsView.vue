@@ -44,12 +44,12 @@ const loadingType = ref<'initial' | 'page' | 'filter' | 'sort'>('initial')
 const loading = ref(false)
 const loadError = ref<string | null>(null)
 
-// Pagination — cursor-based, always ?after= for both directions
-const limit = ref(15)
-const afterCursor = ref<string | null>(null)
-const prevCursor = ref<string | null>(null)
-const hasNext = ref(false)
-const hasPrev = ref(false)
+// Pagination — page-based
+const perPage = ref(15)
+const currentPage = ref(1)
+const totalPages = ref(0)
+const hasNext = computed(() => currentPage.value < totalPages.value)
+const hasPrev = computed(() => currentPage.value > 1)
 
 // Search / filter / sort
 const searchQuery = ref('')
@@ -112,9 +112,8 @@ async function handleBatchDelete(): Promise<void> {
 
 // Build query params for the API call
 function buildParams(): Record<string, string> {
-  const p: Record<string, string> = { limit: String(limit.value) }
+  const p: Record<string, string> = { per_page: String(perPage.value), page: String(currentPage.value) }
 
-  if (afterCursor.value) p['after'] = afterCursor.value
   if (activeSearch.value) p['q'] = activeSearch.value
   if (sortField.value) p['sort'] = sortDir.value === 'desc' ? `-${sortField.value}` : sortField.value
 
@@ -126,7 +125,8 @@ async function loadSchema(): Promise<void> {
   if (!service.value) return
   try {
     const res = await service.value.getSchema(props.collection)
-    schema.value = res.data
+    // New API: data is an array, take first element
+    schema.value = res.data[0]
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to load schema'
     schemaError.value = msg
@@ -143,11 +143,10 @@ async function loadRecords(type: typeof loadingType.value = 'initial'): Promise<
   selectedIds.value = []
   try {
     const res = await service.value.listRecords(props.collection, buildParams())
-    rows.value = res.data
+    rows.value = res.data ?? []
     meta.value = res.meta
-    hasNext.value = !!res.meta.next
-    hasPrev.value = !!res.meta.prev
-    prevCursor.value = res.meta.prev
+    currentPage.value = res.meta.current_page
+    totalPages.value = res.meta.total_pages
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to load records'
     loadError.value = msg
@@ -166,48 +165,41 @@ function handleSort(field: string): void {
     sortField.value = field
     sortDir.value = 'asc'
   }
-  resetPagination()
+  currentPage.value = 1
   loadRecords('sort')
 }
 
 // Search triggered by button / Enter
 function handleSearch(): void {
   activeSearch.value = searchQuery.value
-  resetPagination()
+  currentPage.value = 1
   loadRecords('filter')
 }
 
 // FilterBar emits a param map; re-fetch from first page
 function handleFilter(params: Record<string, string>): void {
   filterParams.value = params
-  resetPagination()
+  currentPage.value = 1
   loadRecords('filter')
 }
 
-function resetPagination(): void {
-  afterCursor.value = null
-  prevCursor.value = null
-  hasNext.value = false
-  hasPrev.value = false
-}
-
 function goNext(): void {
-  if (meta.value?.next) {
-    afterCursor.value = meta.value.next
+  if (hasNext.value) {
+    currentPage.value++
     loadRecords('page')
   }
 }
 
 function goPrev(): void {
-  if (prevCursor.value) {
-    afterCursor.value = prevCursor.value
+  if (hasPrev.value) {
+    currentPage.value--
     loadRecords('page')
   }
 }
 
-function handleLimitChange(newLimit: number): void {
-  limit.value = newLimit
-  resetPagination()
+function handlePerPageChange(newPerPage: number): void {
+  perPage.value = newPerPage
+  currentPage.value = 1
   loadRecords('page')
 }
 
@@ -463,12 +455,12 @@ onMounted(async () => {
         <div class="card-footer bg-transparent border-top-0">
           <Pagination
             :meta="meta"
-            :limit="limit"
+            :per-page="perPage"
             :has-prev="hasPrev"
             :has-next="hasNext"
             @prev="goPrev"
             @next="goNext"
-            @limit-change="handleLimitChange"
+            @per-page-change="handlePerPageChange"
           />
         </div>
       </div>

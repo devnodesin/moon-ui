@@ -4,13 +4,22 @@ import { createCollectionsService } from '@/services/collections'
 const BASE_URL = 'https://test.moon.dev'
 const CONN_ID = 'test-conn'
 
-const mockCollection = { name: 'products', records: 5 }
+const mockCollection = { name: 'products', count: 5, system: false }
 
 const mockDetail = {
   name: 'products',
   columns: [
     { name: 'title', type: 'string', nullable: false, unique: true },
     { name: 'price', type: 'decimal', nullable: false, unique: false },
+  ],
+}
+
+const mockSchema = {
+  name: 'products',
+  fields: [
+    { name: 'id', type: 'id', nullable: true, unique: false, readonly: true },
+    { name: 'title', type: 'string', nullable: false, unique: false, readonly: false },
+    { name: 'price', type: 'decimal', nullable: false, unique: false, readonly: false },
   ],
 }
 
@@ -47,33 +56,27 @@ describe('createCollectionsService', () => {
     it('returns paginated list of collections', async () => {
       mockOk({
         data: [mockCollection],
-        meta: { count: 1, limit: 15, next: null, prev: null },
+        meta: { count: 1, current_page: 1, per_page: 15, total: 1, total_pages: 1 },
+        links: { first: null, last: null, next: null, prev: null },
       })
       const res = await service.listCollections()
       expect(res.data).toHaveLength(1)
       expect(res.data[0].name).toBe('products')
-      expect(res.data[0].records).toBe(5)
+      expect(res.data[0].count).toBe(5)
     })
 
-    it('passes ?after= for cursor pagination', async () => {
-      mockOk({ data: [], meta: { count: 0, limit: 15, next: null, prev: null } })
-      await service.listCollections({ after: 'cur123' })
+    it('passes page pagination params', async () => {
+      mockOk({ data: [], meta: { count: 0, current_page: 2, per_page: 15, total: 0, total_pages: 0 }, links: {} })
+      await service.listCollections({ page: '2', per_page: '15' })
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('after=cur123')
+      expect(url).toContain('page=2')
     })
 
-    it('passes ?limit= param', async () => {
-      mockOk({ data: [], meta: { count: 0, limit: 30, next: null, prev: null } })
-      await service.listCollections({ limit: '30' })
-      const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('limit=30')
-    })
-
-    it('hits /collections:list endpoint', async () => {
-      mockOk({ data: [], meta: { count: 0, limit: 15, next: null, prev: null } })
+    it('hits /collections:query endpoint', async () => {
+      mockOk({ data: [], meta: { count: 0, current_page: 1, per_page: 15, total: 0, total_pages: 0 }, links: {} })
       await service.listCollections()
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('/collections:list')
+      expect(url).toContain('/collections:query')
     })
 
     it('throws on API error', async () => {
@@ -83,19 +86,19 @@ describe('createCollectionsService', () => {
   })
 
   describe('getCollection', () => {
-    it('returns collection detail with columns', async () => {
-      mockOk({ data: mockDetail })
+    it('returns collection detail array with columns', async () => {
+      mockOk({ data: [mockDetail], message: 'Collection retrieved successfully' })
       const res = await service.getCollection('products')
-      expect(res.data.name).toBe('products')
-      expect(res.data.columns).toHaveLength(2)
-      expect(res.data.columns[0].name).toBe('title')
+      expect(res.data[0].name).toBe('products')
+      expect(res.data[0].columns).toHaveLength(2)
+      expect(res.data[0].columns[0].name).toBe('title')
     })
 
-    it('sends ?name= in URL', async () => {
-      mockOk({ data: mockDetail })
+    it('sends ?name= in URL to /collections:query', async () => {
+      mockOk({ data: [mockDetail] })
       await service.getCollection('products')
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('/collections:get')
+      expect(url).toContain('/collections:query')
       expect(url).toContain('name=products')
     })
 
@@ -105,37 +108,56 @@ describe('createCollectionsService', () => {
     })
   })
 
+  describe('getSchema', () => {
+    it('returns schema with fields array for the collection', async () => {
+      mockOk({ data: [mockSchema], message: 'Schema retrieved successfully' })
+      const res = await service.getSchema('products')
+      expect(res.data[0].name).toBe('products')
+      expect(res.data[0].fields).toHaveLength(3)
+      expect(res.data[0].fields[0].name).toBe('id')
+      expect(res.data[0].fields[0].readonly).toBe(true)
+    })
+
+    it('hits /data/{name}:schema endpoint', async () => {
+      mockOk({ data: [mockSchema] })
+      await service.getSchema('products')
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
+      expect(url).toContain('/data/products:schema')
+    })
+
+    it('throws on not found', async () => {
+      mockFail(404, 'Collection not found')
+      await expect(service.getSchema('missing')).rejects.toMatchObject({ status: 404 })
+    })
+  })
+
   describe('createCollection', () => {
     it('returns created collection detail with message', async () => {
-      mockOk({ data: mockDetail, message: "Collection 'products' created successfully" }, 201)
+      mockOk({
+        data: [mockDetail],
+        message: 'Collection created successfully',
+        meta: { success: 1, failed: 0 },
+      }, 201)
       const res = await service.createCollection({
         name: 'products',
         columns: [{ name: 'title', type: 'string', nullable: false }],
       })
-      expect(res.data.name).toBe('products')
+      expect(res.data[0].name).toBe('products')
       expect(res.message).toContain('created successfully')
     })
 
-    it('wraps payload in { data: {...} }', async () => {
-      mockOk({ data: mockDetail, message: 'created' }, 201)
-      await service.createCollection({
-        name: 'products',
-        columns: [{ name: 'title', type: 'string', nullable: false }],
-      })
-      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body).toHaveProperty('data')
-      expect(body.data.name).toBe('products')
-      expect(body.data.columns).toHaveLength(1)
-    })
-
-    it('hits /collections:create endpoint', async () => {
-      mockOk({ data: mockDetail, message: 'created' }, 201)
+    it('sends op:create with data array to /collections:mutate', async () => {
+      mockOk({ data: [mockDetail], message: 'created', meta: { success: 1, failed: 0 } }, 201)
       await service.createCollection({
         name: 'products',
         columns: [{ name: 'title', type: 'string', nullable: false }],
       })
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('/collections:create')
+      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
+      expect(url).toContain('/collections:mutate')
+      expect(body.op).toBe('create')
+      expect(body.data[0].name).toBe('products')
+      expect(body.data[0].columns).toHaveLength(1)
     })
 
     it('throws on failure', async () => {
@@ -150,44 +172,40 @@ describe('createCollectionsService', () => {
   })
 
   describe('updateCollection', () => {
-    it('sends add_columns payload', async () => {
-      mockOk({ data: mockDetail, message: "Collection 'products' updated successfully" })
+    it('sends op:update with add_columns to /collections:mutate', async () => {
+      mockOk({ data: [mockDetail], message: 'Collection updated successfully', meta: { success: 1, failed: 0 } })
       await service.updateCollection({
         name: 'products',
         add_columns: [{ name: 'stock', type: 'integer', nullable: false }],
       })
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body.data.name).toBe('products')
-      expect(body.data.add_columns).toHaveLength(1)
-      expect(body.data.add_columns[0].name).toBe('stock')
+      expect(url).toContain('/collections:mutate')
+      expect(body.op).toBe('update')
+      expect(body.data[0].name).toBe('products')
+      expect(body.data[0].add_columns).toHaveLength(1)
+      expect(body.data[0].add_columns[0].name).toBe('stock')
     })
 
     it('sends remove_columns payload', async () => {
-      mockOk({ data: mockDetail, message: 'updated' })
+      mockOk({ data: [mockDetail], message: 'updated', meta: { success: 1, failed: 0 } })
       await service.updateCollection({
         name: 'products',
         remove_columns: ['price'],
       })
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body.data.remove_columns).toContain('price')
+      expect(body.data[0].remove_columns).toContain('price')
     })
 
     it('sends rename_columns payload', async () => {
-      mockOk({ data: mockDetail, message: 'updated' })
+      mockOk({ data: [mockDetail], message: 'updated', meta: { success: 1, failed: 0 } })
       await service.updateCollection({
         name: 'products',
         rename_columns: [{ old_name: 'title', new_name: 'name' }],
       })
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
-      expect(body.data.rename_columns[0].old_name).toBe('title')
-      expect(body.data.rename_columns[0].new_name).toBe('name')
-    })
-
-    it('hits /collections:update endpoint', async () => {
-      mockOk({ data: mockDetail, message: 'updated' })
-      await service.updateCollection({ name: 'products', remove_columns: ['price'] })
-      const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('/collections:update')
+      expect(body.data[0].rename_columns[0].old_name).toBe('title')
+      expect(body.data[0].rename_columns[0].new_name).toBe('name')
     })
 
     it('throws on failure', async () => {
@@ -199,20 +217,15 @@ describe('createCollectionsService', () => {
   })
 
   describe('deleteCollection', () => {
-    it('calls correct endpoint with ?name=', async () => {
-      mockOk({ message: "Collection 'products' deleted successfully" })
+    it('sends op:destroy to /collections:mutate', async () => {
+      mockOk({ message: 'Collection destroyed successfully', meta: { success: 1, failed: 0 } })
       const res = await service.deleteCollection('products')
-      expect(res.message).toContain('deleted successfully')
+      expect(res.message).toContain('destroyed successfully')
       const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('/collections:destroy')
-      expect(url).toContain('name=products')
-    })
-
-    it('URL-encodes the collection name', async () => {
-      mockOk({ message: 'deleted' })
-      await service.deleteCollection('my collection')
-      const url = vi.mocked(fetch).mock.calls[0][0] as string
-      expect(url).toContain('name=my%20collection')
+      const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
+      expect(url).toContain('/collections:mutate')
+      expect(body.op).toBe('destroy')
+      expect(body.data[0].name).toBe('products')
     })
 
     it('throws on failure', async () => {

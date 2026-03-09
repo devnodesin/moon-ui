@@ -1,5 +1,5 @@
 import { createHttpClient } from './http'
-import type { ApiListResponse, ApiGetResponse, MoonUser } from '@/types/api'
+import type { ApiListResponse, ApiGetResponse, ApiMutateResponse, ApiDestroyResponse, MoonUser } from '@/types/api'
 
 export interface CreateUserPayload {
   username: string
@@ -13,15 +13,7 @@ export interface UpdateUserPayload {
   email?: string
   role?: 'admin' | 'user'
   can_write?: boolean
-}
-
-export interface UserCreateResponse {
-  data: MoonUser
-  message: string
-}
-
-export interface UserActionResponse {
-  message: string
+  password?: string
 }
 
 export function createUsersService(baseUrl: string, connId: string) {
@@ -29,11 +21,11 @@ export function createUsersService(baseUrl: string, connId: string) {
 
   return {
     async listUsers(params: Record<string, string> = {}): Promise<ApiListResponse<MoonUser>> {
-      return http.get<ApiListResponse<MoonUser>>('/users:list', params)
+      return http.get<ApiListResponse<MoonUser>>('/data/users:query', params)
     },
 
     async getUser(id: string): Promise<ApiGetResponse<MoonUser>> {
-      return http.get<ApiGetResponse<MoonUser>>('/users:get', { id })
+      return http.get<ApiGetResponse<MoonUser>>('/data/users:query', { id })
     },
 
     // Body wrapped in { data: {...} } per moon-llms.md
@@ -54,15 +46,21 @@ export function createUsersService(baseUrl: string, connId: string) {
       })
     },
 
-    async revokeSessions(id: string): Promise<UserActionResponse> {
-      return http.post<UserActionResponse>(`/users:update?id=${id}`, {
-        action: 'revoke_sessions',
+    async updateUser(
+      id: string,
+      payload: UpdateUserPayload,
+    ): Promise<ApiMutateResponse<MoonUser>> {
+      return http.post<ApiMutateResponse<MoonUser>>('/data/users:mutate', {
+        op: 'update',
+        data: [{ id, ...payload }],
       })
     },
 
-    // No body per moon-llms.md
-    async deleteUser(id: string): Promise<UserActionResponse> {
-      return http.post<UserActionResponse>(`/users:destroy?id=${id}`)
+    async deleteUser(id: string): Promise<ApiDestroyResponse> {
+      return http.post<ApiDestroyResponse>('/data/users:mutate', {
+        op: 'destroy',
+        data: [{ id }],
+      })
     },
   }
 }

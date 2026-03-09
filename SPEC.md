@@ -50,18 +50,18 @@ A secure, mobile-first, single-page admin interface for managing Moon API backen
 
 ## Tech Stack
 
-| Concern          | Technology                                    |
-| ---------------- | --------------------------------------------- |
-| Framework        | Vue 3 (Composition API, `<script setup>`)     |
-| Build Tool       | Vite (latest)                                 |
-| Language         | TypeScript (strict mode)                      |
-| UI               | Bootstrap 5.3 + Bootstrap Icons               |
-| HTTP             | Native `fetch` API                            |
-| Routing          | Vue Router 4                                  |
-| State            | Pinia                                         |
-| Testing (unit)   | Vitest + Vue Test Utils                       |
-| Testing (E2E)    | Playwright                                    |
-| Linting          | ESLint + Prettier                             |
+| Concern        | Technology                                |
+| -------------- | ----------------------------------------- |
+| Framework      | Vue 3 (Composition API, `<script setup>`) |
+| Build Tool     | Vite (latest)                             |
+| Language       | TypeScript (strict mode)                  |
+| UI             | Bootstrap 5.3 + Bootstrap Icons           |
+| HTTP           | Native `fetch` API                        |
+| Routing        | Vue Router 4                              |
+| State          | Pinia                                     |
+| Testing (unit) | Vitest + Vue Test Utils                   |
+| Testing (E2E)  | Playwright                                |
+| Linting        | ESLint + Prettier                         |
 
 No other frameworks, CSS libraries, or UI component libraries are permitted.
 
@@ -158,25 +158,25 @@ webapp/
 
 ### Implementation Status
 
-| Module | Status |
-|--------|--------|
-| Project scaffold + config | ✅ Done |
-| Types (api, connection, ui) | ✅ Done |
-| HTTP client (http.ts) | ✅ Done |
-| Auth service | ✅ Done |
-| Pinia stores (auth, connections, toast, progress) | ✅ Done |
-| Composables (useAsync, usePagination, useImportExport, useConfirm) | ✅ Done |
-| Layout components (AppHeader, AppSidebar, AppLayout) | ✅ Done |
-| UI components (ToastContainer, ProgressBar, ConfirmModal, EmptyState) | ✅ Done |
-| Router with auth/admin guards | ✅ Done |
-| LoginView (URL + username + password form) | ✅ Done |
-| DashboardView (health status + quick access) | ✅ Done |
-| ConnectionsView (list, add, switch, delete) | ✅ Done |
-| UsersView (list, create, edit, delete) | ✅ Done |
-| ApiKeysView (list, create, edit, rotate, delete) | ✅ Done |
-| CollectionsView (list, create, schema view/edit, delete, view records) | ✅ Done |
-| Unit tests (73 passing) | ✅ Done |
-| E2E tests | 🔲 Future |
+| Module                                                                 | Status    |
+| ---------------------------------------------------------------------- | --------- |
+| Project scaffold + config                                              | ✅ Done   |
+| Types (api, connection, ui)                                            | ✅ Done   |
+| HTTP client (http.ts)                                                  | ✅ Done   |
+| Auth service                                                           | ✅ Done   |
+| Pinia stores (auth, connections, toast, progress)                      | ✅ Done   |
+| Composables (useAsync, usePagination, useImportExport, useConfirm)     | ✅ Done   |
+| Layout components (AppHeader, AppSidebar, AppLayout)                   | ✅ Done   |
+| UI components (ToastContainer, ProgressBar, ConfirmModal, EmptyState)  | ✅ Done   |
+| Router with auth/admin guards                                          | ✅ Done   |
+| LoginView (URL + username + password form)                             | ✅ Done   |
+| DashboardView (health status + quick access)                           | ✅ Done   |
+| ConnectionsView (list, add, switch, delete)                            | ✅ Done   |
+| UsersView (list, create, edit, delete)                                 | ✅ Done   |
+| ApiKeysView (list, create, edit, rotate, delete)                       | ✅ Done   |
+| CollectionsView (list, create, schema view/edit, delete, view records) | ✅ Done   |
+| Unit tests (73 passing)                                                | ✅ Done   |
+| E2E tests                                                              | 🔲 Future |
 
 ---
 
@@ -186,20 +186,21 @@ webapp/
 
 ```
 Login Page
-  → POST /auth:login
+  → POST /auth:session { op: "login", data: { username, password } }
+  → Response: { data: [{ access_token, refresh_token, expires_at, token_type, user }] }
   → Store access_token + refresh_token + user in localStorage
   → Redirect to Dashboard
 
 API Request
   → Attach Authorization: Bearer <access_token>
   → On 401: attempt token refresh (if refresh_token exists)
-    → POST /auth:refresh with refresh_token
+    → POST /auth:session { op: "refresh", data: { refresh_token } }
     → Store new access_token + refresh_token
     → Retry original request
     → On refresh failure: clear tokens, redirect to Login
 
 Logout
-  → POST /auth:logout with refresh_token
+  → POST /auth:session { op: "logout", data: { refresh_token } }
   → Clear all tokens from localStorage
   → Redirect to Login
 
@@ -212,14 +213,14 @@ Session Timeout
 
 All tokens and session data are stored in `localStorage` under the active connection's key namespace.
 
-| Key                          | Value                              |
-| ---------------------------- | ---------------------------------- |
-| `moon_{connId}_access_token` | JWT access token string            |
-| `moon_{connId}_refresh_token`| Refresh token string               |
-| `moon_{connId}_user`         | Serialized user object (JSON)      |
-| `moon_{connId}_expires_at`   | ISO 8601 expiry timestamp          |
-| `moon_connections`           | Array of saved backend connections |
-| `moon_active_connection`     | ID of the currently active connection |
+| Key                           | Value                                 |
+| ----------------------------- | ------------------------------------- |
+| `moon_{connId}_access_token`  | JWT access token string               |
+| `moon_{connId}_refresh_token` | Refresh token string                  |
+| `moon_{connId}_user`          | Serialized user object (JSON)         |
+| `moon_{connId}_expires_at`    | ISO 8601 expiry timestamp             |
+| `moon_connections`            | Array of saved backend connections    |
+| `moon_active_connection`      | ID of the currently active connection |
 
 ### Remember Me
 
@@ -230,7 +231,7 @@ All tokens and session data are stored in `localStorage` under the active connec
 
 - The HTTP client checks token expiry before each request.
 - If the access token is within 60 seconds of expiry, proactively refresh before the request.
-- If refresh fails (401 from `/auth:refresh`): clear all tokens and redirect to Login.
+- If refresh fails (401 from `/auth:session`): clear all tokens and redirect to Login.
 - Concurrent requests during refresh must queue and wait for the refresh to complete.
 
 ### Session Timeout
@@ -249,11 +250,11 @@ The app supports multiple independent Moon backend connections. Each connection 
 
 ```typescript
 interface Connection {
-  id: string           // UUID generated client-side
-  name: string         // User-defined label (e.g., "Production", "Dev")
-  baseUrl: string      // Moon server base URL (e.g., "https://moon.devnodes.in")
-  isActive: boolean    // Whether this is the currently selected connection
-  createdAt: string    // ISO 8601 timestamp
+  id: string; // UUID generated client-side
+  name: string; // User-defined label (e.g., "Production", "Dev")
+  baseUrl: string; // Moon server base URL (e.g., "https://moon.devnodes.in")
+  isActive: boolean; // Whether this is the currently selected connection
+  createdAt: string; // ISO 8601 timestamp
 }
 ```
 
@@ -291,8 +292,8 @@ The client is a per-connection instance that encapsulates:
 
 ```typescript
 interface HttpClient {
-  get<T>(path: string, params?: Record<string, string>): Promise<T>
-  post<T>(path: string, body?: unknown): Promise<T>
+  get<T>(path: string, params?: Record<string, string>): Promise<T>;
+  post<T>(path: string, body?: unknown): Promise<T>;
 }
 ```
 
@@ -302,9 +303,9 @@ All HTTP errors are normalized to:
 
 ```typescript
 interface ApiError {
-  message: string     // From API response body, or fallback
-  status: number      // HTTP status code
-  requestId?: string  // X-Request-ID from response headers
+  message: string; // From API response body, or fallback
+  status: number; // HTTP status code
+  requestId?: string; // X-Request-ID from response headers
 }
 ```
 
@@ -329,12 +330,12 @@ Using **Pinia** for all global state.
 
 ```typescript
 interface AuthState {
-  user: User | null
-  accessToken: string | null
-  refreshToken: string | null
-  expiresAt: string | null
-  rememberMe: boolean
-  isAuthenticated: boolean
+  user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  expiresAt: string | null;
+  rememberMe: boolean;
+  isAuthenticated: boolean;
 }
 ```
 
@@ -344,8 +345,8 @@ Actions: `login`, `logout`, `refresh`, `loadFromStorage`, `clearSession`
 
 ```typescript
 interface ConnectionsState {
-  connections: Connection[]
-  activeConnectionId: string | null
+  connections: Connection[];
+  activeConnectionId: string | null;
 }
 ```
 
@@ -355,14 +356,14 @@ Actions: `addConnection`, `removeConnection`, `setActive`, `loadFromStorage`
 
 ```typescript
 interface Toast {
-  id: string
-  type: 'success' | 'error' | 'warning' | 'info'
-  message: string
-  autoDismiss: boolean   // default: true (5s for success/info, 8s for error/warning)
+  id: string;
+  type: "success" | "error" | "warning" | "info";
+  message: string;
+  autoDismiss: boolean; // default: true (5s for success/info, 8s for error/warning)
 }
 
 interface ToastState {
-  toasts: Toast[]
+  toasts: Toast[];
 }
 ```
 
@@ -420,20 +421,21 @@ Vue Router 4 with HTML5 history mode.
 
 ```typescript
 function useAsync<T>(fn: () => Promise<T>): {
-  loading: Ref<boolean>
-  error: Ref<string | null>
-  data: Ref<T | null>
-  execute: () => Promise<void>
-}
+  loading: Ref<boolean>;
+  error: Ref<string | null>;
+  data: Ref<T | null>;
+  execute: () => Promise<void>;
+};
 ```
 
 Wraps any async operation: sets `loading`, catches errors, extracts `message` from `ApiError`.
 
 #### `usePagination`
 
-Manages cursor-based pagination state:
-- `after` cursor, `limit`, `hasPrev`, `hasNext`
-- `goNext(nextCursor)`, `goPrev(prevCursor)`, `reset()`
+Manages page-based pagination state:
+
+- `page`, `perPage`, `totalPages`, `hasPrev`, `hasNext`
+- `goNext()`, `goPrev()`, `reset()`, `setMeta({ current_page, total_pages })`
 
 #### `useImportExport`
 
@@ -445,6 +447,7 @@ Manages cursor-based pagination state:
 #### `useConfirm`
 
 Provides a reusable confirmation modal pattern:
+
 - `confirm(message, options)` → `Promise<boolean>`
 
 ---
@@ -477,18 +480,18 @@ Provides a reusable confirmation modal pattern:
 
 - Paginated list table: username, email, role, can_write, last login, actions.
 - Search by username/email (`?q=`).
-- Actions per row: Edit, Reset Password, Revoke Sessions, Delete (with confirm).
+- Actions per row: Edit, Reset Password, Delete (with confirm).
 - Create/Edit form: username, email, role, can_write, password (create only).
 - Admin action "Reset Password": shows form for a replacement password and submits `POST /data/users:mutate` with `op: "action"`, `action: "reset_password"`, and `data: [{ id, password }]`.
 - Admin action "Revoke Sessions": confirm modal → call `action: revoke_sessions`.
 
 ### API Keys (`/apikeys`, admin only)
 
-- Paginated list table: name, description, role, can_write, created date, actions.
-- Create form: name, description, role, can_write.
+- Paginated list table: name, role, can_write, created date, last used, actions.
+- Create form: name, role, can_write.
 - On create: display the key value once in a modal with a "Copy" button and security warning. Never show again.
 - Rotate key: confirm modal → show new key once in modal.
-- Edit: name, description, can_write (key itself is not editable).
+- Edit: name, can_write (key itself is not editable; role is not editable after creation).
 - Delete: confirm modal.
 
 ### Collections (`/collections`)
@@ -496,9 +499,8 @@ Provides a reusable confirmation modal pattern:
 - Paginated list table: name, record count, actions.
 - Actions per row: View Records (navigates to `/collections/:name/records`), Edit Schema (opens schema modal), Delete (confirm then delete).
 - **Create Collection modal** (inline in CollectionsView): collection name input + dynamic column builder (add/remove columns with name, type, nullable, unique). Triggered by "Add Collection" header button.
-- **Schema modal** (inline in CollectionsView): shows current columns table (name, type, nullable, unique, default). "Edit Schema" button enters edit mode: mark existing columns for removal, add new columns, then save. Uses `/collections:update` with `add_columns` and/or `remove_columns` payloads.
+- **Schema modal** (inline in CollectionsView): shows current columns table (name, type, nullable, unique, default). "Edit Schema" button enters edit mode: mark existing columns for removal, add new columns, then save. Uses `/collections:mutate` with `op: "update"` and `add_columns` and/or `remove_columns` payloads.
 - All notifications use Bootstrap toasts with API error messages.
-- `ApiListMeta.total` is optional (collections list does not include it). `Pagination` component handles missing total gracefully.
 
 ### Collection Schema (`/collections/:name/schema`)
 
@@ -508,13 +510,13 @@ Provides a reusable confirmation modal pattern:
   - Rename columns: old name → new name.
   - Modify columns: change type or nullable.
   - Remove columns: select column → confirm → remove.
-- All schema operations are sent to `/collections:update`.
+- All schema operations are sent to `/collections:mutate` with `op: "update"`.
 
 ### Records (`/collections/:name/records`)
 
 - Full-featured data table for the collection's records.
 - Features:
-  - Paginated list (cursor-based).
+  - Paginated list (page-based with `page` and `per_page` params).
   - Column visibility toggle.
   - Sort by any field (click column header).
   - Filter by any field (filter bar with operator selection).
@@ -584,7 +586,7 @@ Show a **global progress bar** (Bootstrap `progress` component at the top of the
 
 ## Data Tables & Pagination
 
-All list views use the shared `DataTable` component with cursor-based pagination.
+All list views use the shared `DataTable` component with page-based pagination.
 
 ### DataTable Features
 
@@ -597,10 +599,11 @@ All list views use the shared `DataTable` component with cursor-based pagination
 
 ### Pagination
 
-- Previous / Next buttons using `meta.prev` and `meta.next` cursors.
-- Show current page info: "Showing N of M total".
-- Page size selector: 15, 30, 50, 100 (maps to `?limit=`).
+- Previous / Next buttons using page-based navigation (`page` and `per_page` params).
+- Show current page info: "Showing X–Y of N total" and "Page M of N".
+- Page size selector: 15, 30, 50, 100 (maps to `?per_page=`).
 - Reset to first page when filters or sort change.
+- `ApiListMeta` contains `current_page`, `per_page`, `total`, `total_pages`, and `count`.
 
 ---
 
@@ -618,7 +621,7 @@ All list views use the shared `DataTable` component with cursor-based pagination
 - **CSV**: parse file, validate headers against collection schema, batch-create records.
 - **JSON**: parse file (expect array of objects), validate keys, batch-create records.
 - Show a preview table (first 10 rows) before confirming import.
-- After import: show a result toast with succeeded/failed counts (using `meta.succeeded` and `meta.failed` from the API).
+- After import: show a result toast with succeeded/failed counts (using `meta.success` and `meta.failed` from the API).
 - Validate all fields client-side before sending. Show inline errors in the preview.
 
 ---
@@ -635,7 +638,7 @@ All forms must validate inputs both client-side (before submission) and surface 
 - `datetime`: must be valid ISO 8601; convert to RFC3339 on submit.
 - `json`: must be valid JSON (parsed with `JSON.parse`).
 - `string`: no specific format, but trimmed before submission.
-- Collection/field names: lowercase, snake_case, `^[a-z][a-z0-9_]*$`.
+- Collection/field names: lowercase, snake*case, `^[a-z]a-z0-9*]\*$`.
 - URL fields (connection base URL): must be a valid HTTP/HTTPS URL.
 
 ### Server-Side Errors
@@ -672,14 +675,14 @@ All forms must validate inputs both client-side (before submission) and surface 
 
 Every module in `src/` has a corresponding test file in `tests/unit/` mirroring the directory structure.
 
-| Module Type   | What to Test                                                      |
-| ------------- | ----------------------------------------------------------------- |
-| Services      | HTTP calls (mock fetch), correct params, error normalization      |
-| Stores        | State mutations, actions, localStorage persistence               |
-| Composables   | Logic, loading/error states, edge cases                          |
-| Components    | Rendering, prop handling, emits, user interaction, slot content  |
-| Views         | Integration of components, route params, service calls (mocked)  |
-| Utils         | All utility functions with valid/invalid inputs                  |
+| Module Type | What to Test                                                    |
+| ----------- | --------------------------------------------------------------- |
+| Services    | HTTP calls (mock fetch), correct params, error normalization    |
+| Stores      | State mutations, actions, localStorage persistence              |
+| Composables | Logic, loading/error states, edge cases                         |
+| Components  | Rendering, prop handling, emits, user interaction, slot content |
+| Views       | Integration of components, route params, service calls (mocked) |
+| Utils       | All utility functions with valid/invalid inputs                 |
 
 ### E2E Tests (Playwright)
 
