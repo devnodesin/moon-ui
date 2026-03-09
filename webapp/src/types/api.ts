@@ -83,6 +83,7 @@ export interface HealthData {
 export interface CollectionSummary {
   name: string
   count: number
+  system: boolean
 }
 
 // Column definition used in the collections management API

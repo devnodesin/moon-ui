@@ -4,13 +4,22 @@ import { createCollectionsService } from '@/services/collections'
 const BASE_URL = 'https://test.moon.dev'
 const CONN_ID = 'test-conn'
 
-const mockCollection = { name: 'products', count: 5 }
+const mockCollection = { name: 'products', count: 5, system: false }
 
 const mockDetail = {
   name: 'products',
   columns: [
     { name: 'title', type: 'string', nullable: false, unique: true },
     { name: 'price', type: 'decimal', nullable: false, unique: false },
+  ],
+}
+
+const mockSchema = {
+  name: 'products',
+  fields: [
+    { name: 'id', type: 'id', nullable: true, unique: false, readonly: true },
+    { name: 'title', type: 'string', nullable: false, unique: false, readonly: false },
+    { name: 'price', type: 'decimal', nullable: false, unique: false, readonly: false },
   ],
 }
 
@@ -96,6 +105,29 @@ describe('createCollectionsService', () => {
     it('throws on not found', async () => {
       mockFail(404, 'Collection not found')
       await expect(service.getCollection('missing')).rejects.toMatchObject({ status: 404 })
+    })
+  })
+
+  describe('getSchema', () => {
+    it('returns schema with fields array for the collection', async () => {
+      mockOk({ data: [mockSchema], message: 'Schema retrieved successfully' })
+      const res = await service.getSchema('products')
+      expect(res.data[0].name).toBe('products')
+      expect(res.data[0].fields).toHaveLength(3)
+      expect(res.data[0].fields[0].name).toBe('id')
+      expect(res.data[0].fields[0].readonly).toBe(true)
+    })
+
+    it('hits /data/{name}:schema endpoint', async () => {
+      mockOk({ data: [mockSchema] })
+      await service.getSchema('products')
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
+      expect(url).toContain('/data/products:schema')
+    })
+
+    it('throws on not found', async () => {
+      mockFail(404, 'Collection not found')
+      await expect(service.getSchema('missing')).rejects.toMatchObject({ status: 404 })
     })
   })
 

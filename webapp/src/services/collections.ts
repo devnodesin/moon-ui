@@ -5,6 +5,7 @@ import type {
   CollectionSummary,
   CollectionColumn,
   CollectionDetail,
+  CollectionSchema,
   CollectionActionResponse,
   CollectionDestroyResponse,
 } from '@/types/api'
@@ -34,6 +35,10 @@ export function createCollectionsService(baseUrl: string, connId: string) {
 
     async getCollection(name: string): Promise<ApiGetResponse<CollectionDetail>> {
       return http.get<ApiGetResponse<CollectionDetail>>('/collections:query', { name })
+    },
+
+    async getSchema(name: string): Promise<ApiGetResponse<CollectionSchema>> {
+      return http.get<ApiGetResponse<CollectionSchema>>(`/data/${name}:schema`)
     },
 
     async createCollection(payload: CollectionCreatePayload): Promise<CollectionActionResponse> {

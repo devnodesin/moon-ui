@@ -12,13 +12,14 @@ import type {
   CollectionSummary,
   ApiListMeta,
   CollectionColumn,
-  CollectionDetail,
+  CollectionSchema,
 } from '@/types/api'
 import type { CollectionCreatePayload, CollectionUpdatePayload } from '@/services/collections'
 
 const COLUMN_TYPES = ['string', 'integer', 'decimal', 'boolean', 'datetime', 'json'] as const
 const SKELETON_COUNT = 5
 const SNAKE_CASE_RE = /^[a-z][a-z0-9_]*$/
+const EXCLUDED_COLLECTIONS = new Set(['users', 'apikeys'])
 
 function toSnakeCase(val: string): string {
   return val.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/^_+/, '').replace(/_+/g, '_')
@@ -64,7 +65,9 @@ async function loadCollections(type: typeof loadingType.value = 'initial'): Prom
   loadError.value = null
   try {
     const res = await service.value.listCollections(buildParams())
-    rows.value = res.data ?? []
+    rows.value = (res.data ?? []).filter(
+      (c) => !c.system && !EXCLUDED_COLLECTIONS.has(c.name),
+    )
     meta.value = res.meta
     currentPage.value = res.meta.current_page
     totalPages.value = res.meta.total_pages
@@ -190,7 +193,7 @@ async function submitCreate(): Promise<void> {
 // ─── Schema Modal ─────────────────────────────────────────────────────────────
 const showSchemaModal = ref(false)
 const schemaTarget = ref('')
-const schemaData = ref<CollectionDetail | null>(null)
+const schemaData = ref<CollectionSchema | null>(null)
 const schemaLoading = ref(false)
 const schemaError = ref<string | null>(null)
 const schemaEditMode = ref(false)
@@ -210,8 +213,7 @@ async function openSchemaModal(name: string): Promise<void> {
   showSchemaModal.value = true
   schemaLoading.value = true
   try {
-    const res = await service.value!.getCollection(name)
-    // New API: data is an array, take first element
+    const res = await service.value!.getSchema(name)
     schemaData.value = res.data[0]
   } catch (err) {
     schemaError.value = (err as { message?: string }).message ?? 'Failed to load schema'
@@ -271,11 +273,12 @@ async function saveSchema(): Promise<void> {
     if (hasRemoved) payload.remove_columns = schemaRemovedNames.value
     const res = await service.value!.updateCollection(payload)
     toastStore.show(res.message, 'success')
-    // New API: data is an array, take first element
-    schemaData.value = res.data[0]
     schemaEditMode.value = false
     schemaAddedCols.value = []
     schemaRemovedNames.value = []
+    // Refresh schema from the schema endpoint to get accurate fields with readonly info
+    const schemaRes = await service.value!.getSchema(schemaTarget.value)
+    schemaData.value = schemaRes.data[0]
     await loadCollections('initial')
   } catch (err) {
     const msg = (err as { message?: string }).message ?? 'Failed to update schema'
@@ -674,7 +677,7 @@ onMounted(() => loadCollections('initial'))
                     </thead>
                     <tbody>
                       <tr
-                        v-for="col in schemaData.columns"
+                        v-for="col in schemaData.fields"
                         :key="col.name"
                         :class="{ 'table-danger opacity-50': isRemovedColumn(col.name) }"
                       >
@@ -695,25 +698,28 @@ onMounted(() => loadCollections('initial'))
                           />
                         </td>
                         <td class="text-muted small font-monospace">
-                          {{ col.default ?? '—' }}
+                          {{ col.default != null ? String(col.default) : '—' }}
                         </td>
                         <td v-if="schemaEditMode">
-                          <button
-                            v-if="!isRemovedColumn(col.name)"
-                            class="btn btn-sm btn-outline-danger"
-                            title="Mark for removal"
-                            @click="markRemoveColumn(col.name)"
-                          >
-                            <i class="bi bi-trash" />
-                          </button>
-                          <button
-                            v-else
-                            class="btn btn-sm btn-outline-secondary"
-                            title="Undo removal"
-                            @click="undoRemoveColumn(col.name)"
-                          >
-                            <i class="bi bi-arrow-counterclockwise" />
-                          </button>
+                          <template v-if="!col.readonly">
+                            <button
+                              v-if="!isRemovedColumn(col.name)"
+                              class="btn btn-sm btn-outline-danger"
+                              title="Mark for removal"
+                              @click="markRemoveColumn(col.name)"
+                            >
+                              <i class="bi bi-trash" />
+                            </button>
+                            <button
+                              v-else
+                              class="btn btn-sm btn-outline-secondary"
+                              title="Undo removal"
+                              @click="undoRemoveColumn(col.name)"
+                            >
+                              <i class="bi bi-arrow-counterclockwise" />
+                            </button>
+                          </template>
+                          <span v-else class="badge bg-light text-muted small">readonly</span>
                         </td>
                       </tr>
                     </tbody>
