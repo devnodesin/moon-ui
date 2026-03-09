@@ -1,5 +1,11 @@
 import { createHttpClient } from './http'
-import type { ApiListResponse, ApiGetResponse, ApiMutateResponse, ApiDestroyResponse, MoonUser } from '@/types/api'
+import type {
+  ApiListResponse,
+  ApiGetResponse,
+  ApiMutateResponse,
+  ApiDestroyResponse,
+  MoonUser,
+} from '@/types/api'
 
 export interface CreateUserPayload {
   username: string
@@ -28,31 +34,25 @@ export function createUsersService(baseUrl: string, connId: string) {
       return http.get<ApiGetResponse<MoonUser>>('/data/users:query', { id })
     },
 
-    // Body wrapped in { data: {...} } per moon-llms.md
-    async createUser(payload: CreateUserPayload): Promise<UserCreateResponse> {
-      return http.post<UserCreateResponse>('/users:create', { data: payload })
-    },
-
-    // Body is direct fields (NOT wrapped) per moon-llms.md
-    async updateUser(id: string, payload: UpdateUserPayload): Promise<UserActionResponse> {
-      return http.post<UserActionResponse>(`/users:update?id=${id}`, payload)
-    },
-
-    async resetPassword(id: string, newPassword: string): Promise<UserActionResponse> {
-      return http.post<UserActionResponse>('/data/users:mutate', {
-        op: 'action',
-        action: 'reset_password',
-        data: [{ id, password: newPassword }],
+    async createUser(payload: CreateUserPayload): Promise<ApiMutateResponse<MoonUser>> {
+      return http.post<ApiMutateResponse<MoonUser>>('/data/users:mutate', {
+        op: 'create',
+        data: [payload],
       })
     },
 
-    async updateUser(
-      id: string,
-      payload: UpdateUserPayload,
-    ): Promise<ApiMutateResponse<MoonUser>> {
+    async updateUser(id: string, payload: UpdateUserPayload): Promise<ApiMutateResponse<MoonUser>> {
       return http.post<ApiMutateResponse<MoonUser>>('/data/users:mutate', {
         op: 'update',
         data: [{ id, ...payload }],
+      })
+    },
+
+    async resetPassword(id: string, newPassword: string): Promise<ApiMutateResponse<MoonUser>> {
+      return http.post<ApiMutateResponse<MoonUser>>('/data/users:mutate', {
+        op: 'action',
+        action: 'reset_password',
+        data: [{ id, password: newPassword }],
       })
     },
 

@@ -18,7 +18,7 @@ const { confirm } = useConfirm()
 
 const activeConn = computed(() => connectionsStore.activeConnection)
 const service = computed(() =>
-  activeConn.value ? createUsersService(activeConn.value.baseUrl, activeConn.value.id) : null,
+  activeConn.value ? createUsersService(activeConn.value.baseUrl, activeConn.value.id) : null
 )
 
 // List state
@@ -52,7 +52,10 @@ const resetPwdError = ref<string | null>(null)
 const SKELETON_COUNT = 5
 
 function buildParams(): Record<string, string> {
-  const p: Record<string, string> = { per_page: String(perPage.value), page: String(currentPage.value) }
+  const p: Record<string, string> = {
+    per_page: String(perPage.value),
+    page: String(currentPage.value),
+  }
   if (activeSearch.value) p['q'] = activeSearch.value
   return p
 }
@@ -162,9 +165,7 @@ async function submitResetPassword(): Promise<void> {
   resetPwdLoading.value = true
   resetPwdError.value = null
   try {
-    const res = await service.value!.updateUser(resetPwdUserId.value!, {
-      password: newPassword.value,
-    })
+    const res = await service.value!.resetPassword(resetPwdUserId.value!, newPassword.value)
     toastStore.show(res.message, 'success')
     closeResetPassword()
   } catch (err) {
@@ -186,7 +187,9 @@ onMounted(() => loadUsers('initial'))
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item active fs-4" aria-current="page"><i class="bi bi-people me-2 text-primary" />Users</li>
+            <li class="breadcrumb-item active fs-4" aria-current="page">
+              <i class="bi bi-people me-2 text-primary" />Users
+            </li>
           </ol>
         </nav>
         <button class="btn btn-sm btn-primary" @click="router.push({ name: 'user-create' })">
@@ -254,7 +257,9 @@ onMounted(() => loadUsers('initial'))
                       </span>
                     </td>
                     <td>
-                      <span class="placeholder-glow d-block"><span class="placeholder col-10" /></span>
+                      <span class="placeholder-glow d-block"
+                        ><span class="placeholder col-10"
+                      /></span>
                     </td>
                   </tr>
                 </template>
@@ -275,7 +280,11 @@ onMounted(() => loadUsers('initial'))
                     <td>
                       <i
                         class="bi"
-                        :class="user.can_write ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-muted'"
+                        :class="
+                          user.can_write
+                            ? 'bi-check-circle-fill text-success'
+                            : 'bi-x-circle-fill text-muted'
+                        "
                       />
                     </td>
                     <td class="text-muted small">{{ formatDate(user.last_login_at) }}</td>
@@ -318,7 +327,11 @@ onMounted(() => loadUsers('initial'))
                 <!-- Empty -->
                 <tr v-else>
                   <td colspan="6" class="p-0">
-                    <EmptyState icon="bi-people" title="No users found" message="Try a different search term." />
+                    <EmptyState
+                      icon="bi-people"
+                      title="No users found"
+                      message="Try a different search term."
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -347,20 +360,19 @@ onMounted(() => loadUsers('initial'))
         v-if="resetPwdUserId"
         class="modal show d-block"
         tabindex="-1"
-        style="background: rgba(0,0,0,0.5)"
+        style="background: rgba(0, 0, 0, 0.5)"
         @click.self="closeResetPassword"
       >
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">
-                <i class="bi bi-key me-2" />Reset Password
-              </h5>
+              <h5 class="modal-title"><i class="bi bi-key me-2" />Reset Password</h5>
               <button type="button" class="btn-close" @click="closeResetPassword" />
             </div>
             <div class="modal-body">
               <p class="text-muted mb-3">
-                Resetting password for <strong>{{ resetPwdUser?.username }}</strong>.
+                Resetting password for <strong>{{ resetPwdUser?.username }}</strong
+                >.
               </p>
               <div class="alert alert-danger py-2" v-if="resetPwdError">
                 {{ resetPwdError }}
@@ -378,11 +390,23 @@ onMounted(() => loadUsers('initial'))
               </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" :disabled="resetPwdLoading" @click="closeResetPassword">
+              <button
+                class="btn btn-secondary"
+                :disabled="resetPwdLoading"
+                @click="closeResetPassword"
+              >
                 Cancel
               </button>
-              <button class="btn btn-warning" :disabled="resetPwdLoading" @click="submitResetPassword">
-                <span v-if="resetPwdLoading" class="spinner-border spinner-border-sm me-1" role="status" />
+              <button
+                class="btn btn-warning"
+                :disabled="resetPwdLoading"
+                @click="submitResetPassword"
+              >
+                <span
+                  v-if="resetPwdLoading"
+                  class="spinner-border spinner-border-sm me-1"
+                  role="status"
+                />
                 Reset Password
               </button>
             </div>

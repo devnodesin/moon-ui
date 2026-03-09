@@ -1,11 +1,10 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProgressStore } from '@/stores/progress'
 import { useConnectionsStore } from '@/stores/connections'
 
-const base = import.meta.env.PROD ? '/ui/' : '/';
 const router = createRouter({
-  history: createWebHistory(base),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/login',

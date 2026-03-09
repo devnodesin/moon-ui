@@ -373,27 +373,29 @@ Actions: `show`, `dismiss`, `clear`
 
 ## Routing
 
-Vue Router 4 with HTML5 history mode.
+Vue Router 4 with **hash history mode** (`createWebHashHistory`). Hash mode is used so that browser refreshes always load `index.html` regardless of server SPA fallback configuration. URLs use the `#` fragment: `https://example.com/ui/#/users`.
+
+> **Note:** HTML5 history mode is intentionally avoided because the production deployment at `/ui/` is served by a static file server without a guaranteed SPA fallback. Hash mode provides full route refresh support without any server-side configuration.
 
 ### Route Structure
 
 ```
-/login                         LoginView (public)
-/                              Redirect → /dashboard (requires auth)
-/dashboard                     DashboardView
-/connections                   ConnectionsView
-/users                         UsersView (admin only)
-/users/new                     UserFormView (admin only)
-/users/:id/edit                UserFormView (admin only)
-/apikeys                       ApiKeysView (admin only)
-/apikeys/new                   ApiKeyFormView (admin only)
-/apikeys/:id/edit              ApiKeyFormView (admin only)
-/collections                   CollectionsView
-/collections/new               CollectionFormView
-/collections/:name/schema      CollectionSchemaView
-/collections/:name/records     RecordsView
-/collections/:name/records/new RecordFormView
-/collections/:name/records/:id/edit RecordFormView
+/#/login                         LoginView (public)
+/#/                              Redirect → /#/dashboard (requires auth)
+/#/dashboard                     DashboardView
+/#/connections                   ConnectionsView
+/#/users                         UsersView (admin only)
+/#/users/new                     UserFormView (admin only)
+/#/users/:id/edit                UserFormView (admin only)
+/#/apikeys                       ApiKeysView (admin only)
+/#/apikeys/new                   ApiKeyFormView (admin only)
+/#/apikeys/:id/edit              ApiKeyFormView (admin only)
+/#/collections                   CollectionsView
+/#/collections/new               CollectionFormView
+/#/collections/:name/schema      CollectionSchemaView
+/#/collections/:name/records     RecordsView
+/#/collections/:name/records/new RecordFormView
+/#/collections/:name/records/:id/edit RecordFormView
 ```
 
 ### Navigation Guards
@@ -482,8 +484,11 @@ Provides a reusable confirmation modal pattern:
 - Search by username/email (`?q=`).
 - Actions per row: Edit, Reset Password, Delete (with confirm).
 - Create/Edit form: username, email, role, can_write, password (create only).
-- Admin action "Reset Password": shows form for a replacement password and submits `POST /data/users:mutate` with `op: "action"`, `action: "reset_password"`, and `data: [{ id, password }]`.
-- Admin action "Revoke Sessions": confirm modal → call `action: revoke_sessions`.
+- All user mutations go through `POST /data/users:mutate` with the appropriate `op`:
+  - Create: `op: "create"`, `data: [{ username, email, password, role, can_write }]`
+  - Update (email/role/can_write): `op: "update"`, `data: [{ id, ...fields }]`
+  - Reset Password: `op: "action"`, `action: "reset_password"`, `data: [{ id, password }]`
+  - Delete: `op: "destroy"`, `data: [{ id }]`
 
 ### API Keys (`/apikeys`, admin only)
 
