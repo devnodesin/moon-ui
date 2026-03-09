@@ -382,11 +382,11 @@ curl -s -X POST "http://localhost:6000/data/users:mutate" \
   "data": [
     {
       "can_write": false,
-      "created_at": "2026-03-08T16:38:42Z",
+      "created_at": "2026-03-09T17:13:00Z",
       "email": "moonuser@example.com",
-      "id": "01KK751DR3JH9VH80B17H114FA",
+      "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J",
       "role": "user",
-      "updated_at": "2026-03-08T16:38:42Z",
+      "updated_at": "2026-03-09T17:13:00Z",
       "username": "moonuser"
     }
   ],
@@ -414,30 +414,30 @@ curl -s -X GET "http://localhost:6000/data/users:query" \
   "data": [
     {
       "can_write": true,
-      "created_at": "2026-03-08T12:33:26Z",
+      "created_at": "2026-03-09T10:15:50Z",
       "email": "admin@example.com",
-      "id": "01KK6Q0AKZ52X0V10S7QG9MEVV",
-      "last_login_at": "2026-03-08T16:38:41Z",
+      "id": "01KK91H3WK7KH2H1H7AT4NYMA6",
+      "last_login_at": "2026-03-09T17:13:00Z",
       "role": "admin",
-      "updated_at": "2026-03-08T16:38:41Z",
+      "updated_at": "2026-03-09T17:13:00Z",
       "username": "admin"
     },
     {
       "can_write": false,
-      "created_at": "2026-03-08T16:38:42Z",
+      "created_at": "2026-03-09T17:13:00Z",
       "email": "moonuser@example.com",
-      "id": "01KK751DR3JH9VH80B17H114FA",
+      "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J",
       "last_login_at": null,
       "role": "user",
-      "updated_at": "2026-03-08T16:38:42Z",
+      "updated_at": "2026-03-09T17:13:00Z",
       "username": "moonuser"
     }
   ],
   "meta": {
-    "count": 2,
+    "count": 3,
     "current_page": 1,
     "per_page": 15,
-    "total": 2,
+    "total": 3,
     "total_pages": 1
   },
   "links": {
@@ -454,7 +454,7 @@ curl -s -X GET "http://localhost:6000/data/users:query" \
 Retrieve a specific user by their ULID.
 
 ```bash
-curl -s -X GET "http://localhost:6000/data/users:query?id=01KK751DR3JH9VH80B17H114FA" \
+curl -s -X GET "http://localhost:6000/data/users:query?id=01KK9SCZ3TMBYP9E8KV34GEQ9J" \
     -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 ```
 
@@ -466,12 +466,12 @@ curl -s -X GET "http://localhost:6000/data/users:query?id=01KK751DR3JH9VH80B17H1
   "data": [
     {
       "can_write": false,
-      "created_at": "2026-03-08T16:38:42Z",
+      "created_at": "2026-03-09T17:13:00Z",
       "email": "moonuser@example.com",
-      "id": "01KK751DR3JH9VH80B17H114FA",
+      "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J",
       "last_login_at": null,
       "role": "user",
-      "updated_at": "2026-03-08T16:38:42Z",
+      "updated_at": "2026-03-09T17:13:00Z",
       "username": "moonuser"
     }
   ]
@@ -491,7 +491,7 @@ curl -s -X POST "http://localhost:6000/data/users:mutate" \
         "op": "update",
         "data": [
           {
-            "id": "01KK751DR3JH9VH80B17H114FA",
+            "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J",
             "email": "moonuser_updated@example.com"
           }
         ]
@@ -507,13 +507,90 @@ curl -s -X POST "http://localhost:6000/data/users:mutate" \
   "data": [
     {
       "can_write": false,
-      "created_at": "2026-03-08T16:38:42Z",
+      "created_at": "2026-03-09T17:13:00Z",
       "email": "moonuser_updated@example.com",
-      "id": "01KK751DR3JH9VH80B17H114FA",
+      "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J",
       "last_login_at": null,
       "role": "user",
-      "updated_at": "2026-03-08T16:38:44Z",
+      "updated_at": "2026-03-09T17:13:01Z",
       "username": "moonuser"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
+}
+```
+
+### Reset User Password
+
+Reset a user's password via action.
+
+```bash
+curl -s -X POST "http://localhost:6000/data/users:mutate" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '
+      {
+        "op": "action",
+        "action": "reset_password",
+        "data": [
+          {
+            "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J",
+            "password": "NewSecurePassword123"
+          }
+        ]
+      }
+    ' | jq .
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Action completed successfully",
+  "data": [
+    {
+      "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
+}
+```
+
+### Revoke User Sessions
+
+Revoke all sessions for a user via action.
+
+```bash
+curl -s -X POST "http://localhost:6000/data/users:mutate" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '
+      {
+        "op": "action",
+        "action": "revoke_sessions",
+        "data": [
+          {
+            "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J"
+          }
+        ]
+      }
+    ' | jq .
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Action completed successfully",
+  "data": [
+    {
+      "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J"
     }
   ],
   "meta": {
@@ -536,7 +613,7 @@ curl -s -X POST "http://localhost:6000/data/users:mutate" \
         "op": "destroy",
         "data": [
           {
-            "id": "01KK751DR3JH9VH80B17H114FA"
+            "id": "01KK9SCZ3TMBYP9E8KV34GEQ9J"
           }
         ]
       }
@@ -896,15 +973,18 @@ curl -s -X GET "http://localhost:6000/collections:query" \
   "data": [
     {
       "count": 0,
-      "name": "apikeys"
+      "name": "apikeys",
+      "system": true
     },
     {
       "count": 0,
-      "name": "products"
+      "name": "products",
+      "system": false
     },
     {
       "count": 1,
-      "name": "users"
+      "name": "users",
+      "system": true
     }
   ],
   "meta": {
@@ -940,7 +1020,8 @@ curl -s -X GET "http://localhost:6000/collections:query?name=products" \
   "data": [
     {
       "count": 0,
-      "name": "products"
+      "name": "products",
+      "system": false
     }
   ]
 }
@@ -2099,6 +2180,280 @@ curl -s -X GET "http://localhost:6000/data/products:query?brand[eq]=Wow&sort=-pr
   "links": {
     "first": "/data/products:query?brand%5Beq%5D=Wow&fields=title%2Cprice%2Cquantity&page=1&per_page=10&sort=-price",
     "last": "/data/products:query?brand%5Beq%5D=Wow&fields=title%2Cprice%2Cquantity&page=1&per_page=10&sort=-price",
+    "next": null,
+    "prev": null
+  }
+}
+```
+
+
+### Create Collection with Typed Columns
+
+```bash
+curl -s -X POST "http://localhost:6000/collections:mutate" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '
+      {
+        "op": "create",
+        "data": [
+          {
+            "name": "typed_items",
+            "columns": [
+              {
+                "name": "string_test",
+                "type": "string",
+                "nullable": false
+              },
+              {
+                "name": "integer_test",
+                "type": "integer",
+                "nullable": true
+              },
+              {
+                "name": "decimal_test",
+                "type": "decimal",
+                "nullable": true
+              },
+              {
+                "name": "boolean_test",
+                "type": "boolean",
+                "nullable": true
+              },
+              {
+                "name": "date_test",
+                "type": "datetime",
+                "nullable": true
+              },
+              {
+                "name": "json_test",
+                "type": "json",
+                "nullable": true
+              }
+            ]
+          }
+        ]
+      }
+    ' | jq .
+```
+
+**Response (201 Created):**
+
+```json
+{
+  "message": "Collection created successfully",
+  "data": [
+    {
+      "columns": [
+        {
+          "name": "string_test",
+          "nullable": false,
+          "type": "string",
+          "unique": false
+        },
+        {
+          "name": "integer_test",
+          "nullable": true,
+          "type": "integer",
+          "unique": false
+        },
+        {
+          "name": "decimal_test",
+          "nullable": true,
+          "type": "decimal",
+          "unique": false
+        },
+        {
+          "name": "boolean_test",
+          "nullable": true,
+          "type": "boolean",
+          "unique": false
+        },
+        {
+          "name": "date_test",
+          "nullable": true,
+          "type": "datetime",
+          "unique": false
+        },
+        {
+          "name": "json_test",
+          "nullable": true,
+          "type": "json",
+          "unique": false
+        }
+      ],
+      "name": "typed_items"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
+}
+```
+
+### Get Schema
+
+Retrieve the schema for `typed_items`. Each field must report the correct Moon type: `id` for the primary key, `string`, `integer`, `decimal`, `boolean`, `datetime`, and `json` for the user-defined columns.
+
+```bash
+curl -s -X GET "http://localhost:6000/data/typed_items:schema" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Schema retrieved successfully",
+  "data": [
+    {
+      "name": "typed_items",
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": true,
+          "unique": false,
+          "readonly": true
+        },
+        {
+          "name": "string_test",
+          "type": "string",
+          "nullable": false,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "integer_test",
+          "type": "integer",
+          "nullable": true,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "decimal_test",
+          "type": "decimal",
+          "nullable": true,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "boolean_test",
+          "type": "boolean",
+          "nullable": true,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "date_test",
+          "type": "datetime",
+          "nullable": true,
+          "unique": false,
+          "readonly": false
+        },
+        {
+          "name": "json_test",
+          "type": "json",
+          "nullable": true,
+          "unique": false,
+          "readonly": false
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Create Record
+
+Insert one record that exercises every supported field type.
+
+```bash
+curl -s -X POST "http://localhost:6000/data/typed_items:mutate" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '
+      {
+        "op": "create",
+        "data": [
+          {
+            "string_test": "sample",
+            "integer_test": 42,
+            "decimal_test": "9.99",
+            "boolean_test": true,
+            "date_test": "2024-01-01T00:00:00Z",
+            "json_test": {
+              "key": "value"
+            }
+          }
+        ]
+      }
+    ' | jq .
+```
+
+**Response (201 Created):**
+
+```json
+{
+  "message": "Resource created successfully",
+  "data": [
+    {
+      "boolean_test": true,
+      "date_test": "2024-01-01 00:00:00 +0000 UTC",
+      "decimal_test": "9.99",
+      "id": "01KK92XEWYF61XCZCQ7GFB20B3",
+      "integer_test": 42,
+      "json_test": {
+        "key": "value"
+      },
+      "string_test": "sample"
+    }
+  ],
+  "meta": {
+    "failed": 0,
+    "success": 1
+  }
+}
+```
+
+### Query Record
+
+Fetch the records
+
+```bash
+curl -s -X GET "http://localhost:6000/data/typed_items:query" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Resources retrieved successfully",
+  "data": [
+    {
+      "boolean_test": true,
+      "date_test": "2024-01-01 00:00:00 +0000 UTC",
+      "decimal_test": "9.99",
+      "id": "01KK92XEWYF61XCZCQ7GFB20B3",
+      "integer_test": 42,
+      "json_test": {
+        "key": "value"
+      },
+      "string_test": "sample"
+    }
+  ],
+  "meta": {
+    "count": 1,
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "total_pages": 1
+  },
+  "links": {
+    "first": "/data/typed_items:query?page=1&per_page=15",
+    "last": "/data/typed_items:query?page=1&per_page=15",
     "next": null,
     "prev": null
   }

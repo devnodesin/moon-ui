@@ -47,9 +47,10 @@ export function createUsersService(baseUrl: string, connId: string) {
     },
 
     async resetPassword(id: string, newPassword: string): Promise<UserActionResponse> {
-      return http.post<UserActionResponse>(`/users:update?id=${id}`, {
+      return http.post<UserActionResponse>('/data/users:mutate', {
+        op: 'action',
         action: 'reset_password',
-        new_password: newPassword,
+        data: [{ id, password: newPassword }],
       })
     },
 

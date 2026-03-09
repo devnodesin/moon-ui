@@ -479,7 +479,7 @@ Provides a reusable confirmation modal pattern:
 - Search by username/email (`?q=`).
 - Actions per row: Edit, Reset Password, Revoke Sessions, Delete (with confirm).
 - Create/Edit form: username, email, role, can_write, password (create only).
-- Admin action "Reset Password": shows form with new_password field.
+- Admin action "Reset Password": shows form for a replacement password and submits `POST /data/users:mutate` with `op: "action"`, `action: "reset_password"`, and `data: [{ id, password }]`.
 - Admin action "Revoke Sessions": confirm modal → call `action: revoke_sessions`.
 
 ### API Keys (`/apikeys`, admin only)

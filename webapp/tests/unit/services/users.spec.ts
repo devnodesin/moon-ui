@@ -129,7 +129,7 @@ describe('createUsersService', () => {
     it('throws on validation failure', async () => {
       mockFail(400, 'Username already taken')
       await expect(
-        service.createUser({ username: 'dup', email: 'e@e.com', password: 'p', role: 'user' }),
+        service.createUser({ username: 'dup', email: 'e@e.com', password: 'p', role: 'user' })
       ).rejects.toMatchObject({ message: 'Username already taken' })
     })
   })
@@ -154,13 +154,16 @@ describe('createUsersService', () => {
   })
 
   describe('resetPassword', () => {
-    it('sends reset_password action with new_password', async () => {
+    it('sends reset_password action to /data/users:mutate with password payload', async () => {
       mockOk({ message: 'Password reset successfully' })
       const res = await service.resetPassword('01KJ001', 'NewPass123#')
       expect(res.message).toBe('Password reset successfully')
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)
+      expect(url).toContain('/data/users:mutate')
+      expect(body.op).toBe('action')
       expect(body.action).toBe('reset_password')
-      expect(body.new_password).toBe('NewPass123#')
+      expect(body.data).toEqual([{ id: '01KJ001', password: 'NewPass123#' }])
     })
   })
 
