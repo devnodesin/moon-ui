@@ -3,7 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/ui/' : '/',
+  //base: command === 'build' ? '/ui/' : '/', // for subdirectory deployment, adjust as needed
+  base: '/',
   plugins: [vue()],
   resolve: {
     alias: {
