@@ -34,9 +34,9 @@ const pageText = computed(() => {
 
 <template>
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2 px-1">
-    <div class="d-flex flex-column">
+    <div class="d-flex flex-row gap-2">
       <span v-if="meta && meta.total_pages > 1" class="text-muted small">{{ pageText }}</span>
-      <span class="text-muted small"> ( {{ rangeText }} )</span>
+      <span class="text-muted small">( {{ rangeText }} )</span>
     </div>
 
     <div class="d-flex align-items-center gap-2">
