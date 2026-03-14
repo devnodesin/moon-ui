@@ -25,7 +25,7 @@ MoonUI is a secure, mobile-first admin interface for managing Moon API Server ba
 
 - URL: https://moon.devnodes.in/
 - Username: `admin`
-- Password: `moonadmin12#`
+- Password: `MoonAdmin12#`
 - Demo MoonUI: https://moon.devnodes.in/ui/
 
 ## License
