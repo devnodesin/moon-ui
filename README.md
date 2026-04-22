@@ -1,4 +1,3 @@
-
 # MoonUI Admin WebApp
 
 MoonUI is a secure, mobile-first admin interface for managing Moon API Server backends.

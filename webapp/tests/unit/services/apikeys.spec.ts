@@ -66,7 +66,11 @@ describe('createApiKeysService', () => {
     })
 
     it('hits /data/apikeys:query endpoint', async () => {
-      mockOk({ data: [], meta: { count: 0, current_page: 1, per_page: 15, total: 0, total_pages: 0 }, links: {} })
+      mockOk({
+        data: [],
+        meta: { count: 0, current_page: 1, per_page: 15, total: 0, total_pages: 0 },
+        links: {},
+      })
       await service.listApiKeys()
       const url = vi.mocked(fetch).mock.calls[0][0] as string
       expect(url).toContain('/data/apikeys:query')
@@ -101,7 +105,11 @@ describe('createApiKeysService', () => {
     })
 
     it('sends op:create with data array to /data/apikeys:mutate', async () => {
-      mockOk({ data: [mockApiKeyWithSecret], message: 'Resource created successfully', meta: { success: 1, failed: 0 } })
+      mockOk({
+        data: [mockApiKeyWithSecret],
+        message: 'Resource created successfully',
+        meta: { success: 1, failed: 0 },
+      })
       await service.createApiKey({
         name: 'Test',
         role: 'user',
@@ -139,14 +147,18 @@ describe('createApiKeysService', () => {
           rate_limit: 15,
           captcha_required: false,
           enabled: true,
-        }),
+        })
       ).rejects.toMatchObject({ message: 'Name already taken' })
     })
   })
 
   describe('updateApiKey', () => {
     it('sends op:update with data array to /data/apikeys:mutate', async () => {
-      mockOk({ data: [mockApiKey], message: 'Resource updated successfully', meta: { success: 1, failed: 0 } })
+      mockOk({
+        data: [mockApiKey],
+        message: 'Resource updated successfully',
+        meta: { success: 1, failed: 0 },
+      })
       await service.updateApiKey('01KJ100', {
         name: 'New Name',
         can_write: true,
@@ -184,7 +196,11 @@ describe('createApiKeysService', () => {
     })
 
     it('sends op:action with action:rotate to /data/apikeys:mutate', async () => {
-      mockOk({ data: [mockApiKeyWithSecret], message: 'Action completed successfully', meta: { success: 1, failed: 0 } })
+      mockOk({
+        data: [mockApiKeyWithSecret],
+        message: 'Action completed successfully',
+        meta: { success: 1, failed: 0 },
+      })
       await service.rotateApiKey('01KJ100')
       const url = vi.mocked(fetch).mock.calls[0][0] as string
       const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)

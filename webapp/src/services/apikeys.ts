@@ -1,5 +1,11 @@
 import { createHttpClient } from './http'
-import type { ApiListResponse, ApiGetResponse, ApiMutateResponse, ApiDestroyResponse, ApiKey } from '@/types/api'
+import type {
+  ApiListResponse,
+  ApiGetResponse,
+  ApiMutateResponse,
+  ApiDestroyResponse,
+  ApiKey,
+} from '@/types/api'
 
 export interface CreateApiKeyPayload {
   name: string
@@ -50,7 +56,7 @@ export function createApiKeysService(baseUrl: string, connId: string) {
 
     async updateApiKey(
       id: string,
-      payload: UpdateApiKeyPayload,
+      payload: UpdateApiKeyPayload
     ): Promise<ApiMutateResponse<ApiKey>> {
       return http.post<ApiMutateResponse<ApiKey>>('/data/apikeys:mutate', {
         op: 'update',

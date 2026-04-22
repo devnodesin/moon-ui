@@ -153,7 +153,7 @@ describe('ApiKeyFormView', () => {
     await flushPromises()
 
     expect((wrapper.find('input[name="api-key-name"]').element as HTMLInputElement).value).toBe(
-      'Existing Key',
+      'Existing Key'
     )
     expect((wrapper.find('#collection-orders').element as HTMLInputElement).checked).toBe(true)
     expect((wrapper.find('#captcha-required').element as HTMLInputElement).checked).toBe(true)

@@ -19,12 +19,10 @@ const toastStore = useToastStore()
 
 const activeConn = computed(() => connectionsStore.activeConnection)
 const service = computed(() =>
-  activeConn.value ? createApiKeysService(activeConn.value.baseUrl, activeConn.value.id) : null,
+  activeConn.value ? createApiKeysService(activeConn.value.baseUrl, activeConn.value.id) : null
 )
 const collectionsService = computed(() =>
-  activeConn.value
-    ? createCollectionsService(activeConn.value.baseUrl, activeConn.value.id)
-    : null,
+  activeConn.value ? createCollectionsService(activeConn.value.baseUrl, activeConn.value.id) : null
 )
 
 const EXCLUDED_COLLECTIONS = new Set(['users', 'apikeys'])
@@ -59,8 +57,8 @@ const collectionOptions = computed(() =>
     new Set([
       ...availableCollections.value.map((collection) => collection.name),
       ...selectedCollections.value,
-    ]),
-  ).sort((left, right) => left.localeCompare(right)),
+    ])
+  ).sort((left, right) => left.localeCompare(right))
 )
 
 watch(isWebsite, (value) => {
@@ -76,11 +74,7 @@ watch(isWebsite, (value) => {
 
 function normalizeOrigins(origins: string[]): string[] {
   return Array.from(
-    new Set(
-      origins
-        .map((origin) => origin.trim())
-        .filter((origin) => origin.length > 0),
-    ),
+    new Set(origins.map((origin) => origin.trim()).filter((origin) => origin.length > 0))
   )
 }
 
@@ -89,8 +83,8 @@ function normalizeCollections(collections: string[]): string[] {
     new Set(
       collections
         .map((collection) => collection.trim())
-        .filter((collection) => collection.length > 0),
-    ),
+        .filter((collection) => collection.length > 0)
+    )
   )
 }
 
@@ -133,8 +127,7 @@ async function loadAvailableCollections(): Promise<void> {
 
     availableCollections.value = allCollections
   } catch (err) {
-    const msg =
-      (err as { message?: string }).message ?? 'Failed to load available collections'
+    const msg = (err as { message?: string }).message ?? 'Failed to load available collections'
     toastStore.show(msg, 'error')
     console.error('[ApiKeyFormView] collections load error:', err)
   } finally {
@@ -182,10 +175,7 @@ function validate(): boolean {
     errors['rateLimit'] = 'Rate limit must be a whole number greater than or equal to 0'
   }
 
-  if (
-    isWebsite.value &&
-    normalizedOrigins.some((origin) => !isValidUrl(origin))
-  ) {
+  if (isWebsite.value && normalizedOrigins.some((origin) => !isValidUrl(origin))) {
     errors['allowedOrigins'] = 'Allowed origins must be valid http:// or https:// URLs'
   }
 
@@ -452,9 +442,7 @@ onMounted(async () => {
                     role="switch"
                     :disabled="saving"
                   />
-                  <label class="form-check-label" for="captcha-required">
-                    CAPTCHA Required
-                  </label>
+                  <label class="form-check-label" for="captcha-required"> CAPTCHA Required </label>
                 </div>
               </div>
 
@@ -462,7 +450,7 @@ onMounted(async () => {
                 <label class="form-label fw-semibold d-block">Allowed Origins</label>
                 <div class="d-flex flex-column gap-2">
                   <div
-                    v-for="(origin, index) in allowedOrigins"
+                    v-for="(_, index) in allowedOrigins"
                     :key="`origin-${index}`"
                     class="input-group"
                   >
@@ -513,17 +501,8 @@ onMounted(async () => {
             </div>
 
             <div class="d-flex gap-2 mt-4">
-              <button
-                id="save-api-key"
-                class="btn btn-primary"
-                :disabled="saving"
-                @click="save"
-              >
-                <span
-                  v-if="saving"
-                  class="spinner-border spinner-border-sm me-1"
-                  role="status"
-                />
+              <button id="save-api-key" class="btn btn-primary" :disabled="saving" @click="save">
+                <span v-if="saving" class="spinner-border spinner-border-sm me-1" role="status" />
                 <i v-else class="bi bi-check2 me-1" />
                 {{ isEditMode ? 'Save Changes' : 'Create API Key' }}
               </button>
