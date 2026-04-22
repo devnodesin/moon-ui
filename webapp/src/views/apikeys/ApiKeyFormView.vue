@@ -74,19 +74,15 @@ watch(isWebsite, (value) => {
 })
 
 function normalizeOrigins(origins: string[]): string[] {
-  return Array.from(
-    new Set(origins.map((origin) => origin.trim()).filter((origin) => origin.length > 0))
-  )
+  return normalizeStringArray(origins)
 }
 
 function normalizeCollections(collections: string[]): string[] {
-  return Array.from(
-    new Set(
-      collections
-        .map((collection) => collection.trim())
-        .filter((collection) => collection.length > 0)
-    )
-  )
+  return normalizeStringArray(collections)
+}
+
+function normalizeStringArray(items: string[]): string[] {
+  return Array.from(new Set(items.map((item) => item.trim()).filter((item) => item.length > 0)))
 }
 
 function filterAvailableCollections(collections: CollectionSummary[]): CollectionSummary[] {
@@ -127,7 +123,9 @@ async function loadAvailableCollections(): Promise<void> {
     }
 
     if (page > MAX_COLLECTION_PAGES) {
-      throw new Error('Failed to load available collections')
+      throw new Error(
+        `Too many collection pages to load (exceeded maximum of ${MAX_COLLECTION_PAGES} pages)`
+      )
     }
 
     availableCollections.value = allCollections
@@ -176,8 +174,8 @@ function validate(): boolean {
 
   if (!name.value.trim()) errors['name'] = 'Name is required'
 
-  if (!Number.isInteger(rateLimit.value) || rateLimit.value < 0) {
-    errors['rateLimit'] = 'Rate limit must be a whole number of at least 0'
+  if (!Number.isInteger(rateLimit.value) || rateLimit.value < 1) {
+    errors['rateLimit'] = 'Rate limit must be a whole number of at least 1'
   }
 
   if (isWebsite.value && normalizedOrigins.some((origin) => !isValidUrl(origin))) {
@@ -327,7 +325,7 @@ onMounted(async () => {
                   id="rate-limit"
                   v-model.number="rateLimit"
                   type="number"
-                  min="0"
+                  min="1"
                   step="1"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors['rateLimit'] }"
