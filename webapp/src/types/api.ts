@@ -146,6 +146,12 @@ export interface ApiKey {
   name: string
   role: 'admin' | 'user'
   can_write: boolean
+  collections: string[]
+  is_website: boolean
+  allowed_origins: string[] | null
+  rate_limit: number
+  captcha_required: boolean
+  enabled: boolean
   created_at: string
   updated_at?: string
   last_used_at?: string | null
