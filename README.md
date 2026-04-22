@@ -1,4 +1,3 @@
-
 # MoonUI Admin WebApp
 
 MoonUI is a secure, mobile-first admin interface for managing Moon API Server backends.
@@ -6,6 +5,7 @@ MoonUI is a secure, mobile-first admin interface for managing Moon API Server ba
 ## Main Features
 
 - Manage collections, users, API keys, and backend connections
+- Configure API key collection scopes, website origins, rate limits, CAPTCHA, and enabled state
 - Mobile-first, responsive UI
 - Secure authentication and session management
 
@@ -25,7 +25,7 @@ MoonUI is a secure, mobile-first admin interface for managing Moon API Server ba
 
 - URL: https://moon.devnodes.in/
 - Username: `admin`
-- Password: `moonadmin12#`
+- Password: `MoonAdmin12#`
 - Demo MoonUI: https://moon.devnodes.in/ui/
 
 ## License
