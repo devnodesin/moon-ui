@@ -493,10 +493,12 @@ Provides a reusable confirmation modal pattern:
 ### API Keys (`/apikeys`, admin only)
 
 - Paginated list table: name, role, can_write, created date, last used, actions.
-- Create form: name, role, can_write.
+- Create form: name, role, can_write, collections, is_website, allowed_origins, rate_limit, captcha_required, enabled.
 - On create: display the key value once in a modal with a "Copy" button and security warning. Never show again.
 - Rotate key: confirm modal → show new key once in modal.
-- Edit: name, can_write (key itself is not editable; role is not editable after creation).
+- Edit: name, can_write, collections, is_website, allowed_origins, rate_limit, captcha_required, enabled (key itself is not editable; role is not editable after creation).
+- Collections must be loaded from the active Moon server and presented as multi-select checkboxes.
+- Allowed origins must support add, edit, and remove interactions in the form UI.
 - Delete: confirm modal.
 
 ### Collections (`/collections`)

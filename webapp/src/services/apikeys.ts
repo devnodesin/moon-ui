@@ -5,11 +5,23 @@ export interface CreateApiKeyPayload {
   name: string
   role: 'admin' | 'user'
   can_write: boolean
+  collections: string[]
+  is_website: boolean
+  allowed_origins: string[] | null
+  rate_limit: number
+  captcha_required: boolean
+  enabled: boolean
 }
 
 export interface UpdateApiKeyPayload {
   name?: string
   can_write?: boolean
+  collections?: string[]
+  is_website?: boolean
+  allowed_origins?: string[] | null
+  rate_limit?: number
+  captcha_required?: boolean
+  enabled?: boolean
 }
 
 // key is only returned on create and rotate — not in list
