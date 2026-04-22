@@ -110,6 +110,12 @@ describe('ApiKeyFormView', () => {
     await wrapper.find('[data-testid="add-origin"]').trigger('click')
     await wrapper.find('[data-testid="origin-input-1"]').setValue('https://app.moon.devnodes.in')
     await wrapper.find('[data-testid="remove-origin-0"]').trigger('click')
+
+    expect((wrapper.find('[data-testid="origin-input-0"]').element as HTMLInputElement).value).toBe(
+      'https://app.moon.devnodes.in'
+    )
+    expect(wrapper.find('[data-testid="origin-input-1"]').exists()).toBe(false)
+
     await wrapper.find('#save-api-key').trigger('click')
 
     expect(createApiKey).toHaveBeenCalledWith({

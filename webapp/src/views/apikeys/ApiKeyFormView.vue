@@ -64,7 +64,7 @@ const collectionOptions = computed(() =>
 
 watch(isWebsite, (value) => {
   if (value && allowedOrigins.value.length === 0) {
-    allowedOrigins.value = ['']
+    ensureAllowedOriginInputs()
   } else if (!value) {
     allowedOrigins.value = []
   }
@@ -84,11 +84,15 @@ function addAllowedOrigin(): void {
   allowedOrigins.value = [...allowedOrigins.value, '']
 }
 
-function removeAllowedOrigin(index: number): void {
-  allowedOrigins.value = allowedOrigins.value.filter((_, currentIndex) => currentIndex !== index)
+function ensureAllowedOriginInputs(): void {
   if (isWebsite.value && allowedOrigins.value.length === 0) {
     allowedOrigins.value = ['']
   }
+}
+
+function removeAllowedOrigin(index: number): void {
+  allowedOrigins.value = allowedOrigins.value.filter((_, currentIndex) => currentIndex !== index)
+  ensureAllowedOriginInputs()
 }
 
 async function loadAvailableCollections(): Promise<void> {
@@ -98,22 +102,25 @@ async function loadAvailableCollections(): Promise<void> {
   try {
     const allCollections: CollectionSummary[] = []
     let page = 1
+    let totalPages = 1
 
-    while (true) {
+    while (page <= totalPages && page <= MAX_COLLECTION_PAGES) {
       const res = await collectionsService.value.listCollections({
         page: String(page),
         per_page: String(COLLECTIONS_PER_PAGE),
       })
 
+      totalPages = res.meta.total_pages
       allCollections.push(...filterAvailableCollections(res.data ?? []))
 
       if (page >= res.meta.total_pages) break
-      if (page >= MAX_COLLECTION_PAGES) {
-        throw new Error(
-          `Too many collection pages to load (exceeded maximum of ${MAX_COLLECTION_PAGES} pages)`
-        )
-      }
       page += 1
+    }
+
+    if (page > MAX_COLLECTION_PAGES && page <= totalPages) {
+      throw new Error(
+        `Too many collection pages to load (exceeded maximum of ${MAX_COLLECTION_PAGES} pages)`
+      )
     }
 
     availableCollections.value = allCollections
@@ -167,7 +174,7 @@ function validate(): boolean {
   }
 
   if (isWebsite.value && normalizedOrigins.some((origin) => !isValidUrl(origin))) {
-    errors['allowedOrigins'] = 'Allowed origins must be valid http:// or https:// URLs'
+    errors['allowedOrigins'] = 'Each allowed origin must be a valid http:// or https:// URL'
   }
 
   validationErrors.value = errors
