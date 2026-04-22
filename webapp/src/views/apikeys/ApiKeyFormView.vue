@@ -27,6 +27,7 @@ const collectionsService = computed(() =>
 
 const EXCLUDED_COLLECTIONS = new Set(['users', 'apikeys'])
 const COLLECTIONS_PER_PAGE = 100
+const MAX_COLLECTION_PAGES = 50
 const DEFAULT_RATE_LIMIT = 15
 
 // Form fields
@@ -113,7 +114,7 @@ async function loadAvailableCollections(): Promise<void> {
     const allCollections: CollectionSummary[] = []
     let page = 1
 
-    while (true) {
+    while (page <= MAX_COLLECTION_PAGES) {
       const res = await collectionsService.value.listCollections({
         page: String(page),
         per_page: String(COLLECTIONS_PER_PAGE),
@@ -123,6 +124,10 @@ async function loadAvailableCollections(): Promise<void> {
 
       if (page >= res.meta.total_pages) break
       page += 1
+    }
+
+    if (page > MAX_COLLECTION_PAGES) {
+      throw new Error('Failed to load available collections')
     }
 
     availableCollections.value = allCollections
@@ -172,7 +177,7 @@ function validate(): boolean {
   if (!name.value.trim()) errors['name'] = 'Name is required'
 
   if (!Number.isInteger(rateLimit.value) || rateLimit.value < 0) {
-    errors['rateLimit'] = 'Rate limit must be a whole number greater than or equal to 0'
+    errors['rateLimit'] = 'Rate limit must be a whole number of at least 0'
   }
 
   if (isWebsite.value && normalizedOrigins.some((origin) => !isValidUrl(origin))) {
