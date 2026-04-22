@@ -65,21 +65,10 @@ const collectionOptions = computed(() =>
 watch(isWebsite, (value) => {
   if (value && allowedOrigins.value.length === 0) {
     allowedOrigins.value = ['']
-    return
-  }
-
-  if (!value) {
+  } else if (!value) {
     allowedOrigins.value = []
   }
 })
-
-function normalizeOrigins(origins: string[]): string[] {
-  return normalizeStringArray(origins)
-}
-
-function normalizeCollections(collections: string[]): string[] {
-  return normalizeStringArray(collections)
-}
 
 function normalizeStringArray(items: string[]): string[] {
   return Array.from(new Set(items.map((item) => item.trim()).filter((item) => item.length > 0)))
@@ -110,7 +99,7 @@ async function loadAvailableCollections(): Promise<void> {
     const allCollections: CollectionSummary[] = []
     let page = 1
 
-    while (page <= MAX_COLLECTION_PAGES) {
+    while (true) {
       const res = await collectionsService.value.listCollections({
         page: String(page),
         per_page: String(COLLECTIONS_PER_PAGE),
@@ -119,13 +108,12 @@ async function loadAvailableCollections(): Promise<void> {
       allCollections.push(...filterAvailableCollections(res.data ?? []))
 
       if (page >= res.meta.total_pages) break
+      if (page >= MAX_COLLECTION_PAGES) {
+        throw new Error(
+          `Too many collection pages to load (exceeded maximum of ${MAX_COLLECTION_PAGES} pages)`
+        )
+      }
       page += 1
-    }
-
-    if (page > MAX_COLLECTION_PAGES) {
-      throw new Error(
-        `Too many collection pages to load (exceeded maximum of ${MAX_COLLECTION_PAGES} pages)`
-      )
     }
 
     availableCollections.value = allCollections
@@ -149,7 +137,7 @@ async function loadApiKey(): Promise<void> {
       name.value = found.name
       role.value = found.role
       canWrite.value = found.can_write
-      selectedCollections.value = normalizeCollections(found.collections ?? [])
+      selectedCollections.value = normalizeStringArray(found.collections ?? [])
       isWebsite.value = found.is_website
       allowedOrigins.value = found.allowed_origins ? [...found.allowed_origins] : []
       rateLimit.value = found.rate_limit
@@ -170,7 +158,7 @@ async function loadApiKey(): Promise<void> {
 
 function validate(): boolean {
   const errors: Record<string, string> = {}
-  const normalizedOrigins = normalizeOrigins(allowedOrigins.value)
+  const normalizedOrigins = normalizeStringArray(allowedOrigins.value)
 
   if (!name.value.trim()) errors['name'] = 'Name is required'
 
@@ -195,8 +183,8 @@ async function save(): Promise<void> {
 
   if (!validate()) return
 
-  const normalizedCollections = normalizeCollections(selectedCollections.value)
-  const normalizedOrigins = normalizeOrigins(allowedOrigins.value)
+  const normalizedCollections = normalizeStringArray(selectedCollections.value)
+  const normalizedOrigins = normalizeStringArray(allowedOrigins.value)
 
   saving.value = true
   try {
